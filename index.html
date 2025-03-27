@@ -1078,6 +1078,49 @@
         .continue-btn.easier { border-color: #22c55e; }
         .continue-btn.same { border-color: var(--gradient-start); }
         .continue-btn.harder { border-color: #ef4444; }
+
+        .quiz-section {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+
+        .question {
+            margin-bottom: 1.5rem;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin: 1rem 0;
+        }
+
+        .option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            cursor: pointer;
+        }
+
+        .feedback {
+            margin-top: 0.5rem;
+            font-style: italic;
+        }
+
+        .check-answers {
+            background: #4CAF50;
+            color: white;
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .check-answers:hover {
+            background: #45a049;
+        }
     </style>
 </head>
 <body>
@@ -1315,27 +1358,8 @@
                     }
                     
                     if (result.story) {
-                        output.innerHTML = `
-                            <div class="story-content">${result.story}</div>
-                            <div class="story-continuation">
-                                <h3>Continue the story with:</h3>
-                                <div class="difficulty-buttons">
-                                    <button class="continue-btn easier" data-difficulty="easier">
-                                        <span>📉</span> Easier
-                                    </button>
-                                    <button class="continue-btn same" data-difficulty="same">
-                                        <span>➡️</span> Same Level
-                                    </button>
-                                    <button class="continue-btn harder" data-difficulty="harder">
-                                        <span>📈</span> More Challenging
-                                    </button>
-                                </div>
-                            </div>
-                            <button class="copy-button" onclick="copyStory()">
-                                <span class="copy-icon">📋</span>
-                                <span class="copy-text">Copy Story</span>
-                            </button>
-                        `;
+                        displayStory(result.story);
+                        displayQuiz(result.quiz);
                     }
                 } catch (error) {
                     output.innerHTML = `<div class="error">❌ An error occurred while continuing the story. Please try again.</div>`;
@@ -1396,43 +1420,8 @@
                     }
 
                     // Display the generated story
-                    const storyOutput = document.getElementById('storyOutput');
-                    storyOutput.innerHTML = `
-                        <div class="story-content">${data.story}</div>
-                        <div class="story-continuation">
-                            <h3>Continue the story with:</h3>
-                            <div class="difficulty-buttons">
-                                <button class="continue-btn easier" data-difficulty="easier">
-                                    <span>📉</span> Easier
-                                </button>
-                                <button class="continue-btn same" data-difficulty="same">
-                                    <span>➡️</span> Same Level
-                                </button>
-                                <button class="continue-btn harder" data-difficulty="harder">
-                                    <span>📈</span> More Challenging
-                                </button>
-                            </div>
-                        </div>
-                        <button class="copy-button" onclick="copyStory()">
-                            <span class="copy-icon">📋</span>
-                            <span class="copy-text">Copy Story</span>
-                        </button>
-                    `;
-                    storyOutput.style.display = 'block';
-
-                    // Show metrics
-                    const metrics = document.getElementById('storyMetrics');
-                    metrics.style.display = 'block';
-                    metrics.innerHTML = `
-                        <div class="metric-item">
-                            <span class="metric-icon">📝</span>
-                            <span>Word Count: <span id="wordCount">${data.story.split(/\s+/).length}</span></span>
-                        </div>
-                        <div class="metric-item">
-                            <span class="metric-icon">⏱️</span>
-                            <span>Reading Time: <span id="readingTime">${Math.ceil(data.story.split(/\s+/).length / 200)}</span> min</span>
-                        </div>
-                    `;
+                    displayStory(data.story);
+                    displayQuiz(data.quiz);
 
                 } catch (error) {
                     console.error('Error:', error);
@@ -1527,6 +1516,82 @@
                 });
             });
         });
+
+        function displayStory(story) {
+            const storyOutput = document.getElementById('storyOutput');
+            storyOutput.innerHTML = `
+                <div class="story-content">${story}</div>
+                <div class="story-continuation">
+                    <h3>Continue the story with:</h3>
+                    <div class="difficulty-buttons">
+                        <button class="continue-btn easier" data-difficulty="easier">
+                            <span>📉</span> Easier
+                        </button>
+                        <button class="continue-btn same" data-difficulty="same">
+                            <span>➡️</span> Same Level
+                        </button>
+                        <button class="continue-btn harder" data-difficulty="harder">
+                            <span>📈</span> More Challenging
+                        </button>
+                    </div>
+                </div>
+                <button class="copy-button" onclick="copyStory()">
+                    <span class="copy-icon">📋</span>
+                    <span class="copy-text">Copy Story</span>
+                </button>
+            `;
+            storyOutput.style.display = 'block';
+        }
+
+        function displayQuiz(quiz) {
+            const quizSection = document.createElement('div');
+            quizSection.className = 'quiz-section';
+            quizSection.innerHTML = `
+                <h3>Test Your Understanding</h3>
+                <div class="quiz-container">
+                    ${quiz.map((q, qIndex) => `
+                        <div class="question" data-question="${qIndex}">
+                            <p class="question-text">${q.question}</p>
+                            <div class="options">
+                                ${q.options.map(option => `
+                                    <label class="option">
+                                        <input type="radio" name="q${qIndex}" value="${option[0]}">
+                                        ${option}
+                                    </label>
+                                `).join('')}
+                            </div>
+                            <div class="feedback" style="display: none;"></div>
+                        </div>
+                    `).join('')}
+                    <button class="check-answers">Check Answers</button>
+                </div>
+            `;
+
+            document.querySelector('.output-section').appendChild(quizSection);
+
+            // Add event listener for checking answers
+            quizSection.querySelector('.check-answers').addEventListener('click', () => {
+                let score = 0;
+                quiz.forEach((q, qIndex) => {
+                    const questionDiv = quizSection.querySelector(`[data-question="${qIndex}"]`);
+                    const selectedAnswer = questionDiv.querySelector('input:checked')?.value;
+                    const feedback = questionDiv.querySelector('.feedback');
+                    
+                    if (selectedAnswer === q.correctAnswer) {
+                        score++;
+                        feedback.textContent = `Correct! ${q.explanation}`;
+                        feedback.style.color = 'green';
+                    } else {
+                        feedback.textContent = `Incorrect. ${q.explanation}`;
+                        feedback.style.color = 'red';
+                    }
+                    feedback.style.display = 'block';
+                });
+
+                quizSection.querySelector('.check-answers').textContent = 
+                    `Score: ${score}/${quiz.length}`;
+            });
+        }
     </script>
 </body>
 </html> 

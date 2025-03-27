@@ -150,7 +150,36 @@ app.post('/generate-story', async (req, res) => {
 
             const generatedStory = response.data.choices[0].message.content;
 
-            // Store in Supabase
+            // After getting the story, generate quiz questions
+            const quizPrompt = `Based on this story: "${generatedStory}", generate exactly 3 multiple choice questions that test understanding of the key scientific concepts. Format the response as a JSON array with this structure:
+            [
+                {
+                    "question": "Question text",
+                    "options": ["A) option1", "B) option2", "C) option3", "D) option4"],
+                    "correctAnswer": "A",
+                    "explanation": "Why this is the correct answer"
+                }
+            ]`;
+
+            const quizResponse = await axios.post(
+                `${OPENROUTER_BASE_URL}/chat/completions`,
+                {
+                    model: 'google/gemini-2.0-flash-001',
+                    messages: [{ role: 'user', content: quizPrompt }],
+                    temperature: 0.7
+                },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                        'Content-Type': 'application/json',
+                        'HTTP-Referer': config.server.frontendUrl,
+                    }
+                }
+            );
+
+            const quiz = JSON.parse(quizResponse.data.choices[0].message.content);
+
+            // Store in Supabase with both story and quiz
             try {
                 const { data, error: dbError } = await supabase
                     .from('stories')
@@ -164,27 +193,21 @@ app.post('/generate-story', async (req, res) => {
                             word_count,
                             language,
                             story_text: generatedStory,
+                            quiz_questions: quiz,
                             is_continuation: !!req.body.previous_story
                         }
                     ]);
 
-                if (dbError) {
-                    console.error('Supabase error details:', {
-                        message: dbError.message,
-                        details: dbError.details,
-                        hint: dbError.hint,
-                        code: dbError.code
-                    });
-                    // Continue execution even if database insertion fails
-                } else {
-                    console.log('Successfully stored story in Supabase:', data);
-                }
+                if (dbError) throw dbError;
             } catch (dbError) {
-                console.error('Supabase connection error:', dbError);
+                console.error('Supabase error:', dbError);
             }
 
-            // Return success response
-            return res.status(200).json({ story: generatedStory });
+            // Return both story and quiz
+            return res.status(200).json({ 
+                story: generatedStory,
+                quiz: quiz
+            });
         } catch (error) {
             console.error('OpenRouter API Error:', error.response ? error.response.data : error.message);
             return res.status(500).json({ 

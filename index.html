@@ -1087,6 +1087,8 @@
             max-width: 800px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            position: relative;
+            z-index: 1;
         }
 
         .quiz-section h3 {
@@ -1103,6 +1105,8 @@
             margin-bottom: 15px;
             border-radius: 6px;
             border: 1px solid #dee2e6;
+            position: relative;
+            z-index: 2;
         }
 
         .quiz-question p {
@@ -1126,6 +1130,8 @@
             border-radius: 4px;
             cursor: pointer;
             transition: background-color 0.2s;
+            position: relative;
+            z-index: 2;
         }
 
         .quiz-option:hover {
@@ -1142,6 +1148,8 @@
             border-radius: 4px;
             display: none;
             font-size: 0.9rem;
+            position: relative;
+            z-index: 2;
         }
 
         .quiz-feedback.correct {
@@ -1167,6 +1175,8 @@
             width: 100%;
             font-size: 1rem;
             transition: background-color 0.2s;
+            position: relative;
+            z-index: 2;
         }
 
         #checkAnswers:hover {
@@ -1180,6 +1190,13 @@
             font-size: 1.1rem;
             color: #212529;
             padding: 10px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .output-section {
+            position: relative;
+            z-index: 1;
         }
     </style>
 </head>

@@ -10,7 +10,7 @@ module.exports = {
         key: process.env.SUPABASE_KEY
     },
     server: {
-        port: 3000,
-        frontendUrl: 'http://localhost:8000'
+        port: process.env.PORT || 3000,
+        frontendUrl: process.env.FRONTEND_URL || 'https://test-dict.onrender.com'
     }
 }; 

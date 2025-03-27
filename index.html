@@ -1080,19 +1080,21 @@
         .continue-btn.harder { border-color: #ef4444; }
 
         .quiz-section {
-            background-color: #f5f5f5;
+            background-color: #f8f9fa;
             border-radius: 8px;
             padding: 20px;
-            margin: 20px 0;
+            margin: 20px auto;
             max-width: 800px;
-            margin-left: auto;
-            margin-right: auto;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         }
 
         .quiz-section h3 {
-            color: #333;
+            color: #212529;
             margin-bottom: 20px;
             text-align: center;
+            font-size: 1.5rem;
+            font-weight: 500;
         }
 
         .quiz-question {
@@ -1100,7 +1102,13 @@
             padding: 15px;
             margin-bottom: 15px;
             border-radius: 6px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            border: 1px solid #dee2e6;
+        }
+
+        .quiz-question p {
+            margin: 0 0 15px 0;
+            font-size: 1rem;
+            color: #212529;
         }
 
         .quiz-options {
@@ -1114,13 +1122,18 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            padding: 8px;
+            padding: 8px 12px;
             border-radius: 4px;
             cursor: pointer;
+            transition: background-color 0.2s;
         }
 
         .quiz-option:hover {
-            background-color: #f0f0f0;
+            background-color: #e9ecef;
+        }
+
+        .quiz-option input[type="radio"] {
+            margin: 0;
         }
 
         .quiz-feedback {
@@ -1128,6 +1141,7 @@
             padding: 10px;
             border-radius: 4px;
             display: none;
+            font-size: 0.9rem;
         }
 
         .quiz-feedback.correct {
@@ -1143,7 +1157,7 @@
         }
 
         #checkAnswers {
-            background-color: #007bff;
+            background-color: #0d6efd;
             color: white;
             border: none;
             padding: 10px 20px;
@@ -1151,17 +1165,21 @@
             cursor: pointer;
             margin-top: 15px;
             width: 100%;
+            font-size: 1rem;
+            transition: background-color 0.2s;
         }
 
         #checkAnswers:hover {
-            background-color: #0056b3;
+            background-color: #0b5ed7;
         }
 
         .final-score {
             text-align: center;
             margin-top: 15px;
-            font-weight: bold;
-            font-size: 1.2em;
+            font-weight: 500;
+            font-size: 1.1rem;
+            color: #212529;
+            padding: 10px;
         }
     </style>
 </head>
@@ -1605,7 +1623,7 @@
                         ${q.options.map((option, i) => `
                             <label class="quiz-option">
                                 <input type="radio" name="q${index}" value="${option}">
-                                ${option}
+                                <span>${option}</span>
                             </label>
                         `).join('')}
                     </div>
@@ -1614,13 +1632,15 @@
                 questionsDiv.appendChild(questionDiv);
             });
 
-            document.querySelector('.output-section').appendChild(quizSection);
+            // Add quiz section after the story output
+            const outputSection = document.querySelector('.output-section');
+            outputSection.appendChild(quizSection);
 
             // Add event listener for checking answers
             quizSection.querySelector('#checkAnswers').addEventListener('click', () => {
                 let score = 0;
                 quiz.forEach((q, index) => {
-                    const questionDiv = quizSection.querySelector(`[data-question="${index}"]`);
+                    const questionDiv = quizSection.querySelectorAll('.quiz-question')[index];
                     const selectedAnswer = questionDiv.querySelector('input:checked')?.value;
                     const feedback = questionDiv.querySelector('.quiz-feedback');
                     

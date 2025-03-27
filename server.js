@@ -151,13 +151,13 @@ app.post('/generate-story', async (req, res) => {
             const generatedStory = response.data.choices[0].message.content;
 
             // After getting the story, generate quiz questions
-            const quizPrompt = `Based on this story: "${generatedStory}", generate exactly 3 multiple choice questions that test understanding of the key scientific concepts. Format the response as a JSON array with this structure:
+            const quizPrompt = `Based on this story, generate exactly 3 multiple choice questions that test understanding of the key scientific concepts. Format your response EXACTLY like this, with no additional text or markdown:
             [
                 {
-                    "question": "Question text",
-                    "options": ["A) option1", "B) option2", "C) option3", "D) option4"],
+                    "question": "Question text here?",
+                    "options": ["A) First option", "B) Second option", "C) Third option", "D) Fourth option"],
                     "correctAnswer": "A",
-                    "explanation": "Why this is the correct answer"
+                    "explanation": "Explanation of why this is correct"
                 }
             ]`;
 
@@ -165,8 +165,12 @@ app.post('/generate-story', async (req, res) => {
                 `${OPENROUTER_BASE_URL}/chat/completions`,
                 {
                     model: 'google/gemini-2.0-flash-001',
-                    messages: [{ role: 'user', content: quizPrompt }],
-                    temperature: 0.7
+                    messages: [{ 
+                        role: 'user', 
+                        content: quizPrompt 
+                    }],
+                    temperature: 0.7,
+                    response_format: { type: "json_object" }
                 },
                 {
                     headers: {
@@ -177,7 +181,14 @@ app.post('/generate-story', async (req, res) => {
                 }
             );
 
-            const quiz = JSON.parse(quizResponse.data.choices[0].message.content);
+            // Add error handling for JSON parsing
+            let quiz;
+            try {
+                quiz = JSON.parse(quizResponse.data.choices[0].message.content);
+            } catch (parseError) {
+                console.error('Failed to parse quiz JSON:', parseError);
+                quiz = [];  // Fallback to empty quiz if parsing fails
+            }
 
             // Store in Supabase with both story and quiz
             try {

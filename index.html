@@ -1080,46 +1080,88 @@
         .continue-btn.harder { border-color: #ef4444; }
 
         .quiz-section {
-            margin-top: 2rem;
-            padding: 1rem;
-            background: #f5f5f5;
+            background-color: #f5f5f5;
             border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
-        .question {
-            margin-bottom: 1.5rem;
+        .quiz-section h3 {
+            color: #333;
+            margin-bottom: 20px;
+            text-align: center;
         }
 
-        .options {
+        .quiz-question {
+            background: white;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .quiz-options {
             display: flex;
             flex-direction: column;
-            gap: 0.5rem;
-            margin: 1rem 0;
+            gap: 10px;
+            margin: 10px 0;
         }
 
-        .option {
+        .quiz-option {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            cursor: pointer;
-        }
-
-        .feedback {
-            margin-top: 0.5rem;
-            font-style: italic;
-        }
-
-        .check-answers {
-            background: #4CAF50;
-            color: white;
-            padding: 0.5rem 1rem;
-            border: none;
+            gap: 10px;
+            padding: 8px;
             border-radius: 4px;
             cursor: pointer;
         }
 
-        .check-answers:hover {
-            background: #45a049;
+        .quiz-option:hover {
+            background-color: #f0f0f0;
+        }
+
+        .quiz-feedback {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .quiz-feedback.correct {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .quiz-feedback.incorrect {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        #checkAnswers {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 15px;
+            width: 100%;
+        }
+
+        #checkAnswers:hover {
+            background-color: #0056b3;
+        }
+
+        .final-score {
+            text-align: center;
+            margin-top: 15px;
+            font-weight: bold;
+            font-size: 1.2em;
         }
     </style>
 </head>
@@ -1548,48 +1590,52 @@
             quizSection.className = 'quiz-section';
             quizSection.innerHTML = `
                 <h3>Test Your Understanding</h3>
-                <div class="quiz-container">
-                    ${quiz.map((q, qIndex) => `
-                        <div class="question" data-question="${qIndex}">
-                            <p class="question-text">${q.question}</p>
-                            <div class="options">
-                                ${q.options.map(option => `
-                                    <label class="option">
-                                        <input type="radio" name="q${qIndex}" value="${option[0]}">
-                                        ${option}
-                                    </label>
-                                `).join('')}
-                            </div>
-                            <div class="feedback" style="display: none;"></div>
-                        </div>
-                    `).join('')}
-                    <button class="check-answers">Check Answers</button>
-                </div>
+                <div id="questions"></div>
+                <button id="checkAnswers">Check Answers</button>
+                <div class="final-score"></div>
             `;
+
+            const questionsDiv = quizSection.querySelector('#questions');
+            quiz.forEach((q, index) => {
+                const questionDiv = document.createElement('div');
+                questionDiv.className = 'quiz-question';
+                questionDiv.innerHTML = `
+                    <p><strong>Question ${index + 1}:</strong> ${q.question}</p>
+                    <div class="quiz-options">
+                        ${q.options.map((option, i) => `
+                            <label class="quiz-option">
+                                <input type="radio" name="q${index}" value="${option}">
+                                ${option}
+                            </label>
+                        `).join('')}
+                    </div>
+                    <div class="quiz-feedback"></div>
+                `;
+                questionsDiv.appendChild(questionDiv);
+            });
 
             document.querySelector('.output-section').appendChild(quizSection);
 
             // Add event listener for checking answers
-            quizSection.querySelector('.check-answers').addEventListener('click', () => {
+            quizSection.querySelector('#checkAnswers').addEventListener('click', () => {
                 let score = 0;
-                quiz.forEach((q, qIndex) => {
-                    const questionDiv = quizSection.querySelector(`[data-question="${qIndex}"]`);
+                quiz.forEach((q, index) => {
+                    const questionDiv = quizSection.querySelector(`[data-question="${index}"]`);
                     const selectedAnswer = questionDiv.querySelector('input:checked')?.value;
-                    const feedback = questionDiv.querySelector('.feedback');
+                    const feedback = questionDiv.querySelector('.quiz-feedback');
                     
                     if (selectedAnswer === q.correctAnswer) {
                         score++;
                         feedback.textContent = `Correct! ${q.explanation}`;
-                        feedback.style.color = 'green';
+                        feedback.className = 'quiz-feedback correct';
                     } else {
                         feedback.textContent = `Incorrect. ${q.explanation}`;
-                        feedback.style.color = 'red';
+                        feedback.className = 'quiz-feedback incorrect';
                     }
                     feedback.style.display = 'block';
                 });
 
-                quizSection.querySelector('.check-answers').textContent = 
-                    `Score: ${score}/${quiz.length}`;
+                quizSection.querySelector('.final-score').textContent = `Score: ${score}/${quiz.length}`;
             });
         }
     </script>

@@ -5,7 +5,7 @@ const config = require('./config');
 const path = require('path');
 
 const app = express();
-const port = config.server.port;
+const port = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json());
@@ -14,8 +14,8 @@ app.use(express.static(path.join(__dirname)));
 // CORS middleware
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
+    res.header('Access-Control-Allow-Headers', '*');
     if (req.method === 'OPTIONS') {
         return res.sendStatus(200);
     }
@@ -199,6 +199,11 @@ app.post('/generate-story', async (req, res) => {
 
 // Root path handler
 app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Catch-all route for SPA
+app.use('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 

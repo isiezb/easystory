@@ -2,12 +2,14 @@ const express = require('express');
 const axios = require('axios');
 const { createClient } = require('@supabase/supabase-js');
 const config = require('./config');
+const path = require('path');
 
 const app = express();
 const port = config.server.port;
 
 // Middleware
 app.use(express.json());
+app.use(express.static(path.join(__dirname)));
 
 // CORS middleware
 app.use((req, res, next) => {
@@ -193,6 +195,11 @@ app.post('/generate-story', async (req, res) => {
         console.error('Error:', error);
         return res.status(500).json({ error: 'Failed to generate story' });
     }
+});
+
+// Add a route for the root path
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Start server

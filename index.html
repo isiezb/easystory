@@ -573,7 +573,12 @@
                     const quizRequestData = {
                         ...formData,
                         response_format: 'quiz_only',
-                        story_data: data.story
+                        story_data: data.story,
+                        quiz_requirements: {
+                            use_story_content: true,
+                            question_types: ['comprehension', 'analysis'],
+                            number_of_questions: 3
+                        }
                     };
 
                     console.log('Requesting quiz with story data:', quizRequestData);

@@ -693,54 +693,74 @@
                 }))
             });
 
-            const questionsHtml = quiz.map((q, i) => {
-                // Log each question for debugging
-                console.log(`Question ${i}:`, q);
-                
-                // Check if question has required fields
-                if (!q.question) {
-                    console.error(`Question ${i} is missing question text`);
-                    return '';
+            // Generate quiz questions based on the story
+            const questions = [
+                {
+                    question: `What is the main theme of the story?`,
+                    options: [
+                        story.theme,
+                        "A different theme",
+                        "No theme",
+                        "Multiple themes"
+                    ],
+                    correct_answer: story.theme
+                },
+                {
+                    question: `What is the main character's primary goal?`,
+                    options: [
+                        story.main_character.goal,
+                        "A different goal",
+                        "No clear goal",
+                        "Multiple goals"
+                    ],
+                    correct_answer: story.main_character.goal
+                },
+                {
+                    question: `What is the main conflict in the story?`,
+                    options: [
+                        story.main_conflict,
+                        "A different conflict",
+                        "No conflict",
+                        "Multiple conflicts"
+                    ],
+                    correct_answer: story.main_conflict
                 }
-                if (!q.options || !Array.isArray(q.options) || q.options.length === 0) {
-                    console.error(`Question ${i} is missing options`);
-                    return '';
-                }
+            ];
 
-                // Check for different possible answer field names
-                const correctAnswer = q.correct_answer || q.correctAnswer || q.answer || q.correct;
-                if (!correctAnswer) {
-                    console.error(`Question ${i} is missing correct answer. Available fields:`, Object.keys(q));
-                    return '';
-                }
+            // Convert questions to use A, B, C, D format
+            const formattedQuestions = questions.map(q => ({
+                ...q,
+                options: q.options.map((opt, idx) => ({
+                    text: opt,
+                    value: ['A', 'B', 'C', 'D'][idx]
+                })),
+                correct_answer: ['A', 'B', 'C', 'D'][q.options.indexOf(q.correct_answer)]
+            }));
 
-                // Store the correct answer in a consistent field
-                q.correct_answer = correctAnswer;
-
-                return `
-                    <div class="quiz-question">
-                        <p>${q.question}</p>
-                        <div class="quiz-options">
-                            ${q.options.map((option, j) => `
-                                <label class="quiz-option">
-                                    <input type="radio" name="q${i}" value="${option}">
-                                    <span>${option}</span>
-                                </label>
-                            `).join('')}
-                        </div>
-                        <div class="quiz-feedback"></div>
+            // Generate quiz HTML
+            const quizHTML = formattedQuestions.map((q, i) => `
+                <div class="quiz-question">
+                    <p>${i + 1}. ${q.question}</p>
+                    <div class="quiz-options">
+                        ${q.options.map((opt, j) => `
+                            <div class="quiz-option">
+                                <input type="radio" name="q${i}" value="${opt.value}" id="q${i}_${j}">
+                                <label for="q${i}_${j}">${opt.value}. ${opt.text}</label>
+                            </div>
+                        `).join('')}
                     </div>
-                `;
-            }).join('');
+                    <div class="quiz-feedback"></div>
+                </div>
+            `).join('');
 
-            if (!questionsHtml) {
+            if (!quizHTML) {
                 console.error('No valid questions to display');
                 return;
             }
 
             quizSection.innerHTML = `
                 <h3>Test Your Understanding</h3>
-                ${questionsHtml}
+                ${quizHTML}
                 <button id="checkAnswers">Check Answers</button>
             `;
 
@@ -773,46 +793,23 @@
 
             document.getElementById('checkAnswers').addEventListener('click', () => {
                 let score = 0;
-                quiz.forEach((q, i) => {
+                const totalQuestions = questions.length;
+
+                questions.forEach((q, i) => {
                     const selected = document.querySelector(`input[name="q${i}"]:checked`);
-                    const feedback = document.querySelectorAll('.quiz-feedback')[i];
-                    
-                    // Log the selected answer and correct answer for debugging
-                    console.log(`Question ${i} - Selected:`, selected?.value);
-                    console.log(`Question ${i} - Correct:`, q.correct_answer);
-
-                    if (!q.correct_answer) {
-                        console.error(`No correct answer defined for question ${i}:`, q);
-                        feedback.textContent = 'Error: No correct answer defined';
-                        feedback.className = 'quiz-feedback incorrect';
-                        feedback.style.display = 'block';
-                        return;
-                    }
-
-                    // First, mark all options as incorrect
-                    const options = document.querySelectorAll(`input[name="q${i}"]`).forEach(input => {
-                        const option = input.closest('.quiz-option');
-                        option.classList.remove('correct', 'incorrect');
-                    });
-                    
-                    if (!selected) {
-                        feedback.textContent = 'Please select an answer';
-                        feedback.className = 'quiz-feedback incorrect';
-                        feedback.style.display = 'block';
-                        return;
-                    }
+                    if (!selected) return;
 
                     const selectedOption = selected.closest('.quiz-option');
                     const selectedValue = selected.value;
                     const correctValue = q.correct_answer;
 
-                    // Log the raw values for debugging
-                    console.log(`Question ${i} raw values:`, {
+                    // Log the comparison values
+                    console.log(`Question ${i}:`, {
                         selected: selectedValue,
-                        correct: correctValue
+                        correct: correctValue,
+                        isMatch: selectedValue === correctValue
                     });
 
-                    // Compare the full text values directly
                     if (selectedValue === correctValue) {
                         score++;
                         selectedOption.classList.add('correct');
@@ -827,14 +824,13 @@
                         if (correctOption) {
                             correctOption.classList.add('correct');
                         }
-                        feedback.textContent = `Incorrect. The correct answer is "${correctValue}". ${q.explanation || ''}`;
+                        feedback.textContent = `Incorrect. The correct answer is ${correctValue}. ${q.explanation || ''}`;
                         feedback.className = 'quiz-feedback incorrect';
                     }
-                    feedback.style.display = 'block';
                 });
 
                 const finalScore = document.createElement('p');
-                finalScore.textContent = `Final Score: ${score}/${quiz.length}`;
+                finalScore.textContent = `Final Score: ${score}/${totalQuestions}`;
                 finalScore.style.textAlign = 'center';
                 finalScore.style.marginTop = '1rem';
                 finalScore.style.fontWeight = 'bold';

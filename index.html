@@ -279,6 +279,85 @@
             position: relative;
         }
 
+        .form-group.error input,
+        .form-group.error select {
+            border-color: #ef4444;
+            background: rgba(239, 68, 68, 0.05);
+        }
+
+        .form-group.error label {
+            color: #ef4444;
+        }
+
+        .error-message {
+            color: #ef4444;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+
+        .form-group.error .error-message {
+            display: block;
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--bg);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        .loading-text {
+            color: var(--bg);
+            font-size: 1.25rem;
+            margin-top: 1rem;
+            text-align: center;
+        }
+
+        .error-toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: #ef4444;
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            box-shadow: var(--shadow-lg);
+            display: none;
+            z-index: 1000;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @media (max-width: 768px) {
+            .error-toast {
+                bottom: 1rem;
+                right: 1rem;
+                left: 1rem;
+                text-align: center;
+            }
+        }
+
         label {
             display: block;
             margin-bottom: 0.75rem;
@@ -1087,6 +1166,15 @@
         </section>
     </div>
 
+    <div class="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Generating your story...</div>
+        </div>
+    </div>
+
+    <div class="error-toast"></div>
+
     <script>
         const config = {
             serverUrl: window.location.origin
@@ -1143,6 +1231,33 @@
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
+                // Reset error states
+                document.querySelectorAll('.form-group').forEach(group => {
+                    group.classList.remove('error');
+                });
+                
+                // Validate form
+                let hasError = false;
+                const requiredFields = form.querySelectorAll('[required]');
+                requiredFields.forEach(field => {
+                    if (!field.value) {
+                        const group = field.closest('.form-group');
+                        group.classList.add('error');
+                        const errorMessage = document.createElement('div');
+                        errorMessage.className = 'error-message';
+                        errorMessage.textContent = 'This field is required';
+                        group.appendChild(errorMessage);
+                        hasError = true;
+                    }
+                });
+                
+                if (hasError) {
+                    showError('Please fill in all required fields');
+                    return;
+                }
+                
+                showLoading();
+
                 const submitButton = e.target.querySelector('button[type="submit"]');
                 const originalText = submitButton.textContent;
                 submitButton.disabled = true;
@@ -1527,6 +1642,47 @@
                     });
                     button.innerHTML = originalText;
                 }
+            }
+        });
+
+        function showLoading(message = 'Generating your story...') {
+            const overlay = document.querySelector('.loading-overlay');
+            overlay.querySelector('.loading-text').textContent = message;
+            overlay.style.display = 'flex';
+        }
+
+        function hideLoading() {
+            document.querySelector('.loading-overlay').style.display = 'none';
+        }
+
+        function showError(message) {
+            const toast = document.querySelector('.error-toast');
+            toast.textContent = message;
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 5000);
+        }
+
+        // Add keyboard navigation for quiz
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+                const selectedOption = document.querySelector('.quiz-option.selected');
+                if (!selectedOption) return;
+                
+                const options = Array.from(document.querySelectorAll('.quiz-option'));
+                const currentIndex = options.indexOf(selectedOption);
+                let nextIndex;
+                
+                if (e.key === 'ArrowDown') {
+                    nextIndex = currentIndex < options.length - 1 ? currentIndex + 1 : 0;
+                } else {
+                    nextIndex = currentIndex > 0 ? currentIndex - 1 : options.length - 1;
+                }
+                
+                options[currentIndex].classList.remove('selected');
+                options[nextIndex].classList.add('selected');
+                options[nextIndex].querySelector('input').checked = true;
             }
         });
     </script>

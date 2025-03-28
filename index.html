@@ -806,10 +806,13 @@
                     const selectedValue = selected.value;
                     const correctValue = q.correct_answer;
 
-                    // Log the comparison values
-                    console.log(`Comparing: "${selectedValue}" with "${correctValue}"`);
+                    // Log the raw values for debugging
+                    console.log(`Question ${i} raw values:`, {
+                        selected: selectedValue,
+                        correct: correctValue
+                    });
 
-                    // Simple string comparison
+                    // Compare the full text values directly
                     if (selectedValue === correctValue) {
                         score++;
                         selectedOption.classList.add('correct');

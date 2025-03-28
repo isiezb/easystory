@@ -21,6 +21,9 @@
             --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             --transition: all 0.3s ease;
             --backdrop-blur: blur(8px);
+            --success: #22c55e;
+            --error: #ef4444;
+            --card-bg: rgba(255, 255, 255, 0.95);
         }
 
         [data-theme="dark"] {
@@ -35,7 +38,7 @@
             --border: #334155;
             --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
             --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
-            --gradient: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            --card-bg: rgba(15, 23, 42, 0.95);
         }
 
         [data-theme="dark"] body {
@@ -1231,33 +1234,12 @@
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
-                // Reset error states
-                document.querySelectorAll('.form-group').forEach(group => {
-                    group.classList.remove('error');
-                });
-                
-                // Validate form
-                let hasError = false;
-                const requiredFields = form.querySelectorAll('[required]');
-                requiredFields.forEach(field => {
-                    if (!field.value) {
-                        const group = field.closest('.form-group');
-                        group.classList.add('error');
-                        const errorMessage = document.createElement('div');
-                        errorMessage.className = 'error-message';
-                        errorMessage.textContent = 'This field is required';
-                        group.appendChild(errorMessage);
-                        hasError = true;
-                    }
-                });
-                
-                if (hasError) {
-                    showError('Please fill in all required fields');
+                if (!utils.validateForm(form)) {
+                    utils.showError('Please fill in all required fields');
                     return;
                 }
                 
-                showLoading();
-
+                utils.showLoading();
                 const submitButton = e.target.querySelector('button[type="submit"]');
                 const originalText = submitButton.textContent;
                 submitButton.disabled = true;
@@ -1272,28 +1254,13 @@
                         main_character: document.getElementById('mainCharacter').value,
                         word_count: parseInt(document.getElementById('wordCount').value),
                         language: document.getElementById('language').value,
-                        response_format: 'story_only'  // First get just the story
+                        response_format: 'story_only'
                     };
 
-                    const response = await fetch(`${config.serverUrl}/generate-story`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(formData)
-                    });
-
-                    const data = await response.json();
-
-                    if (!response.ok) {
-                        throw new Error(data.error || 'Failed to generate story');
-                    }
-
-                    // Display the story first
+                    const data = await utils.handleApiRequest(`${config.serverUrl}/generate-story`, formData);
                     displayStory(data.story);
 
-                    // Then generate the quiz with the story data
-                    const quizRequestData = {
+                    const quizData = await utils.handleApiRequest(`${config.serverUrl}/generate-story`, {
                         ...formData,
                         response_format: 'quiz_only',
                         story_data: data.story,
@@ -1302,40 +1269,21 @@
                             question_types: ['comprehension', 'analysis'],
                             number_of_questions: 3
                         }
-                    };
-
-                    console.log('Requesting quiz with story data:', quizRequestData);
-
-                    const quizResponse = await fetch(`${config.serverUrl}/generate-story`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(quizRequestData)
                     });
 
-                    const quizResponseData = await quizResponse.json();
-                    console.log('Received quiz data:', quizResponseData);
-
-                    if (!quizResponse.ok) {
-                        throw new Error(quizResponseData.error || 'Failed to generate quiz');
-                    }
-
-                    // Display the quiz after a short delay
                     setTimeout(() => {
-                        if (quizResponseData && quizResponseData.quiz) {
-                            displayQuiz(quizResponseData.quiz);
-                        } else {
-                            console.error('No quiz data received');
+                        if (quizData && quizData.quiz) {
+                            displayQuiz(quizData.quiz);
                         }
-                    }, 2000); // 2 second delay
+                    }, 2000);
 
                 } catch (error) {
                     console.error('Error:', error);
-                    alert(error.message || 'Failed to generate story. Please try again.');
+                    utils.showError(error.message || 'Failed to generate story. Please try again.');
                 } finally {
                     submitButton.disabled = false;
                     submitButton.querySelector('span').textContent = originalText;
+                    utils.hideLoading();
                 }
             });
         });
@@ -1685,6 +1633,69 @@
                 options[nextIndex].querySelector('input').checked = true;
             }
         });
+
+        const utils = {
+            showLoading(message = 'Generating your story...') {
+                const overlay = document.querySelector('.loading-overlay');
+                overlay.querySelector('.loading-text').textContent = message;
+                overlay.style.display = 'flex';
+            },
+
+            hideLoading() {
+                document.querySelector('.loading-overlay').style.display = 'none';
+            },
+
+            showError(message) {
+                const toast = document.querySelector('.error-toast');
+                toast.textContent = message;
+                toast.style.display = 'block';
+                setTimeout(() => {
+                    toast.style.display = 'none';
+                }, 5000);
+            },
+
+            validateForm(form) {
+                let hasError = false;
+                const requiredFields = form.querySelectorAll('[required]');
+                
+                // Reset previous errors
+                form.querySelectorAll('.form-group').forEach(group => {
+                    group.classList.remove('error');
+                    const errorMessage = group.querySelector('.error-message');
+                    if (errorMessage) errorMessage.remove();
+                });
+
+                // Validate fields
+                requiredFields.forEach(field => {
+                    if (!field.value) {
+                        const group = field.closest('.form-group');
+                        group.classList.add('error');
+                        const errorMessage = document.createElement('div');
+                        errorMessage.className = 'error-message';
+                        errorMessage.textContent = 'This field is required';
+                        group.appendChild(errorMessage);
+                        hasError = true;
+                    }
+                });
+
+                return !hasError;
+            },
+
+            async handleApiRequest(url, data) {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+
+                const responseData = await response.json();
+                if (!response.ok) {
+                    throw new Error(responseData.error || 'Request failed');
+                }
+
+                return responseData;
+            }
+        };
     </script>
 </body>
 </html> 

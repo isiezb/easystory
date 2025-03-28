@@ -820,7 +820,21 @@
 
         document.addEventListener('click', async (e) => {
             if (e.target.closest('.continue-btn')) {
-                const difficulty = e.target.closest('.continue-btn').dataset.difficulty;
+                const button = e.target.closest('.continue-btn');
+                const difficulty = button.dataset.difficulty;
+
+                // Disable all difficulty buttons
+                const buttons = document.querySelectorAll('.continue-btn');
+                buttons.forEach(btn => {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
+                    btn.style.cursor = 'not-allowed';
+                });
+
+                // Store original button text
+                const originalText = button.innerHTML;
+                button.innerHTML = '<span>⏳</span> Generating...';
+
                 const currentData = {
                     academic_grade: document.getElementById('academicGrade').value,
                     subject: document.getElementById('subject').value,
@@ -867,6 +881,14 @@
                 } catch (error) {
                     console.error('Error:', error);
                     alert(error.message || 'Failed to generate continuation. Please try again.');
+                } finally {
+                    // Re-enable buttons and restore text
+                    buttons.forEach(btn => {
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                        btn.style.cursor = 'pointer';
+                    });
+                    button.innerHTML = originalText;
                 }
             }
         });

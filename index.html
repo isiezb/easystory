@@ -548,7 +548,8 @@
                         setting: document.getElementById('setting').value,
                         main_character: document.getElementById('mainCharacter').value,
                         word_count: parseInt(document.getElementById('wordCount').value),
-                        language: document.getElementById('language').value
+                        language: document.getElementById('language').value,
+                        response_format: 'story_only'
                     };
 
                     const response = await fetch(`${config.serverUrl}/generate-story`, {
@@ -566,7 +567,9 @@
                     }
 
                     displayStory(data.story);
-                    displayQuiz(data.quiz);
+                    if (data.quiz) {
+                        displayQuiz(data.quiz);
+                    }
 
                 } catch (error) {
                     console.error('Error:', error);
@@ -580,12 +583,18 @@
 
         function displayStory(story) {
             const storyOutput = document.getElementById('storyOutput');
-            const wordCount = story.trim().split(/\s+/).length;
-            const readingTime = Math.ceil(wordCount / 200); // Assuming 200 words per minute
+            
+            // Clean up the story text
+            const cleanStory = story
+                .replace(/^[^a-zA-Z0-9\u00C0-\u024F]+/u, '') // Remove any non-letter prefix, including Unicode letters
+                .trim();
 
-            // Format story with paragraphs
-            const formattedStory = story
-                .split('\n\n')
+            const wordCount = cleanStory.trim().split(/\s+/).length;
+            const readingTime = Math.ceil(wordCount / 200);
+
+            // Format story with paragraphs, preserving any existing paragraph structure
+            const formattedStory = cleanStory
+                .split(/\n\s*\n/)  // Split on multiple newlines
                 .map(paragraph => paragraph.trim())
                 .filter(paragraph => paragraph.length > 0)
                 .map(paragraph => `<p>${paragraph}</p>`)

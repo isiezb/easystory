@@ -561,6 +561,7 @@
                     });
 
                     const data = await response.json();
+                    console.log('Initial story response:', data);
 
                     if (!response.ok) {
                         throw new Error(data.error || 'Failed to generate story');
@@ -582,6 +583,8 @@
                         }
                     };
 
+                    console.log('Sending quiz request with data:', quizRequestData);
+
                     // Add loading indicator for quiz
                     const quizLoadingDiv = document.createElement('div');
                     quizLoadingDiv.className = 'loading-indicator';
@@ -592,7 +595,6 @@
                     document.querySelector('#storyOutput').after(quizLoadingDiv);
 
                     try {
-                        console.log('Sending quiz request with data:', quizRequestData);
                         const quizResponse = await fetch(`${config.serverUrl}/generate-story`, {
                             method: 'POST',
                             headers: {
@@ -602,7 +604,7 @@
                         });
 
                         const quizResponseData = await quizResponse.json();
-                        console.log('Received quiz response:', quizResponseData);
+                        console.log('Quiz response data:', quizResponseData);
 
                         if (!quizResponse.ok) {
                             throw new Error(quizResponseData.error || 'Failed to generate quiz');
@@ -610,16 +612,15 @@
 
                         // Validate quiz data
                         if (!quizResponseData.quiz || !Array.isArray(quizResponseData.quiz)) {
+                            console.error('Invalid quiz data structure:', quizResponseData);
                             throw new Error('Invalid quiz data received');
                         }
 
                         // Remove loading indicator
                         quizLoadingDiv.remove();
 
-                        // Display the quiz after a short delay
-                        setTimeout(() => {
-                            displayQuiz(quizResponseData.quiz);
-                        }, 2000); // 2 second delay
+                        // Display the quiz immediately without delay
+                        displayQuiz(quizResponseData.quiz);
 
                     } catch (error) {
                         console.error('Quiz generation error:', error);

@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import openai
 import os
@@ -6,7 +6,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='.')
 CORS(app)
 
 openai.api_key = os.getenv('OPENAI_API_KEY')
@@ -124,10 +124,7 @@ Subject details: {subject_specification}"""
 
 @app.route('/')
 def home():
-    return jsonify({
-        "status": "ok",
-        "message": "API is running"
-    })
+    return send_from_directory('.', 'index.html')
 
 @app.route('/generate-story', methods=['POST'])
 def generate_story():

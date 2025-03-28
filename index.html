@@ -448,15 +448,17 @@
                         return;
                     }
 
-                    // Check both possible property names for correct answer
-                    const correctAnswer = q.correct_answer || q.correctAnswer;
+                    // Log the values for debugging
+                    console.log('Selected:', selected.value);
+                    console.log('Correct answer:', q.correct_answer);
+                    console.log('Question:', q);
 
-                    if (selected.value === correctAnswer) {
+                    if (selected.value === q.correct_answer) {
                         score++;
                         feedback.textContent = `Correct! ${q.explanation}`;
                         feedback.className = 'quiz-feedback correct';
                     } else {
-                        feedback.textContent = `Incorrect. The correct answer is "${correctAnswer}". ${q.explanation}`;
+                        feedback.textContent = `Incorrect. The correct answer is "${q.correct_answer}". ${q.explanation}`;
                         feedback.className = 'quiz-feedback incorrect';
                     }
                     feedback.style.display = 'block';

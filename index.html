@@ -693,59 +693,15 @@
                 }))
             });
 
-            // Generate quiz questions based on the story
-            const questions = [
-                {
-                    question: `What is the main theme of the story?`,
-                    options: [
-                        story.theme,
-                        "A different theme",
-                        "No theme",
-                        "Multiple themes"
-                    ],
-                    correct_answer: story.theme
-                },
-                {
-                    question: `What is the main character's primary goal?`,
-                    options: [
-                        story.main_character.goal,
-                        "A different goal",
-                        "No clear goal",
-                        "Multiple goals"
-                    ],
-                    correct_answer: story.main_character.goal
-                },
-                {
-                    question: `What is the main conflict in the story?`,
-                    options: [
-                        story.main_conflict,
-                        "A different conflict",
-                        "No conflict",
-                        "Multiple conflicts"
-                    ],
-                    correct_answer: story.main_conflict
-                }
-            ];
-
-            // Convert questions to use A, B, C, D format
-            const formattedQuestions = questions.map(q => ({
-                ...q,
-                options: q.options.map((opt, idx) => ({
-                    text: opt,
-                    value: ['A', 'B', 'C', 'D'][idx]
-                })),
-                correct_answer: ['A', 'B', 'C', 'D'][q.options.indexOf(q.correct_answer)]
-            }));
-
             // Generate quiz HTML
-            const quizHTML = formattedQuestions.map((q, i) => `
+            const quizHTML = quiz.map((q, i) => `
                 <div class="quiz-question">
                     <p>${i + 1}. ${q.question}</p>
                     <div class="quiz-options">
                         ${q.options.map((opt, j) => `
                             <div class="quiz-option">
-                                <input type="radio" name="q${i}" value="${opt.value}" id="q${i}_${j}">
-                                <label for="q${i}_${j}">${opt.value}. ${opt.text}</label>
+                                <input type="radio" name="q${i}" value="${opt}" id="q${i}_${j}">
+                                <label for="q${i}_${j}">${opt}</label>
                             </div>
                         `).join('')}
                     </div>
@@ -793,15 +749,16 @@
 
             document.getElementById('checkAnswers').addEventListener('click', () => {
                 let score = 0;
-                const totalQuestions = questions.length;
+                const totalQuestions = quiz.length;
 
-                questions.forEach((q, i) => {
+                quiz.forEach((q, i) => {
                     const selected = document.querySelector(`input[name="q${i}"]:checked`);
                     if (!selected) return;
 
                     const selectedOption = selected.closest('.quiz-option');
                     const selectedValue = selected.value;
                     const correctValue = q.correct_answer;
+                    const feedback = selectedOption.closest('.quiz-question').querySelector('.quiz-feedback');
 
                     // Log the comparison values
                     console.log(`Question ${i}:`, {
@@ -824,7 +781,7 @@
                         if (correctOption) {
                             correctOption.classList.add('correct');
                         }
-                        feedback.textContent = `Incorrect. The correct answer is ${correctValue}. ${q.explanation || ''}`;
+                        feedback.textContent = `Incorrect. The correct answer is "${correctValue}". ${q.explanation || ''}`;
                         feedback.className = 'quiz-feedback incorrect';
                     }
                 });

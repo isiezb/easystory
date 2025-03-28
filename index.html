@@ -672,32 +672,60 @@
 
             const quizSection = document.createElement('div');
             quizSection.className = 'quiz-section';
+            
+            // Log the quiz structure
+            console.log('Quiz structure:', {
+                length: quiz.length,
+                questions: quiz.map(q => ({
+                    hasQuestion: !!q.question,
+                    hasOptions: !!q.options,
+                    hasCorrectAnswer: !!q.correct_answer,
+                    optionsCount: q.options?.length
+                }))
+            });
+
+            const questionsHtml = quiz.map((q, i) => {
+                // Log each question for debugging
+                console.log(`Question ${i}:`, q);
+                
+                // Check if question has required fields
+                if (!q.question) {
+                    console.error(`Question ${i} is missing question text`);
+                    return '';
+                }
+                if (!q.options || !Array.isArray(q.options) || q.options.length === 0) {
+                    console.error(`Question ${i} is missing options`);
+                    return '';
+                }
+                if (!q.correct_answer) {
+                    console.error(`Question ${i} is missing correct answer`);
+                    return '';
+                }
+
+                return `
+                    <div class="quiz-question">
+                        <p>${q.question}</p>
+                        <div class="quiz-options">
+                            ${q.options.map((option, j) => `
+                                <label class="quiz-option">
+                                    <input type="radio" name="q${i}" value="${option}">
+                                    <span>${option}</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                        <div class="quiz-feedback"></div>
+                    </div>
+                `;
+            }).join('');
+
+            if (!questionsHtml) {
+                console.error('No valid questions to display');
+                return;
+            }
+
             quizSection.innerHTML = `
                 <h3>Test Your Understanding</h3>
-                ${quiz.map((q, i) => {
-                    // Log each question for debugging
-                    console.log(`Question ${i}:`, q);
-                    
-                    if (!q.options || !q.correct_answer) {
-                        console.error(`Invalid question data for question ${i}:`, q);
-                        return '';
-                    }
-
-                    return `
-                        <div class="quiz-question">
-                            <p>${q.question}</p>
-                            <div class="quiz-options">
-                                ${q.options.map((option, j) => `
-                                    <label class="quiz-option">
-                                        <input type="radio" name="q${i}" value="${option}">
-                                        <span>${option}</span>
-                                    </label>
-                                `).join('')}
-                            </div>
-                            <div class="quiz-feedback"></div>
-                        </div>
-                    `;
-                }).join('')}
+                ${questionsHtml}
                 <button id="checkAnswers">Check Answers</button>
             `;
 

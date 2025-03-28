@@ -697,10 +697,16 @@
                     console.error(`Question ${i} is missing options`);
                     return '';
                 }
-                if (!q.correct_answer) {
-                    console.error(`Question ${i} is missing correct answer`);
+
+                // Check for different possible answer field names
+                const correctAnswer = q.correct_answer || q.correctAnswer || q.answer || q.correct;
+                if (!correctAnswer) {
+                    console.error(`Question ${i} is missing correct answer. Available fields:`, Object.keys(q));
                     return '';
                 }
+
+                // Store the correct answer in a consistent field
+                q.correct_answer = correctAnswer;
 
                 return `
                     <div class="quiz-question">
@@ -729,12 +735,20 @@
                 <button id="checkAnswers">Check Answers</button>
             `;
 
+            // Remove any existing quiz section
             const existingQuiz = document.querySelector('.quiz-section');
             if (existingQuiz) {
                 existingQuiz.remove();
             }
 
-            document.querySelector('#storyOutput').after(quizSection);
+            // Insert quiz section after the story continuation section
+            const storyContinuation = document.querySelector('.story-continuation');
+            if (storyContinuation) {
+                storyContinuation.after(quizSection);
+            } else {
+                // Fallback: insert after story output if continuation section doesn't exist
+                document.querySelector('#storyOutput').after(quizSection);
+            }
 
             // Add click handlers for quiz options
             const quizOptions = quizSection.querySelectorAll('.quiz-option');

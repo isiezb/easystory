@@ -129,7 +129,7 @@ app.post('/generate-story', async (req, res) => {
                         'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
                         'Content-Type': 'application/json',
                         'HTTP-Referer': config.server.frontendUrl,
-                        'X-Title': 'Didactic Story Generator',
+                        'X-Title': 'EASY STORY EASY LIFE',
                         'OpenAI-Organization': 'org-123',
                         'HTTP-Origin': config.server.frontendUrl
                     }

@@ -1,4 +1,4 @@
-# Didactic Story Generator
+# EASY STORY EASY LIFE
 
 An interactive web application that generates educational stories tailored to your grade level and subject matter. The app includes comprehension quizzes and allows for story continuation with adjustable difficulty levels.
 

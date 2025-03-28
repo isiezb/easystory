@@ -809,7 +809,11 @@
                     // Log the comparison values
                     console.log(`Comparing: "${selectedValue}" with "${correctValue}"`);
 
-                    if (selectedValue === correctValue) {
+                    // Normalize the comparison by removing any extra whitespace and converting to lowercase
+                    const normalizedSelected = selectedValue.toLowerCase().replace(/\s+/g, ' ');
+                    const normalizedCorrect = correctValue.toLowerCase().replace(/\s+/g, ' ');
+
+                    if (normalizedSelected === normalizedCorrect) {
                         score++;
                         selectedOption.classList.add('correct');
                         feedback.textContent = `Correct! ${q.explanation || ''}`;
@@ -818,7 +822,7 @@
                         selectedOption.classList.add('incorrect');
                         // Find and mark the correct option
                         const correctOption = Array.from(document.querySelectorAll(`input[name="q${i}"]`))
-                            .find(input => input.value.trim() === correctValue)
+                            .find(input => input.value.trim().toLowerCase().replace(/\s+/g, ' ') === normalizedCorrect)
                             ?.closest('.quiz-option');
                         if (correctOption) {
                             correctOption.classList.add('correct');

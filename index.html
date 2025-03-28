@@ -34,9 +34,18 @@
             --gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
         }
 
+        html, body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            font-family: 'Inter', sans-serif;
+        }
+
+        [data-theme="dark"] html,
         [data-theme="dark"] body {
             background: var(--bg);
-            min-height: 100vh;
         }
 
         [data-theme="dark"] .header-container {
@@ -90,6 +99,14 @@
 
         [data-theme="dark"] .action-btn.active {
             background: var(--gradient);
+        }
+
+        [data-theme="dark"] .theme-toggle {
+            background: rgba(15, 23, 42, 0.95);
+        }
+
+        [data-theme="dark"] .container {
+            background: var(--bg);
         }
 
         * {

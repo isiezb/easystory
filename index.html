@@ -396,12 +396,15 @@
                         return;
                     }
 
-                    if (selected.value === q.correct_answer) {
+                    // Check both possible property names for correct answer
+                    const correctAnswer = q.correct_answer || q.correctAnswer;
+
+                    if (selected.value === correctAnswer) {
                         score++;
                         feedback.textContent = `Correct! ${q.explanation}`;
                         feedback.className = 'quiz-feedback correct';
                     } else {
-                        feedback.textContent = `Incorrect. The correct answer is "${q.correct_answer}". ${q.explanation}`;
+                        feedback.textContent = `Incorrect. The correct answer is "${correctAnswer}". ${q.explanation}`;
                         feedback.className = 'quiz-feedback incorrect';
                     }
                     feedback.style.display = 'block';

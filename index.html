@@ -662,24 +662,42 @@
         }
 
         function displayQuiz(quiz) {
+            // Log the quiz data for debugging
+            console.log('Quiz data:', quiz);
+
+            if (!quiz || !Array.isArray(quiz) || quiz.length === 0) {
+                console.error('Invalid quiz data:', quiz);
+                return;
+            }
+
             const quizSection = document.createElement('div');
             quizSection.className = 'quiz-section';
             quizSection.innerHTML = `
                 <h3>Test Your Understanding</h3>
-                ${quiz.map((q, i) => `
-                    <div class="quiz-question">
-                        <p>${q.question}</p>
-                        <div class="quiz-options">
-                            ${q.options.map((option, j) => `
-                                <label class="quiz-option">
-                                    <input type="radio" name="q${i}" value="${option}">
-                                    <span>${option}</span>
-                                </label>
-                            `).join('')}
+                ${quiz.map((q, i) => {
+                    // Log each question for debugging
+                    console.log(`Question ${i}:`, q);
+                    
+                    if (!q.options || !q.correct_answer) {
+                        console.error(`Invalid question data for question ${i}:`, q);
+                        return '';
+                    }
+
+                    return `
+                        <div class="quiz-question">
+                            <p>${q.question}</p>
+                            <div class="quiz-options">
+                                ${q.options.map((option, j) => `
+                                    <label class="quiz-option">
+                                        <input type="radio" name="q${i}" value="${option}">
+                                        <span>${option}</span>
+                                    </label>
+                                `).join('')}
+                            </div>
+                            <div class="quiz-feedback"></div>
                         </div>
-                        <div class="quiz-feedback"></div>
-                    </div>
-                `).join('')}
+                    `;
+                }).join('')}
                 <button id="checkAnswers">Check Answers</button>
             `;
 
@@ -707,6 +725,19 @@
                 quiz.forEach((q, i) => {
                     const selected = document.querySelector(`input[name="q${i}"]:checked`);
                     const feedback = document.querySelectorAll('.quiz-feedback')[i];
+                    
+                    // Log the selected answer and correct answer for debugging
+                    console.log(`Question ${i} - Selected:`, selected?.value);
+                    console.log(`Question ${i} - Correct:`, q.correct_answer);
+
+                    if (!q.correct_answer) {
+                        console.error(`No correct answer defined for question ${i}:`, q);
+                        feedback.textContent = 'Error: No correct answer defined';
+                        feedback.className = 'quiz-feedback incorrect';
+                        feedback.style.display = 'block';
+                        return;
+                    }
+
                     const options = document.querySelectorAll(`input[name="q${i}"]`).forEach(input => {
                         const option = input.closest('.quiz-option');
                         option.classList.remove('correct', 'incorrect');
@@ -726,11 +757,11 @@
                     if (selected.value === q.correct_answer) {
                         score++;
                         selectedOption.classList.add('correct');
-                        feedback.textContent = `Correct! ${q.explanation}`;
+                        feedback.textContent = `Correct! ${q.explanation || ''}`;
                         feedback.className = 'quiz-feedback correct';
                     } else {
                         selectedOption.classList.add('incorrect');
-                        feedback.textContent = `Incorrect. The correct answer is "${q.correct_answer}". ${q.explanation}`;
+                        feedback.textContent = `Incorrect. The correct answer is "${q.correct_answer}". ${q.explanation || ''}`;
                         feedback.className = 'quiz-feedback incorrect';
                     }
                     feedback.style.display = 'block';

@@ -6,32 +6,36 @@
     <title>EASY STORY EASY LIFE</title>
     <style>
         :root {
-            --primary: #4f46e5;
-            --primary-dark: #4338ca;
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #8b5cf6;
+            --accent: #818cf8;
+            --text: #1e293b;
+            --text-light: #64748b;
             --bg: #ffffff;
-            --text: #1a1a1a;
-            --border: #e5e7eb;
-            --success: #10b981;
-            --error: #ef4444;
-            --shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
-            --hover-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            --gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            --gradient-text: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            --card-bg: rgba(255, 255, 255, 0.9);
-            --backdrop-blur: blur(12px);
-            --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            --font-serif: 'Merriweather', Georgia, 'Times New Roman', serif;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            --bg-alt: #f8fafc;
+            --border: #e2e8f0;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --gradient: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --transition: all 0.3s ease;
+            --backdrop-blur: blur(8px);
         }
 
         [data-theme="dark"] {
-            --bg: #0f172a;
+            --primary: #818cf8;
+            --primary-dark: #6366f1;
+            --secondary: #a78bfa;
+            --accent: #c4b5fd;
             --text: #f8fafc;
-            --border: #1e293b;
-            --card-bg: rgba(15, 23, 42, 0.95);
-            --shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
-            --gradient-text: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
-            --gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            --text-light: #cbd5e1;
+            --bg: #0f172a;
+            --bg-alt: #1e293b;
+            --border: #334155;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.2);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4), 0 4px 6px -2px rgba(0, 0, 0, 0.3);
+            --gradient: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
         }
 
         [data-theme="dark"] body {
@@ -211,15 +215,23 @@
             max-width: 1200px;
             margin: 0 auto;
             position: relative;
-            padding: 6rem 3rem 5rem;
-            margin-bottom: 5rem;
+            padding: 4rem 2rem 3rem;
+            margin-bottom: 3rem;
             background: var(--card-bg);
-            border-radius: 40px;
+            border-radius: 24px;
             overflow: hidden;
             backdrop-filter: var(--backdrop-blur);
             border: 1px solid var(--border);
             box-shadow: var(--shadow);
             transition: var(--transition);
+        }
+
+        @media (min-width: 768px) {
+            .header-container {
+                padding: 6rem 3rem 5rem;
+                margin-bottom: 5rem;
+                border-radius: 40px;
+            }
         }
 
         .header-container::before {
@@ -241,18 +253,19 @@
 
         .form-section {
             background: var(--card-bg);
-            border-radius: 32px;
-            padding: 4rem;
+            padding: 2rem;
+            border-radius: 24px;
             box-shadow: var(--shadow);
-            margin-bottom: 4rem;
             border: 1px solid var(--border);
-            transition: var(--transition);
             backdrop-filter: var(--backdrop-blur);
+            transition: var(--transition);
         }
 
-        .form-section:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--hover-shadow);
+        @media (min-width: 768px) {
+            .form-section {
+                padding: 3rem;
+                border-radius: 32px;
+            }
         }
 
         .form-container {
@@ -276,31 +289,22 @@
             transition: var(--transition);
         }
 
-        input, select {
+        .input {
             width: 100%;
-            padding: 1.25rem;
+            padding: 0.75rem 1rem;
             border: 2px solid var(--border);
-            border-radius: 16px;
+            border-radius: 12px;
             background: var(--bg);
             color: var(--text);
-            font-size: 1.1rem;
+            font-size: 1rem;
             transition: var(--transition);
-            appearance: none;
-            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: right 1rem center;
-            background-size: 1.2em;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
-        input:hover, select:hover {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
-        }
-
-        input:focus, select:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
+        .input:focus {
             outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
         }
 
         button[type="submit"] {
@@ -366,7 +370,7 @@
 
         #storyOutput:hover {
             transform: translateY(-2px);
-            box-shadow: var(--hover-shadow);
+            box-shadow: var(--shadow-lg);
         }
 
         .quiz-section {
@@ -382,7 +386,7 @@
 
         .quiz-section:hover {
             transform: translateY(-5px);
-            box-shadow: var(--hover-shadow);
+            box-shadow: var(--shadow-lg);
         }
 
         .quiz-section h3 {
@@ -417,23 +421,21 @@
         }
 
         .quiz-option {
-            display: flex;
-            align-items: center;
-            gap: 1.5rem;
-            padding: 1.75rem;
+            padding: 1rem;
             border: 2px solid var(--border);
-            border-radius: 16px;
+            border-radius: 12px;
+            background: var(--bg);
+            color: var(--text);
             cursor: pointer;
             transition: var(--transition);
-            background: var(--bg);
-            margin-bottom: 1.25rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
         .quiz-option:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
             border-color: var(--primary);
-            transform: translateX(10px);
-            background: rgba(79, 70, 229, 0.05);
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.1);
         }
 
         .quiz-option input[type="radio"] {
@@ -458,15 +460,15 @@
         }
 
         .quiz-feedback.correct {
-            background: rgba(16, 185, 129, 0.1);
-            color: var(--success);
-            border: 1px solid var(--success);
+            background: rgba(34, 197, 94, 0.1);
+            color: #22c55e;
+            border: 1px solid #22c55e;
         }
 
         .quiz-feedback.incorrect {
             background: rgba(239, 68, 68, 0.1);
-            color: var(--error);
-            border: 1px solid var(--error);
+            color: #ef4444;
+            border: 1px solid #ef4444;
         }
 
         #checkAnswers {
@@ -517,7 +519,7 @@
 
         .continue-btn:hover {
             transform: translateY(-3px);
-            box-shadow: var(--hover-shadow);
+            box-shadow: var(--shadow-lg);
         }
 
         .continue-btn.easier { border-color: var(--success); }
@@ -602,7 +604,7 @@
         }
 
         .story-actions:hover {
-            box-shadow: var(--hover-shadow);
+            box-shadow: var(--shadow-lg);
         }
 
         .story-meta {
@@ -627,31 +629,30 @@
         }
 
         .action-btn {
-            padding: 1rem 1.75rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 12px;
             background: var(--bg);
-            border: 2px solid var(--border);
-            border-radius: 14px;
+            color: var(--text);
+            font-size: 1rem;
+            font-weight: 500;
             cursor: pointer;
-            font-size: 1.1rem;
+            transition: var(--transition);
+            box-shadow: var(--shadow);
             display: flex;
             align-items: center;
-            gap: 1rem;
-            transition: var(--transition);
-            white-space: nowrap;
-            font-weight: 500;
+            gap: 0.5rem;
         }
 
         .action-btn:hover {
-            border-color: var(--primary);
             transform: translateY(-2px);
-            background: rgba(79, 70, 229, 0.05);
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.1);
+            box-shadow: var(--shadow-lg);
+            background: var(--bg-alt);
         }
 
         .action-btn.active {
             background: var(--gradient);
             color: white;
-            border-color: transparent;
         }
 
         .copy-btn {
@@ -917,7 +918,7 @@
 
         .theme-toggle:hover {
             transform: translateY(-2px);
-            box-shadow: var(--hover-shadow);
+            box-shadow: var(--shadow-lg);
         }
 
         @media print {

@@ -296,6 +296,8 @@
             border-radius: 8px;
             box-shadow: var(--shadow);
             z-index: 10;
+            width: fit-content;
+            margin-left: auto;
         }
 
         .story-meta {
@@ -324,6 +326,7 @@
             align-items: center;
             gap: 0.5rem;
             transition: all 0.2s;
+            white-space: nowrap;
         }
 
         .action-btn:hover {
@@ -335,6 +338,10 @@
             background: var(--primary);
             color: white;
             border-color: var(--primary);
+        }
+
+        .copy-btn {
+            position: static;
         }
 
         .quiz-option.selected {
@@ -350,33 +357,6 @@
         .quiz-option.incorrect {
             border-color: var(--error);
             background: rgba(239, 68, 68, 0.1);
-        }
-
-        .copy-btn {
-            position: absolute;
-            top: 1rem;
-            right: 1rem;
-            padding: 0.5rem 1rem;
-            background: var(--bg);
-            border: 2px solid var(--border);
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.875rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            transition: all 0.2s;
-        }
-
-        .copy-btn:hover {
-            border-color: var(--primary);
-            transform: translateY(-1px);
-        }
-
-        .copy-btn.copied {
-            background: var(--success);
-            color: white;
-            border-color: var(--success);
         }
 
         @media (max-width: 768px) {
@@ -600,6 +580,17 @@
 
         function displayStory(story) {
             const storyOutput = document.getElementById('storyOutput');
+            const wordCount = story.trim().split(/\s+/).length;
+            const readingTime = Math.ceil(wordCount / 200); // Assuming 200 words per minute
+
+            // Format story with paragraphs
+            const formattedStory = story
+                .split('\n\n')
+                .map(paragraph => paragraph.trim())
+                .filter(paragraph => paragraph.length > 0)
+                .map(paragraph => `<p>${paragraph}</p>`)
+                .join('');
+
             storyOutput.innerHTML = `
                 <div class="story-content">
                     <div class="story-actions">
@@ -616,7 +607,11 @@
                             <span>Print</span>
                         </button>
                     </div>
-                    ${story}
+                    <div class="story-meta">
+                        <span>📝 ${wordCount} words</span>
+                        <span>⏱️ ${readingTime} min read</span>
+                    </div>
+                    ${formattedStory}
                 </div>
                 <div class="story-continuation">
                     <h3>Continue the story with:</h3>

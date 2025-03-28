@@ -573,7 +573,13 @@
                     const quizRequestData = {
                         ...formData,
                         response_format: 'quiz_only',
-                        story_data: data.story
+                        story_data: data.story,
+                        quiz_type: 'educational',
+                        quiz_requirements: {
+                            focus_on: 'educational_content',
+                            use_story_context: true,
+                            question_types: ['comprehension', 'analysis', 'application']
+                        }
                     };
 
                     const quizResponse = await fetch(`${config.serverUrl}/generate-story`, {

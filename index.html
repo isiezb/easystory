@@ -35,7 +35,8 @@
         }
 
         [data-theme="dark"] body {
-            background: #0f172a;
+            background: var(--bg);
+            min-height: 100vh;
         }
 
         [data-theme="dark"] .header-container {
@@ -52,6 +53,43 @@
 
         [data-theme="dark"] #storyOutput {
             background: rgba(15, 23, 42, 0.95);
+        }
+
+        [data-theme="dark"] .quiz-question {
+            background: rgba(15, 23, 42, 0.95);
+        }
+
+        [data-theme="dark"] .story-actions {
+            background: rgba(15, 23, 42, 0.95);
+        }
+
+        [data-theme="dark"] .story-meta {
+            background: rgba(99, 102, 241, 0.1);
+            border-color: rgba(99, 102, 241, 0.2);
+        }
+
+        [data-theme="dark"] .story-content {
+            background: rgba(15, 23, 42, 0.95);
+        }
+
+        [data-theme="dark"] .story-continuation {
+            border-color: var(--border);
+        }
+
+        [data-theme="dark"] .continue-btn {
+            background: rgba(15, 23, 42, 0.95);
+        }
+
+        [data-theme="dark"] .action-btn {
+            background: rgba(15, 23, 42, 0.95);
+        }
+
+        [data-theme="dark"] .action-btn:hover {
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        [data-theme="dark"] .action-btn.active {
+            background: var(--gradient);
         }
 
         * {
@@ -1172,7 +1210,7 @@
                         <button class="action-btn copy-btn">
                             <span>📋</span>
                             <span>Copy</span>
-                        </button>
+                            </button>
                         <button class="action-btn save-btn">
                             <span>💾</span>
                             <span>Save</span>
@@ -1181,14 +1219,14 @@
                             <span>🖨️</span>
                             <span>Print</span>
                         </button>
-                    </div>
+                            </div>
                     <div class="story-meta">
                         <span>📝 ${wordCount} words</span>
                         <span>⏱️ ${readingTime} min read</span>
-                    </div>
+                            </div>
                     <div class="story-text">
                         ${formattedStory}
-                    </div>
+                            </div>
                 </div>
                 <div class="story-continuation">
                     <h3>Continue the story with:</h3>
@@ -1203,8 +1241,8 @@
                             <span>📈</span> More Challenging
                         </button>
                     </div>
-                </div>
-            `;
+                            </div>
+                        `;
 
             // Add event listeners for the action buttons
             const copyBtn = storyOutput.querySelector('.copy-btn');
@@ -1288,7 +1326,7 @@
             const storyContinuation = document.querySelector('.story-continuation');
             if (storyContinuation) {
                 storyContinuation.after(quizSection);
-            } else {
+                    } else {
                 // Fallback: insert after story output if continuation section doesn't exist
                 document.querySelector('#storyOutput').after(quizSection);
             }

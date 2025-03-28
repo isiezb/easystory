@@ -549,9 +549,7 @@
                         main_character: document.getElementById('mainCharacter').value,
                         word_count: parseInt(document.getElementById('wordCount').value),
                         language: document.getElementById('language').value,
-                        response_format: 'story_with_quiz',
-                        quiz_type: 'story_related',
-                        story_data: storyData // Pass the story data to ensure quiz is related
+                        response_format: 'story_only'  // First get just the story
                     };
 
                     const response = await fetch(`${config.serverUrl}/generate-story`, {
@@ -568,10 +566,34 @@
                         throw new Error(data.error || 'Failed to generate story');
                     }
 
+                    // Display the story first
                     displayStory(data.story);
-                    if (data.quiz) {
-                        displayQuiz(data.quiz);
+
+                    // Then generate the quiz with the story data
+                    const quizRequestData = {
+                        ...formData,
+                        response_format: 'quiz_only',
+                        story_data: data.story
+                    };
+
+                    const quizResponse = await fetch(`${config.serverUrl}/generate-story`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(quizRequestData)
+                    });
+
+                    const quizResponseData = await quizResponse.json();
+
+                    if (!quizResponse.ok) {
+                        throw new Error(quizResponseData.error || 'Failed to generate quiz');
                     }
+
+                    // Display the quiz after a short delay
+                    setTimeout(() => {
+                        displayQuiz(quizResponseData.quiz);
+                    }, 2000); // 2 second delay
 
                 } catch (error) {
                     console.error('Error:', error);

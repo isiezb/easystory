@@ -248,6 +248,81 @@
 
         .story-content {
             position: relative;
+            font-size: 1.1rem;
+            line-height: 1.8;
+        }
+
+        .story-content p {
+            margin-bottom: 1.5rem;
+        }
+
+        .story-content h2, .story-content h3 {
+            margin: 2rem 0 1rem;
+            color: var(--primary);
+        }
+
+        .story-content blockquote {
+            border-left: 4px solid var(--primary);
+            padding-left: 1rem;
+            margin: 1.5rem 0;
+            font-style: italic;
+        }
+
+        .story-content ul, .story-content ol {
+            margin: 1.5rem 0;
+            padding-left: 2rem;
+        }
+
+        .story-content li {
+            margin-bottom: 0.5rem;
+        }
+
+        .story-actions {
+            position: sticky;
+            top: 1rem;
+            display: flex;
+            gap: 0.5rem;
+            justify-content: flex-end;
+            margin-bottom: 1rem;
+        }
+
+        .action-btn {
+            padding: 0.5rem 1rem;
+            background: var(--bg);
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            border-color: var(--primary);
+            transform: translateY(-1px);
+        }
+
+        .action-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        .quiz-option.selected {
+            border-color: var(--primary);
+            background: rgba(79, 70, 229, 0.1);
+        }
+
+        .quiz-option.correct {
+            border-color: var(--success);
+            background: rgba(16, 185, 129, 0.1);
+        }
+
+        .quiz-option.incorrect {
+            border-color: var(--error);
+            background: rgba(239, 68, 68, 0.1);
         }
 
         .copy-btn {
@@ -290,9 +365,26 @@
                 padding: 1.5rem;
             }
         }
+
+        .theme-toggle {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 100;
+        }
+
+        @media print {
+            .theme-toggle {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 <body>
+    <button class="theme-toggle action-btn" id="themeToggle">
+        <span>🌙</span>
+        <span>Dark Mode</span>
+    </button>
     <div class="container">
         <h1>Didactic Story Generator</h1>
         
@@ -385,6 +477,44 @@
             serverUrl: window.location.origin
         };
 
+        // Theme handling
+        const themeToggle = document.getElementById('themeToggle');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        
+        if (prefersDark) {
+            document.body.setAttribute('data-theme', 'dark');
+            themeToggle.querySelector('span:first-child').textContent = '☀️';
+            themeToggle.querySelector('span:last-child').textContent = 'Light Mode';
+        }
+
+        themeToggle.addEventListener('click', () => {
+            const isDark = document.body.getAttribute('data-theme') === 'dark';
+            document.body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+            themeToggle.querySelector('span:first-child').textContent = isDark ? '🌙' : '☀️';
+            themeToggle.querySelector('span:last-child').textContent = isDark ? 'Dark Mode' : 'Light Mode';
+        });
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                const submitButton = document.querySelector('button[type="submit"]');
+                if (!submitButton.disabled) {
+                    submitButton.click();
+                }
+            }
+        });
+
+        // Story saving
+        function saveStory(story) {
+            const savedStories = JSON.parse(localStorage.getItem('savedStories') || '[]');
+            savedStories.push({
+                story,
+                date: new Date().toISOString(),
+                title: document.getElementById('subject').value
+            });
+            localStorage.setItem('savedStories', JSON.stringify(savedStories));
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const form = document.getElementById('storyForm');
             const output = document.getElementById('storyOutput');
@@ -445,10 +575,20 @@
             const storyOutput = document.getElementById('storyOutput');
             storyOutput.innerHTML = `
                 <div class="story-content">
-                    <button class="copy-btn">
-                        <span>📋</span>
-                        <span>Copy Story</span>
-                    </button>
+                    <div class="story-actions">
+                        <button class="action-btn copy-btn">
+                            <span>📋</span>
+                            <span>Copy</span>
+                        </button>
+                        <button class="action-btn save-btn">
+                            <span>💾</span>
+                            <span>Save</span>
+                        </button>
+                        <button class="action-btn print-btn">
+                            <span>🖨️</span>
+                            <span>Print</span>
+                        </button>
+                    </div>
                     ${story}
                 </div>
                 <div class="story-continuation">
@@ -467,16 +607,35 @@
                 </div>
             `;
 
+            // Copy button
             const copyBtn = storyOutput.querySelector('.copy-btn');
             copyBtn.addEventListener('click', async () => {
                 const storyText = storyOutput.querySelector('.story-content').textContent.trim();
                 await navigator.clipboard.writeText(storyText);
-                copyBtn.classList.add('copied');
+                copyBtn.classList.add('active');
                 copyBtn.querySelector('span:last-child').textContent = 'Copied!';
                 setTimeout(() => {
-                    copyBtn.classList.remove('copied');
-                    copyBtn.querySelector('span:last-child').textContent = 'Copy Story';
+                    copyBtn.classList.remove('active');
+                    copyBtn.querySelector('span:last-child').textContent = 'Copy';
                 }, 2000);
+            });
+
+            // Save button
+            const saveBtn = storyOutput.querySelector('.save-btn');
+            saveBtn.addEventListener('click', () => {
+                saveStory(story);
+                saveBtn.classList.add('active');
+                saveBtn.querySelector('span:last-child').textContent = 'Saved!';
+                setTimeout(() => {
+                    saveBtn.classList.remove('active');
+                    saveBtn.querySelector('span:last-child').textContent = 'Save';
+                }, 2000);
+            });
+
+            // Print button
+            const printBtn = storyOutput.querySelector('.print-btn');
+            printBtn.addEventListener('click', () => {
+                window.print();
             });
         }
 
@@ -509,11 +668,30 @@
 
             document.querySelector('#storyOutput').after(quizSection);
 
+            // Add click handlers for quiz options
+            const quizOptions = quizSection.querySelectorAll('.quiz-option');
+            quizOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    const question = option.closest('.quiz-question');
+                    question.querySelectorAll('.quiz-option').forEach(opt => {
+                        opt.classList.remove('selected');
+                    });
+                    option.classList.add('selected');
+                });
+            });
+
             document.getElementById('checkAnswers').addEventListener('click', () => {
                 let score = 0;
                 quiz.forEach((q, i) => {
                     const selected = document.querySelector(`input[name="q${i}"]:checked`);
                     const feedback = document.querySelectorAll('.quiz-feedback')[i];
+                    const options = document.querySelectorAll(`input[name="q${i}"]`).forEach(input => {
+                        const option = input.closest('.quiz-option');
+                        option.classList.remove('correct', 'incorrect');
+                        if (input.value === q.correct_answer) {
+                            option.classList.add('correct');
+                        }
+                    });
                     
                     if (!selected) {
                         feedback.textContent = 'Please select an answer';
@@ -522,16 +700,14 @@
                         return;
                     }
 
-                    // Log the values for debugging
-                    console.log('Selected:', selected.value);
-                    console.log('Correct answer:', q.correct_answer);
-                    console.log('Question:', q);
-
+                    const selectedOption = selected.closest('.quiz-option');
                     if (selected.value === q.correct_answer) {
                         score++;
+                        selectedOption.classList.add('correct');
                         feedback.textContent = `Correct! ${q.explanation}`;
                         feedback.className = 'quiz-feedback correct';
                     } else {
+                        selectedOption.classList.add('incorrect');
                         feedback.textContent = `Incorrect. The correct answer is "${q.correct_answer}". ${q.explanation}`;
                         feedback.className = 'quiz-feedback incorrect';
                     }

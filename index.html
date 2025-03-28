@@ -6,23 +6,21 @@
     <title>Didactic Story Generator</title>
     <style>
         :root {
-            --bg-color: #ffffff;
-            --text-color: #1a1a1a;
-            --border-color: #e5e7eb;
-            --input-bg: #ffffff;
-            --button-bg: #4f46e5;
-            --button-hover: #4338ca;
-            --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            --hover-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            --success-color: #10b981;
-            --error-color: #ef4444;
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
+            --bg: #ffffff;
+            --text: #1a1a1a;
+            --border: #e5e7eb;
+            --success: #10b981;
+            --error: #ef4444;
+            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --hover-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
         }
 
         [data-theme="dark"] {
-            --bg-color: #111827;
-            --text-color: #f9fafb;
-            --border-color: #374151;
-            --input-bg: #1f2937;
+            --bg: #111827;
+            --text: #f9fafb;
+            --border: #374151;
         }
 
         * {
@@ -33,217 +31,187 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
+            background: linear-gradient(135deg, #f6f7ff 0%, var(--bg) 100%);
+            color: var(--text);
             line-height: 1.6;
+            min-height: 100vh;
+            margin: 0;
             padding: 2rem;
         }
 
-        h1 {
-            text-align: center;
-            margin-bottom: 2rem;
-            font-size: 2.5rem;
-            font-weight: 700;
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
         }
 
         .form-section {
-            max-width: 800px;
-            margin: 0 auto;
+            background: var(--bg);
+            border-radius: 16px;
             padding: 2rem;
-            background: var(--bg-color);
-            border-radius: 12px;
             box-shadow: var(--shadow);
+            margin-bottom: 2rem;
         }
 
         .form-container {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
             gap: 1.5rem;
-            margin-bottom: 2rem;
         }
 
         .form-group {
-            margin-bottom: 1rem;
+            margin-bottom: 1.5rem;
         }
 
         label {
             display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
+            margin-bottom: 0.75rem;
+            font-weight: 600;
+            color: var(--text);
         }
 
         input, select {
             width: 100%;
             padding: 0.75rem;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            background: var(--input-bg);
-            color: var(--text-color);
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            color: var(--text);
             font-size: 1rem;
+            transition: all 0.2s;
         }
 
         input:focus, select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
             outline: none;
-            border-color: var(--button-bg);
-            box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.1);
         }
 
-        button[type="submit"] {
+        button {
             width: 100%;
             padding: 1rem;
-            background: var(--button-bg);
+            background: var(--primary);
             color: white;
             border: none;
-            border-radius: 6px;
+            border-radius: 8px;
             font-size: 1rem;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.2s;
         }
 
-        button[type="submit"]:hover {
-            background: var(--button-hover);
-            transform: translateY(-1px);
+        button:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
             box-shadow: var(--hover-shadow);
         }
 
         .output-section {
-            max-width: 800px;
-            margin: 2rem auto;
+            position: relative;
+            z-index: 1;
         }
 
         #storyOutput {
+            background: var(--bg);
+            border-radius: 16px;
             padding: 2rem;
-            background: var(--bg-color);
-            border-radius: 12px;
-            box-shadow: var(--shadow);
             margin-bottom: 2rem;
+            box-shadow: var(--shadow);
+            line-height: 1.8;
         }
 
         .quiz-section {
-            background: var(--bg-color);
-            border-radius: 12px;
+            background: var(--bg);
+            border-radius: 16px;
             padding: 2rem;
             box-shadow: var(--shadow);
+            margin-top: 2rem;
         }
 
         .quiz-question {
+            background: var(--bg);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
             margin-bottom: 1.5rem;
-            padding: 1rem;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
+        }
+
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin: 1rem 0;
         }
 
         .quiz-option {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.75rem;
-            margin-bottom: 0.5rem;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
+            gap: 0.75rem;
+            padding: 1rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.2s;
         }
 
         .quiz-option:hover {
-            background: var(--input-bg);
+            border-color: var(--primary);
+            transform: translateX(4px);
+        }
+
+        .quiz-option input[type="radio"] {
+            width: 20px;
+            height: 20px;
+            margin: 0;
         }
 
         .quiz-feedback {
-            margin-top: 0.5rem;
-            padding: 0.75rem;
-            border-radius: 6px;
-            display: none;
+            margin-top: 1rem;
+            padding: 1rem;
+            border-radius: 8px;
+            font-weight: 500;
         }
 
         .quiz-feedback.correct {
             background: rgba(16, 185, 129, 0.1);
-            color: var(--success-color);
+            color: var(--success);
+            border: 1px solid var(--success);
         }
 
         .quiz-feedback.incorrect {
             background: rgba(239, 68, 68, 0.1);
-            color: var(--error-color);
+            color: var(--error);
+            border: 1px solid var(--error);
         }
 
         #checkAnswers {
-            width: 100%;
-            padding: 1rem;
-            background: var(--button-bg);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            font-size: 1rem;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            margin-top: 1rem;
-        }
-
-        #checkAnswers:hover {
-            background: var(--button-hover);
-            transform: translateY(-1px);
-            box-shadow: var(--hover-shadow);
+            margin-top: 1.5rem;
         }
 
         @media (max-width: 768px) {
             body {
                 padding: 1rem;
             }
-
+            
             .form-container {
                 grid-template-columns: 1fr;
             }
-
-            h1 {
-                font-size: 2rem;
-            }
-
-            .form-section, .output-section {
-                padding: 1rem;
+            
+            .form-section, #storyOutput, .quiz-section {
+                padding: 1.5rem;
             }
         }
     </style>
 </head>
 <body>
-    <nav class="nav-container" role="navigation" aria-label="Main navigation">
-        <a href="#" class="nav-logo" aria-label="Story Generator Home">
-            <span role="img" aria-label="Books"></span>
-            Story Generator
-        </a>
-        <div class="nav-actions" role="group" aria-label="Navigation actions">
-            <button class="nav-button active" aria-current="page">
-                <span role="img" aria-label="Sparkles">✨</span>
-                Generate
-            </button>
-            <button class="nav-button">
-                <span role="img" aria-label="Books">📖</span>
-                Library
-            </button>
-            <button class="nav-button" id="themeToggle" aria-label="Toggle dark mode">
-                <span role="img" aria-label="Moon">🌙</span>
-                Theme
-            </button>
-        </div>
-    </nav>
-
-    <main id="main-content" role="main">
-        <section class="hero-section">
-            <h1>Didactic Story Generator</h1>
-            <p class="hero-description">
-                Create engaging educational stories tailored to your academic level and subject matter. 
-                Perfect for students, teachers, and lifelong learners.
-            </p>
-        </section>
-
+    <div class="container">
+        <h1>Didactic Story Generator</h1>
+        
         <section class="form-section">
-            <h2 class="section-title">Story Parameters</h2>
-            <form id="storyForm" role="form" aria-label="Story generation form">
+            <form id="storyForm">
                 <div class="form-container">
                     <div class="form-group">
-                        <label for="academicGrade" id="grade-label">Academic Grade:</label>
-                        <select id="academicGrade" name="academic_grade" required aria-labelledby="grade-label" aria-describedby="grade-description">
+                        <label for="academicGrade">Academic Grade:</label>
+                        <select id="academicGrade" name="academic_grade" required>
                             <option value="">Select your grade level...</option>
                             <option value="elementary">Elementary</option>
                             <option value="middle_school">Middle School</option>
@@ -251,12 +219,11 @@
                             <option value="university">University</option>
                             <option value="expert">Expert</option>
                         </select>
-                        <div id="grade-description" class="sr-only">Choose the academic level appropriate for your story</div>
                     </div>
 
                     <div class="form-group">
-                        <label for="subject" id="subject-label">Subject:</label>
-                        <select id="subject" name="subject" required aria-labelledby="subject-label" aria-describedby="subject-description">
+                        <label for="subject">Subject:</label>
+                        <select id="subject" name="subject" required>
                             <option value="">Select a subject...</option>
                             <option value="law">Law</option>
                             <option value="medicine">Medicine</option>
@@ -268,32 +235,31 @@
                             <option value="literature">Literature</option>
                             <option value="other">Other</option>
                         </select>
-                        <div id="subject-description" class="sr-only">Select the main subject area for your story</div>
                     </div>
 
                     <div class="form-group" id="otherSubjectGroup" style="display: none;">
-                        <label for="otherSubject" id="other-subject-label">Specify Subject:</label>
-                        <input type="text" id="otherSubject" name="other_subject" placeholder="e.g., Astronomy" aria-labelledby="other-subject-label">
+                        <label for="otherSubject">Specify Subject:</label>
+                        <input type="text" id="otherSubject" name="other_subject" placeholder="e.g., Astronomy">
                     </div>
 
                     <div class="form-group">
-                        <label for="subjectSpecification" id="spec-label">Subject Specification (Optional):</label>
-                        <input type="text" id="subjectSpecification" name="subject_specification" placeholder="e.g., Genetics for Biology" aria-labelledby="spec-label">
+                        <label for="subjectSpecification">Subject Specification (Optional):</label>
+                        <input type="text" id="subjectSpecification" name="subject_specification" placeholder="e.g., Genetics for Biology">
                     </div>
 
                     <div class="form-group">
-                        <label for="setting" id="setting-label">Setting (Optional):</label>
-                        <input type="text" id="setting" name="setting" placeholder="e.g., a small village in the mountains" aria-labelledby="setting-label">
+                        <label for="setting">Setting (Optional):</label>
+                        <input type="text" id="setting" name="setting" placeholder="e.g., a small village in the mountains">
                     </div>
 
                     <div class="form-group">
-                        <label for="mainCharacter" id="character-label">Main Character (Optional):</label>
-                        <input type="text" id="mainCharacter" name="main_character" placeholder="e.g., a curious young scientist" aria-labelledby="character-label">
+                        <label for="mainCharacter">Main Character (Optional):</label>
+                        <input type="text" id="mainCharacter" name="main_character" placeholder="e.g., a curious young scientist">
                     </div>
 
                     <div class="form-group">
-                        <label for="wordCount" id="word-count-label">Word Count:</label>
-                        <select id="wordCount" name="word_count" required aria-labelledby="word-count-label">
+                        <label for="wordCount">Word Count:</label>
+                        <select id="wordCount" name="word_count" required>
                             <option value="300">300 words</option>
                             <option value="500" selected>500 words</option>
                             <option value="750">750 words</option>
@@ -301,8 +267,8 @@
                     </div>
 
                     <div class="form-group">
-                        <label for="language" id="language-label">Language:</label>
-                        <select id="language" name="language" required aria-labelledby="language-label">
+                        <label for="language">Language:</label>
+                        <select id="language" name="language" required>
                             <option value="english" selected>English</option>
                             <option value="spanish">Spanish</option>
                             <option value="french">French</option>
@@ -312,30 +278,16 @@
                         </select>
                     </div>
                 </div>
-                <div class="submit-section">
-                    <button type="submit" class="full-width" aria-label="Generate story">
-                        Generate Story
-                    </button>
-                </div>
+                <button type="submit">Generate Story</button>
             </form>
         </section>
 
         <section class="output-section">
-            <div id="storyMetrics" role="region" aria-label="Story metrics"></div>
-            <div id="storyOutput" role="region" aria-label="Generated story"></div>
-            <div id="continuationSection" class="story-continuation" style="display: none;">
-                <h3>Continue the Story</h3>
-                <div class="difficulty-buttons">
-                    <button class="continue-btn easier" data-difficulty="easier">Easier</button>
-                    <button class="continue-btn same" data-difficulty="same">Same Level</button>
-                    <button class="continue-btn harder" data-difficulty="harder">Harder</button>
-                </div>
-            </div>
+            <div id="storyOutput"></div>
         </section>
-    </main>
+    </div>
 
     <script>
-        // Configuration
         const config = {
             serverUrl: window.location.origin
         };
@@ -343,136 +295,22 @@
         document.addEventListener('DOMContentLoaded', () => {
             const form = document.getElementById('storyForm');
             const output = document.getElementById('storyOutput');
-            const metrics = document.getElementById('storyMetrics');
-            const themeToggle = document.getElementById('themeToggle');
-            const submitButton = form.querySelector('button[type="submit"]');
             const subjectSelect = document.getElementById('subject');
             const otherSubjectGroup = document.getElementById('otherSubjectGroup');
 
-            // Show/hide other subject input based on selection
             subjectSelect.addEventListener('change', () => {
                 otherSubjectGroup.style.display = subjectSelect.value === 'other' ? 'block' : 'none';
             });
 
-            // Theme handling
-            const savedTheme = localStorage.getItem('theme') || 'light';
-            document.documentElement.setAttribute('data-theme', savedTheme);
-            themeToggle.innerHTML = savedTheme === 'dark' ? '<span>☀️</span>Theme' : '<span>🌙</span>Theme';
-
-            themeToggle.addEventListener('click', () => {
-                const currentTheme = document.documentElement.getAttribute('data-theme');
-                const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-                document.documentElement.setAttribute('data-theme', newTheme);
-                localStorage.setItem('theme', newTheme);
-                themeToggle.innerHTML = newTheme === 'dark' ? '<span>☀️</span>Theme' : '<span>🌙</span>Theme';
-            });
-
-            // Ripple effect for submit button
-            submitButton.addEventListener('click', function(e) {
-                const ripple = document.createElement('span');
-                ripple.classList.add('ripple');
-                this.appendChild(ripple);
-
-                const rect = this.getBoundingClientRect();
-                const size = Math.max(rect.width, rect.height);
-                ripple.style.width = ripple.style.height = `${size}px`;
-                ripple.style.left = `${e.clientX - rect.left - size/2}px`;
-                ripple.style.top = `${e.clientY - rect.top - size/2}px`;
-
-                setTimeout(() => ripple.remove(), 600);
-            });
-
-            // Handle story continuation
-            const handleContinuation = async (difficulty) => {
-                // Get current form data
-                const currentData = {
-                    academic_grade: document.getElementById('academicGrade').value,
-                    subject: document.getElementById('subject').value,
-                    subject_specification: document.getElementById('subjectSpecification').value,
-                    setting: document.getElementById('setting').value,
-                    main_character: document.getElementById('mainCharacter').value,
-                    word_count: parseInt(document.getElementById('wordCount').value),
-                    language: document.getElementById('language').value
-                };
-                
-                // Adjust academic grade based on difficulty
-                if (difficulty === 'easier') {
-                    const grades = ['expert', 'university', 'high_school', 'middle_school', 'elementary'];
-                    const currentIndex = grades.indexOf(currentData.academic_grade);
-                    if (currentIndex < grades.length - 1) {
-                        currentData.academic_grade = grades[currentIndex + 1];
-                    }
-                } else if (difficulty === 'harder') {
-                    const grades = ['elementary', 'middle_school', 'high_school', 'university', 'expert'];
-                    const currentIndex = grades.indexOf(currentData.academic_grade);
-                    if (currentIndex > 0) {
-                        currentData.academic_grade = grades[currentIndex - 1];
-                    }
-                }
-                
-                // Add continuation context
-                const storyContent = document.querySelector('.story-content');
-                if (storyContent) {
-                    currentData.previous_story = storyContent.textContent;
-                }
-                
-                try {
-                    output.textContent = 'Generating continuation...';
-                    submitButton.disabled = true;
-                    submitButton.innerHTML = '<span class="loading"></span>Generating...';
-
-                    console.log('Sending continuation request to:', `${config.serverUrl}/generate-story`);
-                    console.log('Request data:', currentData);
-
-                    const response = await fetch(`${config.serverUrl}/generate-story`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(currentData)
-                    });
-
-                    console.log('Response status:', response.status);
-                    const result = await response.json();
-                    console.log('Response data:', result);
-
-                    if (!response.ok) {
-                        throw new Error(result.error || 'Failed to generate continuation');
-                    }
-                    
-                    if (result.story) {
-                        displayStory(result.story);
-                        displayQuiz(result.quiz);
-                    }
-                } catch (error) {
-                    output.innerHTML = `<div class="error">❌ An error occurred while continuing the story. Please try again.</div>`;
-                    console.error('Error:', error);
-                } finally {
-                    submitButton.disabled = false;
-                    submitButton.textContent = 'Generate Story';
-                }
-            };
-
-            // Add click handlers for continuation buttons
-            document.addEventListener('click', (e) => {
-                if (e.target.closest('.continue-btn')) {
-                    const difficulty = e.target.closest('.continue-btn').dataset.difficulty;
-                    handleContinuation(difficulty);
-                }
-            });
-
-            // Form submission handler
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
-                // Show loading state
                 const submitButton = e.target.querySelector('button[type="submit"]');
                 const originalText = submitButton.textContent;
                 submitButton.disabled = true;
                 submitButton.textContent = 'Generating Story...';
 
                 try {
-                    // Get form data
                     const formData = {
                         academic_grade: document.getElementById('academicGrade').value,
                         subject: document.getElementById('subject').value,
@@ -483,9 +321,6 @@
                         language: document.getElementById('language').value
                     };
 
-                    console.log('Sending request to:', `${config.serverUrl}/generate-story`);
-                    console.log('Request data:', formData);
-
                     const response = await fetch(`${config.serverUrl}/generate-story`, {
                         method: 'POST',
                         headers: {
@@ -494,15 +329,12 @@
                         body: JSON.stringify(formData)
                     });
 
-                    console.log('Response status:', response.status);
                     const data = await response.json();
-                    console.log('Response data:', data);
 
                     if (!response.ok) {
                         throw new Error(data.error || 'Failed to generate story');
                     }
 
-                    // Display the generated story
                     displayStory(data.story);
                     displayQuiz(data.quiz);
 
@@ -510,181 +342,77 @@
                     console.error('Error:', error);
                     alert(error.message || 'Failed to generate story. Please try again.');
                 } finally {
-                    // Reset button state
                     submitButton.disabled = false;
                     submitButton.textContent = originalText;
                 }
-            });
-
-            // Function to calculate word count and reading time
-            const calculateMetrics = (text) => {
-                const wordCount = text.trim().split(/\s+/).length;
-                const readingTime = Math.ceil(wordCount / 200); // Assuming 200 words per minute reading speed
-                return { wordCount, readingTime };
-            };
-
-            // Function to copy story to clipboard
-            window.copyStory = () => {
-                const storyText = output.textContent.replace('Copy Story', '').trim();
-                navigator.clipboard.writeText(storyText).then(() => {
-                    const copyButton = output.querySelector('.copy-button');
-                    copyButton.classList.add('copied');
-                    copyButton.innerHTML = '<span class="copy-icon">✓</span><span class="copy-text">Copied!</span>';
-                    setTimeout(() => {
-                        copyButton.classList.remove('copied');
-                        copyButton.innerHTML = '<span class="copy-icon">📋</span><span class="copy-text">Copy Story</span>';
-                    }, 2000);
-                });
-            };
-
-            // Add scroll effect to navigation
-            const nav = document.querySelector('.nav-container');
-            window.addEventListener('scroll', () => {
-                if (window.scrollY > 20) {
-                    nav.classList.add('scrolled');
-                } else {
-                    nav.classList.remove('scrolled');
-                }
-            });
-
-            // Add active state to navigation buttons
-            const navButtons = document.querySelectorAll('.nav-button');
-            navButtons.forEach(button => {
-                button.addEventListener('click', () => {
-                    navButtons.forEach(btn => btn.classList.remove('active'));
-                    button.classList.add('active');
-                });
-            });
-
-            // Add keyboard navigation for form groups
-            const formGroups = document.querySelectorAll('.form-group');
-            formGroups.forEach(group => {
-                group.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        const input = group.querySelector('input, select');
-                        if (input) input.focus();
-                    }
-                });
-            });
-
-            // Add character counters to text inputs
-            const textInputs = document.querySelectorAll('input[type="text"]');
-            textInputs.forEach(input => {
-                const counter = document.createElement('div');
-                counter.className = 'char-counter';
-                counter.textContent = `0/60`;
-                input.parentNode.appendChild(counter);
-
-                input.addEventListener('input', (e) => {
-                    const value = e.target.value;
-                    const length = value.length;
-                    counter.textContent = `${length}/60`;
-                    
-                    if (length >= 60) {
-                        counter.classList.add('at-limit');
-                        e.target.value = value.slice(0, 60);
-                    } else if (length >= 45) {
-                        counter.classList.add('near-limit');
-                    } else {
-                        counter.classList.remove('near-limit', 'at-limit');
-                    }
-                });
-
-                // Allow spaces in input
-                input.addEventListener('keydown', (e) => {
-                    if (e.key === ' ') {
-                        e.stopPropagation();
-                    }
-                });
             });
         });
 
         function displayStory(story) {
             const storyOutput = document.getElementById('storyOutput');
-            storyOutput.innerHTML = `
-                <div class="story-content">${story}</div>
-                <div class="story-continuation">
-                    <h3>Continue the story with:</h3>
-                    <div class="difficulty-buttons">
-                        <button class="continue-btn easier" data-difficulty="easier">
-                            <span>📉</span> Easier
-                        </button>
-                        <button class="continue-btn same" data-difficulty="same">
-                            <span>➡️</span> Same Level
-                        </button>
-                        <button class="continue-btn harder" data-difficulty="harder">
-                            <span>📈</span> More Challenging
-                        </button>
-                    </div>
-                </div>
-                <button class="copy-button" onclick="copyStory()">
-                    <span class="copy-icon">📋</span>
-                    <span class="copy-text">Copy Story</span>
-                </button>
-            `;
+            storyOutput.innerHTML = `<div class="story-content">${story}</div>`;
             storyOutput.style.display = 'block';
         }
 
         function displayQuiz(quiz) {
-            // Remove any existing quiz section
+            const quizSection = document.createElement('div');
+            quizSection.className = 'quiz-section';
+            quizSection.innerHTML = `
+                <h3>Test Your Understanding</h3>
+                ${quiz.map((q, i) => `
+                    <div class="quiz-question">
+                        <p>${q.question}</p>
+                        <div class="quiz-options">
+                            ${q.options.map((option, j) => `
+                                <label class="quiz-option">
+                                    <input type="radio" name="q${i}" value="${option}">
+                                    <span>${option}</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                        <div class="quiz-feedback"></div>
+                    </div>
+                `).join('')}
+                <button id="checkAnswers">Check Answers</button>
+            `;
+
             const existingQuiz = document.querySelector('.quiz-section');
             if (existingQuiz) {
                 existingQuiz.remove();
             }
 
-            const quizSection = document.createElement('div');
-            quizSection.className = 'quiz-section';
-            quizSection.innerHTML = `
-                <h3>Test Your Understanding</h3>
-                <div id="questions"></div>
-                <button id="checkAnswers">Check Answers</button>
-                <div class="final-score"></div>
-            `;
+            document.querySelector('#storyOutput').after(quizSection);
 
-            const questionsDiv = quizSection.querySelector('#questions');
-            quiz.forEach((q, index) => {
-                const questionDiv = document.createElement('div');
-                questionDiv.className = 'quiz-question';
-                questionDiv.innerHTML = `
-                    <p><strong>Question ${index + 1}:</strong> ${q.question}</p>
-                    <div class="quiz-options">
-                        ${q.options.map((option, i) => `
-                            <label class="quiz-option">
-                                <input type="radio" name="q${index}" value="${option}">
-                                <span>${option}</span>
-                            </label>
-                        `).join('')}
-                    </div>
-                    <div class="quiz-feedback"></div>
-                `;
-                questionsDiv.appendChild(questionDiv);
-            });
-
-            // Add quiz section after the story output
-            const outputSection = document.querySelector('.output-section');
-            outputSection.appendChild(quizSection);
-
-            // Add event listener for checking answers
-            quizSection.querySelector('#checkAnswers').addEventListener('click', () => {
+            document.getElementById('checkAnswers').addEventListener('click', () => {
                 let score = 0;
-                quiz.forEach((q, index) => {
-                    const questionDiv = quizSection.querySelectorAll('.quiz-question')[index];
-                    const selectedAnswer = questionDiv.querySelector('input:checked')?.value;
-                    const feedback = questionDiv.querySelector('.quiz-feedback');
+                quiz.forEach((q, i) => {
+                    const selected = document.querySelector(`input[name="q${i}"]:checked`);
+                    const feedback = document.querySelectorAll('.quiz-feedback')[i];
                     
-                    if (selectedAnswer === q.correctAnswer) {
+                    if (!selected) {
+                        feedback.textContent = 'Please select an answer';
+                        feedback.className = 'quiz-feedback incorrect';
+                        feedback.style.display = 'block';
+                        return;
+                    }
+
+                    if (selected.value === q.correct_answer) {
                         score++;
                         feedback.textContent = `Correct! ${q.explanation}`;
                         feedback.className = 'quiz-feedback correct';
                     } else {
-                        feedback.textContent = `Incorrect. ${q.explanation}`;
+                        feedback.textContent = `Incorrect. The correct answer is "${q.correct_answer}". ${q.explanation}`;
                         feedback.className = 'quiz-feedback incorrect';
                     }
                     feedback.style.display = 'block';
                 });
 
-                quizSection.querySelector('.final-score').textContent = `Score: ${score}/${quiz.length}`;
+                const finalScore = document.createElement('p');
+                finalScore.textContent = `Final Score: ${score}/${quiz.length}`;
+                finalScore.style.textAlign = 'center';
+                finalScore.style.marginTop = '1rem';
+                finalScore.style.fontWeight = 'bold';
+                document.getElementById('checkAnswers').after(finalScore);
             });
         }
     </script>

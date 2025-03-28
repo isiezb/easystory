@@ -393,89 +393,89 @@
         <span>Dark Mode</span>
     </button>
     <div class="container">
-        <h1>Didactic Story Generator</h1>
+    <h1>Didactic Story Generator</h1>
         
         <section class="form-section">
-            <form id="storyForm">
+    <form id="storyForm">
                 <div class="form-container">
-                    <div class="form-group">
-                        <label for="academicGrade">Academic Grade:</label>
-                        <select id="academicGrade" name="academic_grade" required>
-                            <option value="">Select your grade level...</option>
-                            <option value="elementary">Elementary</option>
-                            <option value="middle_school">Middle School</option>
-                            <option value="high_school">High School</option>
-                            <option value="university">University</option>
-                            <option value="expert">Expert</option>
-                        </select>
-                    </div>
+        <div class="form-group">
+            <label for="academicGrade">Academic Grade:</label>
+            <select id="academicGrade" name="academic_grade" required>
+                <option value="">Select your grade level...</option>
+                <option value="elementary">Elementary</option>
+                <option value="middle_school">Middle School</option>
+                <option value="high_school">High School</option>
+                <option value="university">University</option>
+                <option value="expert">Expert</option>
+            </select>
+        </div>
 
-                    <div class="form-group">
-                        <label for="subject">Subject:</label>
-                        <select id="subject" name="subject" required>
-                            <option value="">Select a subject...</option>
-                            <option value="law">Law</option>
-                            <option value="medicine">Medicine</option>
-                            <option value="chemistry">Chemistry</option>
-                            <option value="biology">Biology</option>
-                            <option value="physics">Physics</option>
-                            <option value="mathematics">Mathematics</option>
-                            <option value="history">History</option>
-                            <option value="literature">Literature</option>
-                            <option value="other">Other</option>
-                        </select>
-                    </div>
+        <div class="form-group">
+            <label for="subject">Subject:</label>
+            <select id="subject" name="subject" required>
+                <option value="">Select a subject...</option>
+                <option value="law">Law</option>
+                <option value="medicine">Medicine</option>
+                <option value="chemistry">Chemistry</option>
+                <option value="biology">Biology</option>
+                <option value="physics">Physics</option>
+                <option value="mathematics">Mathematics</option>
+                <option value="history">History</option>
+                <option value="literature">Literature</option>
+                <option value="other">Other</option>
+            </select>
+        </div>
 
-                    <div class="form-group" id="otherSubjectGroup" style="display: none;">
-                        <label for="otherSubject">Specify Subject:</label>
-                        <input type="text" id="otherSubject" name="other_subject" placeholder="e.g., Astronomy">
-                    </div>
+        <div class="form-group" id="otherSubjectGroup" style="display: none;">
+            <label for="otherSubject">Specify Subject:</label>
+            <input type="text" id="otherSubject" name="other_subject" placeholder="e.g., Astronomy">
+        </div>
 
-                    <div class="form-group">
-                        <label for="subjectSpecification">Subject Specification (Optional):</label>
-                        <input type="text" id="subjectSpecification" name="subject_specification" placeholder="e.g., Genetics for Biology">
-                    </div>
+        <div class="form-group">
+            <label for="subjectSpecification">Subject Specification (Optional):</label>
+            <input type="text" id="subjectSpecification" name="subject_specification" placeholder="e.g., Genetics for Biology">
+        </div>
 
-                    <div class="form-group">
-                        <label for="setting">Setting (Optional):</label>
-                        <input type="text" id="setting" name="setting" placeholder="e.g., a small village in the mountains">
-                    </div>
+        <div class="form-group">
+            <label for="setting">Setting (Optional):</label>
+            <input type="text" id="setting" name="setting" placeholder="e.g., a small village in the mountains">
+        </div>
 
-                    <div class="form-group">
-                        <label for="mainCharacter">Main Character (Optional):</label>
-                        <input type="text" id="mainCharacter" name="main_character" placeholder="e.g., a curious young scientist">
-                    </div>
+        <div class="form-group">
+            <label for="mainCharacter">Main Character (Optional):</label>
+            <input type="text" id="mainCharacter" name="main_character" placeholder="e.g., a curious young scientist">
+        </div>
 
-                    <div class="form-group">
-                        <label for="wordCount">Word Count:</label>
-                        <select id="wordCount" name="word_count" required>
-                            <option value="300">300 words</option>
-                            <option value="500" selected>500 words</option>
-                            <option value="750">750 words</option>
-                        </select>
-                    </div>
+        <div class="form-group">
+            <label for="wordCount">Word Count:</label>
+            <select id="wordCount" name="word_count" required>
+                <option value="300">300 words</option>
+                <option value="500" selected>500 words</option>
+                <option value="750">750 words</option>
+            </select>
+        </div>
 
-                    <div class="form-group">
-                        <label for="language">Language:</label>
-                        <select id="language" name="language" required>
-                            <option value="english" selected>English</option>
-                            <option value="spanish">Spanish</option>
-                            <option value="french">French</option>
-                            <option value="german">German</option>
-                            <option value="italian">Italian</option>
-                            <option value="portuguese">Portuguese</option>
-                        </select>
-                    </div>
+        <div class="form-group">
+            <label for="language">Language:</label>
+            <select id="language" name="language" required>
+                <option value="english" selected>English</option>
+                <option value="spanish">Spanish</option>
+                <option value="french">French</option>
+                <option value="german">German</option>
+                <option value="italian">Italian</option>
+                <option value="portuguese">Portuguese</option>
+            </select>
+        </div>
                 </div>
                 <button type="submit">
                     <span>Generate Story</span>
                     <div class="spinner"></div>
                 </button>
-            </form>
+    </form>
         </section>
 
         <section class="output-section">
-            <div id="storyOutput"></div>
+    <div id="storyOutput"></div>
         </section>
     </div>
 
@@ -657,10 +657,10 @@
                 saveStory(story);
                 saveBtn.classList.add('active');
                 saveBtn.querySelector('span:last-child').textContent = 'Saved!';
-                setTimeout(() => {
+                    setTimeout(() => {
                     saveBtn.classList.remove('active');
                     saveBtn.querySelector('span:last-child').textContent = 'Save';
-                }, 2000);
+                    }, 2000);
             });
 
             // Print button
@@ -678,9 +678,6 @@
                 console.error('Invalid quiz data:', quiz);
                 return;
             }
-
-            // Get the story content for context
-            const storyContent = document.querySelector('.story-content')?.textContent || '';
 
             const quizSection = document.createElement('div');
             quizSection.className = 'quiz-section';
@@ -719,17 +716,6 @@
 
                 // Store the correct answer in a consistent field
                 q.correct_answer = correctAnswer;
-
-                // Verify question is related to story content
-                const questionWords = q.question.toLowerCase().split(/\s+/);
-                const storyWords = storyContent.toLowerCase().split(/\s+/);
-                const hasRelevantWords = questionWords.some(word => 
-                    word.length > 3 && storyWords.includes(word)
-                );
-
-                if (!hasRelevantWords) {
-                    console.warn(`Question ${i} may not be related to the story content`);
-                }
 
                 return `
                     <div class="quiz-question">
@@ -817,17 +803,14 @@
                     }
 
                     const selectedOption = selected.closest('.quiz-option');
-                    const selectedValue = selected.value.trim();
-                    const correctValue = q.correct_answer.trim();
+                    const selectedValue = selected.value;
+                    const correctValue = q.correct_answer;
 
                     // Log the comparison values
                     console.log(`Comparing: "${selectedValue}" with "${correctValue}"`);
 
-                    // Normalize the comparison by removing any extra whitespace and converting to lowercase
-                    const normalizedSelected = selectedValue.toLowerCase().replace(/\s+/g, ' ');
-                    const normalizedCorrect = correctValue.toLowerCase().replace(/\s+/g, ' ');
-
-                    if (normalizedSelected === normalizedCorrect) {
+                    // Simple string comparison
+                    if (selectedValue === correctValue) {
                         score++;
                         selectedOption.classList.add('correct');
                         feedback.textContent = `Correct! ${q.explanation || ''}`;
@@ -836,7 +819,7 @@
                         selectedOption.classList.add('incorrect');
                         // Find and mark the correct option
                         const correctOption = Array.from(document.querySelectorAll(`input[name="q${i}"]`))
-                            .find(input => input.value.trim().toLowerCase().replace(/\s+/g, ' ') === normalizedCorrect)
+                            .find(input => input.value === correctValue)
                             ?.closest('.quiz-option');
                         if (correctOption) {
                             correctOption.classList.add('correct');

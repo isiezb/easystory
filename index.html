@@ -469,6 +469,7 @@
             overflow-wrap: break-word;
             word-wrap: break-word;
             hyphens: auto;
+            z-index: 1;
         }
 
         #storyOutput:hover {
@@ -1079,16 +1080,29 @@
         .continue-btn.same { border-color: var(--gradient-start); }
         .continue-btn.harder { border-color: #ef4444; }
 
+        .output-section {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
         .quiz-section {
             background-color: #f8f9fa;
             border-radius: 8px;
             padding: 20px;
-            margin: 20px auto;
-            max-width: 800px;
+            margin: 20px 0;
+            width: 100%;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             position: relative;
-            z-index: 1;
+            z-index: 2;
+            border: 1px solid #dee2e6;
         }
 
         .quiz-section h3 {
@@ -1193,17 +1207,12 @@
             position: relative;
             z-index: 2;
         }
-
-        .output-section {
-            position: relative;
-            z-index: 1;
-        }
     </style>
 </head>
 <body>
     <nav class="nav-container" role="navigation" aria-label="Main navigation">
         <a href="#" class="nav-logo" aria-label="Story Generator Home">
-            <span role="img" aria-label="Books">📚</span>
+            <span role="img" aria-label="Books">��</span>
             Story Generator
         </a>
         <div class="nav-actions" role="group" aria-label="Navigation actions">
@@ -1621,6 +1630,12 @@
         }
 
         function displayQuiz(quiz) {
+            // Remove any existing quiz section
+            const existingQuiz = document.querySelector('.quiz-section');
+            if (existingQuiz) {
+                existingQuiz.remove();
+            }
+
             const quizSection = document.createElement('div');
             quizSection.className = 'quiz-section';
             quizSection.innerHTML = `

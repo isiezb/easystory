@@ -97,12 +97,34 @@
             font-weight: 600;
             cursor: pointer;
             transition: all 0.2s;
+            position: relative;
         }
 
-        button:hover {
-            background: var(--primary-dark);
-            transform: translateY(-2px);
-            box-shadow: var(--hover-shadow);
+        button:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        @keyframes spin {
+            to { transform: translateY(-50%) rotate(360deg); }
+        }
+
+        button:disabled .spinner {
+            display: block;
         }
 
         .output-section {
@@ -224,6 +246,37 @@
         .continue-btn.same { border-color: var(--primary); }
         .continue-btn.harder { border-color: var(--error); }
 
+        .story-content {
+            position: relative;
+        }
+
+        .copy-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            padding: 0.5rem 1rem;
+            background: var(--bg);
+            border: 2px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .copy-btn:hover {
+            border-color: var(--primary);
+            transform: translateY(-1px);
+        }
+
+        .copy-btn.copied {
+            background: var(--success);
+            color: white;
+            border-color: var(--success);
+        }
+
         @media (max-width: 768px) {
             body {
                 padding: 1rem;
@@ -315,7 +368,10 @@
                         </select>
                     </div>
                 </div>
-                <button type="submit">Generate Story</button>
+                <button type="submit">
+                    <span>Generate Story</span>
+                    <div class="spinner"></div>
+                </button>
             </form>
         </section>
 
@@ -345,7 +401,7 @@
                 const submitButton = e.target.querySelector('button[type="submit"]');
                 const originalText = submitButton.textContent;
                 submitButton.disabled = true;
-                submitButton.textContent = 'Generating Story...';
+                submitButton.querySelector('span').textContent = 'Generating Story...';
 
                 try {
                     const formData = {
@@ -380,7 +436,7 @@
                     alert(error.message || 'Failed to generate story. Please try again.');
                 } finally {
                     submitButton.disabled = false;
-                    submitButton.textContent = originalText;
+                    submitButton.querySelector('span').textContent = originalText;
                 }
             });
         });
@@ -388,7 +444,13 @@
         function displayStory(story) {
             const storyOutput = document.getElementById('storyOutput');
             storyOutput.innerHTML = `
-                <div class="story-content">${story}</div>
+                <div class="story-content">
+                    <button class="copy-btn">
+                        <span>📋</span>
+                        <span>Copy Story</span>
+                    </button>
+                    ${story}
+                </div>
                 <div class="story-continuation">
                     <h3>Continue the story with:</h3>
                     <div class="difficulty-buttons">
@@ -404,6 +466,18 @@
                     </div>
                 </div>
             `;
+
+            const copyBtn = storyOutput.querySelector('.copy-btn');
+            copyBtn.addEventListener('click', async () => {
+                const storyText = storyOutput.querySelector('.story-content').textContent.trim();
+                await navigator.clipboard.writeText(storyText);
+                copyBtn.classList.add('copied');
+                copyBtn.querySelector('span:last-child').textContent = 'Copied!';
+                setTimeout(() => {
+                    copyBtn.classList.remove('copied');
+                    copyBtn.querySelector('span:last-child').textContent = 'Copy Story';
+                }, 2000);
+            });
         }
 
         function displayQuiz(quiz) {

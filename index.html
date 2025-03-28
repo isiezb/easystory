@@ -789,12 +789,10 @@
                         return;
                     }
 
+                    // First, mark all options as incorrect
                     const options = document.querySelectorAll(`input[name="q${i}"]`).forEach(input => {
                         const option = input.closest('.quiz-option');
                         option.classList.remove('correct', 'incorrect');
-                        if (input.value === q.correct_answer) {
-                            option.classList.add('correct');
-                        }
                     });
                     
                     if (!selected) {
@@ -805,14 +803,27 @@
                     }
 
                     const selectedOption = selected.closest('.quiz-option');
-                    if (selected.value === q.correct_answer) {
+                    const selectedValue = selected.value.trim();
+                    const correctValue = q.correct_answer.trim();
+
+                    // Log the comparison values
+                    console.log(`Comparing: "${selectedValue}" with "${correctValue}"`);
+
+                    if (selectedValue === correctValue) {
                         score++;
                         selectedOption.classList.add('correct');
                         feedback.textContent = `Correct! ${q.explanation || ''}`;
                         feedback.className = 'quiz-feedback correct';
                     } else {
                         selectedOption.classList.add('incorrect');
-                        feedback.textContent = `Incorrect. The correct answer is "${q.correct_answer}". ${q.explanation || ''}`;
+                        // Find and mark the correct option
+                        const correctOption = Array.from(document.querySelectorAll(`input[name="q${i}"]`))
+                            .find(input => input.value.trim() === correctValue)
+                            ?.closest('.quiz-option');
+                        if (correctOption) {
+                            correctOption.classList.add('correct');
+                        }
+                        feedback.textContent = `Incorrect. The correct answer is "${correctValue}". ${q.explanation || ''}`;
                         feedback.className = 'quiz-feedback incorrect';
                     }
                     feedback.style.display = 'block';

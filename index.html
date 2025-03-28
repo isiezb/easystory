@@ -549,7 +549,8 @@
                         main_character: document.getElementById('mainCharacter').value,
                         word_count: parseInt(document.getElementById('wordCount').value),
                         language: document.getElementById('language').value,
-                        response_format: 'story_only'
+                        response_format: 'story_with_quiz',
+                        quiz_type: 'story_related'
                     };
 
                     const response = await fetch(`${config.serverUrl}/generate-story`, {
@@ -682,26 +683,15 @@
             const quizSection = document.createElement('div');
             quizSection.className = 'quiz-section';
             
-            // Log the quiz structure
-            console.log('Quiz structure:', {
-                length: quiz.length,
-                questions: quiz.map(q => ({
-                    hasQuestion: !!q.question,
-                    hasOptions: !!q.options,
-                    hasCorrectAnswer: !!q.correct_answer,
-                    optionsCount: q.options?.length
-                }))
-            });
-
-            // Generate quiz HTML
+            // Generate quiz HTML with A, B, C, D options
             const quizHTML = quiz.map((q, i) => `
                 <div class="quiz-question">
                     <p>${i + 1}. ${q.question}</p>
                     <div class="quiz-options">
                         ${q.options.map((opt, j) => `
                             <div class="quiz-option">
-                                <input type="radio" name="q${i}" value="${opt}" id="q${i}_${j}">
-                                <label for="q${i}_${j}">${opt}</label>
+                                <input type="radio" name="q${i}" value="${['A', 'B', 'C', 'D'][j]}" id="q${i}_${j}">
+                                <label for="q${i}_${j}">${['A', 'B', 'C', 'D'][j]}. ${opt}</label>
                             </div>
                         `).join('')}
                     </div>
@@ -757,7 +747,7 @@
 
                     const selectedOption = selected.closest('.quiz-option');
                     const selectedValue = selected.value;
-                    const correctValue = q.correct_answer;
+                    const correctValue = ['A', 'B', 'C', 'D'][q.options.indexOf(q.correct_answer)];
                     const feedback = selectedOption.closest('.quiz-question').querySelector('.quiz-feedback');
 
                     // Log values for debugging
@@ -784,7 +774,7 @@
                             }
                         });
                         
-                        feedback.textContent = `Incorrect. The correct answer is "${correctValue}". ${q.explanation || ''}`;
+                        feedback.textContent = `Incorrect. The correct answer is ${correctValue}. ${q.explanation || ''}`;
                         feedback.className = 'quiz-feedback incorrect';
                     }
                 });

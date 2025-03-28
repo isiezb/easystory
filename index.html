@@ -550,7 +550,8 @@
                         word_count: parseInt(document.getElementById('wordCount').value),
                         language: document.getElementById('language').value,
                         response_format: 'story_with_quiz',
-                        quiz_type: 'story_related'
+                        quiz_type: 'story_related',
+                        story_data: storyData // Pass the story data to ensure quiz is related
                     };
 
                     const response = await fetch(`${config.serverUrl}/generate-story`, {
@@ -688,12 +689,15 @@
                 <div class="quiz-question">
                     <p>${i + 1}. ${q.question}</p>
                     <div class="quiz-options">
-                        ${q.options.map((opt, j) => `
-                            <div class="quiz-option">
-                                <input type="radio" name="q${i}" value="${['A', 'B', 'C', 'D'][j]}" id="q${i}_${j}">
-                                <label for="q${i}_${j}">${['A', 'B', 'C', 'D'][j]}. ${opt}</label>
-                            </div>
-                        `).join('')}
+                        ${q.options.map((opt, j) => {
+                            const letter = ['A', 'B', 'C', 'D'][j];
+                            return `
+                                <div class="quiz-option">
+                                    <input type="radio" name="q${i}" value="${letter}" id="q${i}_${j}">
+                                    <label for="q${i}_${j}">${letter}. ${opt}</label>
+                                </div>
+                            `;
+                        }).join('')}
                     </div>
                     <div class="quiz-feedback"></div>
                 </div>

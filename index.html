@@ -187,6 +187,43 @@
             margin-top: 1.5rem;
         }
 
+        .story-continuation {
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 2px solid var(--border);
+            text-align: center;
+        }
+
+        .difficulty-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            margin-top: 1rem;
+        }
+
+        .continue-btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            border: 2px solid var(--border);
+            background: var(--bg);
+            color: var(--text);
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+        }
+
+        .continue-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .continue-btn.easier { border-color: var(--success); }
+        .continue-btn.same { border-color: var(--primary); }
+        .continue-btn.harder { border-color: var(--error); }
+
         @media (max-width: 768px) {
             body {
                 padding: 1rem;
@@ -350,8 +387,23 @@
 
         function displayStory(story) {
             const storyOutput = document.getElementById('storyOutput');
-            storyOutput.innerHTML = `<div class="story-content">${story}</div>`;
-            storyOutput.style.display = 'block';
+            storyOutput.innerHTML = `
+                <div class="story-content">${story}</div>
+                <div class="story-continuation">
+                    <h3>Continue the story with:</h3>
+                    <div class="difficulty-buttons">
+                        <button class="continue-btn easier" data-difficulty="easier">
+                            <span>📉</span> Easier
+                        </button>
+                        <button class="continue-btn same" data-difficulty="same">
+                            <span>➡️</span> Same Level
+                        </button>
+                        <button class="continue-btn harder" data-difficulty="harder">
+                            <span>📈</span> More Challenging
+                        </button>
+                    </div>
+                </div>
+            `;
         }
 
         function displayQuiz(quiz) {
@@ -418,6 +470,59 @@
                 document.getElementById('checkAnswers').after(finalScore);
             });
         }
+
+        document.addEventListener('click', async (e) => {
+            if (e.target.closest('.continue-btn')) {
+                const difficulty = e.target.closest('.continue-btn').dataset.difficulty;
+                const currentData = {
+                    academic_grade: document.getElementById('academicGrade').value,
+                    subject: document.getElementById('subject').value,
+                    subject_specification: document.getElementById('subjectSpecification').value,
+                    setting: document.getElementById('setting').value,
+                    main_character: document.getElementById('mainCharacter').value,
+                    word_count: parseInt(document.getElementById('wordCount').value),
+                    language: document.getElementById('language').value
+                };
+
+                // Adjust grade based on difficulty
+                if (difficulty === 'easier') {
+                    const grades = ['expert', 'university', 'high_school', 'middle_school', 'elementary'];
+                    const currentIndex = grades.indexOf(currentData.academic_grade);
+                    if (currentIndex < grades.length - 1) {
+                        currentData.academic_grade = grades[currentIndex + 1];
+                    }
+                } else if (difficulty === 'harder') {
+                    const grades = ['elementary', 'middle_school', 'high_school', 'university', 'expert'];
+                    const currentIndex = grades.indexOf(currentData.academic_grade);
+                    if (currentIndex < grades.length - 1) {
+                        currentData.academic_grade = grades[currentIndex + 1];
+                    }
+                }
+
+                try {
+                    const response = await fetch(`${config.serverUrl}/generate-story`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(currentData)
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(data.error || 'Failed to generate story');
+                    }
+
+                    displayStory(data.story);
+                    displayQuiz(data.quiz);
+
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert(error.message || 'Failed to generate continuation. Please try again.');
+                }
+            }
+        });
     </script>
 </body>
 </html> 

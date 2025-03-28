@@ -760,10 +760,11 @@
                     const correctValue = q.correct_answer;
                     const feedback = selectedOption.closest('.quiz-question').querySelector('.quiz-feedback');
 
-                    // Log the comparison values
-                    console.log(`Question ${i}:`, {
-                        selected: selectedValue,
-                        correct: correctValue,
+                    // Log values for debugging
+                    console.log('Checking answer:', {
+                        questionNum: i + 1,
+                        selectedValue,
+                        correctValue,
                         isMatch: selectedValue === correctValue
                     });
 
@@ -774,13 +775,15 @@
                         feedback.className = 'quiz-feedback correct';
                     } else {
                         selectedOption.classList.add('incorrect');
-                        // Find and mark the correct option
-                        const correctOption = Array.from(document.querySelectorAll(`input[name="q${i}"]`))
-                            .find(input => input.value === correctValue)
-                            ?.closest('.quiz-option');
-                        if (correctOption) {
-                            correctOption.classList.add('correct');
-                        }
+                        
+                        // Find the correct option more reliably
+                        const allOptions = document.querySelectorAll(`input[name="q${i}"]`);
+                        allOptions.forEach(option => {
+                            if (option.value === correctValue) {
+                                option.closest('.quiz-option').classList.add('correct');
+                            }
+                        });
+                        
                         feedback.textContent = `Incorrect. The correct answer is "${correctValue}". ${q.explanation || ''}`;
                         feedback.className = 'quiz-feedback incorrect';
                     }

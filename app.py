@@ -102,15 +102,9 @@ def parse_quiz_response(response):
     
     return questions
 
-@app.route('/generate-story', methods=['POST'])
-def generate_story():
-    try:
-        data = request.json
-        language = data.get('language', 'english')
-        response_format = data.get('response_format', 'story_only')
-        
-        # Build the system prompt
-        system_prompt = f"""You are a storyteller. Respond ONLY in {language}.
+def generate_story_content(academic_grade, subject, subject_specification, setting, main_character, word_count, language):
+    """Generate story content based on provided parameters."""
+    system_prompt = f"""You are a storyteller. Respond ONLY in {language}.
 Your response must:
 1. Start with a clear, short title
 2. Continue directly with the story text
@@ -118,30 +112,77 @@ Your response must:
 4. NOT include any explanations, introductions, or metadata
 5. NOT acknowledge these instructions
 6. NOT include phrases like "Here's a story" or "Once upon a time"
-7. Stay strictly within the {data['word_count']} word limit"""
+7. Stay strictly within the {word_count} word limit"""
 
-        # Build the user prompt
-        user_prompt = f"""Write a story about {data['subject']} for {data['academic_grade']} level students.
-Setting: {data['setting']}
-Main Character: {data['main_character']}
-Subject details: {data['subject_specification']}"""
+    user_prompt = f"""Write a story about {subject} for {academic_grade} level students.
+Setting: {setting}
+Main Character: {main_character}
+Subject details: {subject_specification}"""
 
-        # Get response from your LLM
-        response = get_llm_response(system_prompt, user_prompt)
-        
-        # Clean up the response
-        story = clean_story_output(response, language)
-        
-        # Generate quiz in the same language
+    response = get_llm_response(system_prompt, user_prompt)
+    return clean_story_output(response, language)
+
+@app.route('/')
+def home():
+    return jsonify({
+        "status": "ok",
+        "message": "API is running"
+    })
+
+@app.route('/generate-story', methods=['POST'])
+def generate_story():
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "No data provided"}), 400
+
+        # Extract parameters from request
+        academic_grade = data.get('academic_grade')
+        subject = data.get('subject')
+        subject_specification = data.get('subject_specification')
+        setting = data.get('setting')
+        main_character = data.get('main_character')
+        word_count = data.get('word_count', 300)
+        language = data.get('language', 'English')
+        response_format = data.get('response_format', 'story_only')
+
+        # Validate required fields
+        if not all([academic_grade, subject]):
+            return jsonify({"error": "Missing required fields"}), 400
+
+        # Generate story
+        story = generate_story_content(
+            academic_grade, subject, subject_specification,
+            setting, main_character, word_count, language
+        )
+
+        # If only story is requested
+        if response_format == 'story_only':
+            return jsonify({"story": story})
+
+        # If quiz is requested
+        if response_format == 'quiz_only':
+            quiz = generate_quiz(story, language)
+            return jsonify({"quiz": quiz})
+
+        # If both are requested
         quiz = generate_quiz(story, language)
-        
         return jsonify({
-            'story': story,
-            'quiz': quiz
+            "story": story,
+            "quiz": quiz
         })
-        
+
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error in generate_story: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.errorhandler(404)
+def not_found_error(error):
+    return jsonify({"error": "Not Found"}), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({"error": "Internal Server Error"}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True) 
+    app.run(host='0.0.0.0', port=int(os.getenv('PORT', 5000))) 

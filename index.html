@@ -679,6 +679,9 @@
                 return;
             }
 
+            // Get the story content for context
+            const storyContent = document.querySelector('.story-content')?.textContent || '';
+
             const quizSection = document.createElement('div');
             quizSection.className = 'quiz-section';
             
@@ -716,6 +719,17 @@
 
                 // Store the correct answer in a consistent field
                 q.correct_answer = correctAnswer;
+
+                // Verify question is related to story content
+                const questionWords = q.question.toLowerCase().split(/\s+/);
+                const storyWords = storyContent.toLowerCase().split(/\s+/);
+                const hasRelevantWords = questionWords.some(word => 
+                    word.length > 3 && storyWords.includes(word)
+                );
+
+                if (!hasRelevantWords) {
+                    console.warn(`Question ${i} may not be related to the story content`);
+                }
 
                 return `
                     <div class="quiz-question">

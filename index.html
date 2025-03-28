@@ -582,24 +582,54 @@
                         }
                     };
 
-                    const quizResponse = await fetch(`${config.serverUrl}/generate-story`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(quizRequestData)
-                    });
+                    // Add loading indicator for quiz
+                    const quizLoadingDiv = document.createElement('div');
+                    quizLoadingDiv.className = 'loading-indicator';
+                    quizLoadingDiv.innerHTML = `
+                        <div class="spinner"></div>
+                        <p>Generating quiz based on the story...</p>
+                    `;
+                    document.querySelector('#storyOutput').after(quizLoadingDiv);
 
-                    const quizResponseData = await quizResponse.json();
+                    try {
+                        console.log('Sending quiz request with data:', quizRequestData);
+                        const quizResponse = await fetch(`${config.serverUrl}/generate-story`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(quizRequestData)
+                        });
 
-                    if (!quizResponse.ok) {
-                        throw new Error(quizResponseData.error || 'Failed to generate quiz');
+                        const quizResponseData = await quizResponse.json();
+                        console.log('Received quiz response:', quizResponseData);
+
+                        if (!quizResponse.ok) {
+                            throw new Error(quizResponseData.error || 'Failed to generate quiz');
+                        }
+
+                        // Validate quiz data
+                        if (!quizResponseData.quiz || !Array.isArray(quizResponseData.quiz)) {
+                            throw new Error('Invalid quiz data received');
+                        }
+
+                        // Remove loading indicator
+                        quizLoadingDiv.remove();
+
+                        // Display the quiz after a short delay
+                        setTimeout(() => {
+                            displayQuiz(quizResponseData.quiz);
+                        }, 2000); // 2 second delay
+
+                    } catch (error) {
+                        console.error('Quiz generation error:', error);
+                        quizLoadingDiv.innerHTML = `
+                            <div class="error-message">
+                                <p>Failed to generate quiz. Please try again.</p>
+                                <button onclick="location.reload()">Retry</button>
+                            </div>
+                        `;
                     }
-
-                    // Display the quiz after a short delay
-                    setTimeout(() => {
-                        displayQuiz(quizResponseData.quiz);
-                    }, 2000); // 2 second delay
 
                 } catch (error) {
                     console.error('Error:', error);
@@ -702,7 +732,7 @@
 
         function displayQuiz(quiz) {
             // Log the quiz data for debugging
-            console.log('Quiz data:', quiz);
+            console.log('Displaying quiz with data:', quiz);
 
             if (!quiz || !Array.isArray(quiz) || quiz.length === 0) {
                 console.error('Invalid quiz data:', quiz);
@@ -712,24 +742,43 @@
             const quizSection = document.createElement('div');
             quizSection.className = 'quiz-section';
             
+            // Log the quiz structure
+            console.log('Quiz structure:', {
+                length: quiz.length,
+                questions: quiz.map(q => ({
+                    hasQuestion: !!q.question,
+                    hasOptions: !!q.options,
+                    hasCorrectAnswer: !!q.correct_answer,
+                    optionsCount: q.options?.length
+                }))
+            });
+
             // Generate quiz HTML with A, B, C, D options
-            const quizHTML = quiz.map((q, i) => `
-                <div class="quiz-question">
-                    <p>${i + 1}. ${q.question}</p>
-                    <div class="quiz-options">
-                        ${q.options.map((opt, j) => {
-                            const letter = ['A', 'B', 'C', 'D'][j];
-                            return `
-                                <div class="quiz-option">
-                                    <input type="radio" name="q${i}" value="${letter}" id="q${i}_${j}">
-                                    <label for="q${i}_${j}">${letter}. ${opt}</label>
-                                </div>
-                            `;
-                        }).join('')}
+            const quizHTML = quiz.map((q, i) => {
+                // Validate question data
+                if (!q.question || !q.options || !q.correct_answer) {
+                    console.error(`Invalid question data for question ${i}:`, q);
+                    return '';
+                }
+
+                return `
+                    <div class="quiz-question">
+                        <p>${i + 1}. ${q.question}</p>
+                        <div class="quiz-options">
+                            ${q.options.map((opt, j) => {
+                                const letter = ['A', 'B', 'C', 'D'][j];
+                                return `
+                                    <div class="quiz-option">
+                                        <input type="radio" name="q${i}" value="${letter}" id="q${i}_${j}">
+                                        <label for="q${i}_${j}">${letter}. ${opt}</label>
+                                    </div>
+                                `;
+                            }).join('')}
+                        </div>
+                        <div class="quiz-feedback"></div>
                     </div>
-                    <div class="quiz-feedback"></div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
 
             if (!quizHTML) {
                 console.error('No valid questions to display');

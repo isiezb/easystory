@@ -1314,19 +1314,21 @@
                     if (!selected) return;
 
                     const selectedOption = selected.closest('.quiz-option');
-                    const selectedValue = selected.value;
-                    const correctValue = q.correct_answer;
+                    const selectedValue = selected.value; // A, B, C, or D
+                    const correctIndex = ['A', 'B', 'C', 'D'].indexOf(selectedValue);
+                    const isCorrect = q.options[correctIndex] === q.correct_answer;
                     const feedback = selectedOption.closest('.quiz-question').querySelector('.quiz-feedback');
 
                     // Log values for debugging
                     console.log('Checking answer:', {
                         questionNum: i + 1,
                         selectedValue,
-                        correctValue,
-                        isMatch: selectedValue === correctValue
+                        selectedText: q.options[correctIndex],
+                        correctAnswer: q.correct_answer,
+                        isCorrect
                     });
 
-                    if (selectedValue === correctValue) {
+                    if (isCorrect) {
                         score++;
                         selectedOption.classList.add('correct');
                         feedback.textContent = `Correct! ${q.explanation || ''}`;
@@ -1335,14 +1337,17 @@
                         selectedOption.classList.add('incorrect');
                         
                         // Find and highlight the correct option
+                        const correctLetterIndex = q.options.indexOf(q.correct_answer);
+                        const correctLetter = ['A', 'B', 'C', 'D'][correctLetterIndex];
+                        
                         const allOptions = document.querySelectorAll(`input[name="q${i}"]`);
                         allOptions.forEach(option => {
-                            if (option.value === correctValue) {
+                            if (option.value === correctLetter) {
                                 option.closest('.quiz-option').classList.add('correct');
                             }
                         });
                         
-                        feedback.textContent = `Incorrect. The correct answer is ${correctValue}. ${q.explanation || ''}`;
+                        feedback.textContent = `Incorrect. The correct answer is ${correctLetter}. ${q.explanation || ''}`;
                         feedback.className = 'quiz-feedback incorrect';
                     }
                 });

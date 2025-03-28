@@ -151,15 +151,28 @@ app.post('/generate-story', async (req, res) => {
             const generatedStory = response.data.choices[0].message.content;
 
             // After getting the story, generate quiz questions
-            const quizPrompt = `Based on this story, generate exactly 3 multiple choice questions that test understanding of the key scientific concepts. Format your response EXACTLY like this, with no additional text or markdown:
+            const quizPrompt = `You are a quiz generator. Create exactly 3 multiple-choice questions that test understanding of the following story. Each question must be directly related to specific events, characters, or concepts from the story.
+
+            Requirements:
+            1. Questions must be based ONLY on the content of the story below
+            2. Each question should test comprehension of key story elements
+            3. Options should be plausible but only one should be correct
+            4. Include a brief explanation of why the correct answer is right
+            5. The correct_answer must match EXACTLY with one of the options
+            6. Do not use A, B, C, D in the options or correct_answer
+
+            Format your response EXACTLY like this JSON array:
             [
                 {
-                    "question": "Question text here?",
-                    "options": ["A) First option", "B) Second option", "C) Third option", "D) Fourth option"],
-                    "correctAnswer": "A",
+                    "question": "Question about specific story content?",
+                    "options": ["First option", "Second option", "Third option", "Fourth option"],
+                    "correct_answer": "First option",
                     "explanation": "Explanation of why this is correct"
                 }
-            ]`;
+            ]
+
+            Story to generate questions from:
+            ${generatedStory}`;
 
             const quizResponse = await axios.post(
                 `${OPENROUTER_BASE_URL}/chat/completions`,
@@ -185,6 +198,22 @@ app.post('/generate-story', async (req, res) => {
             let quiz;
             try {
                 quiz = JSON.parse(quizResponse.data.choices[0].message.content);
+                // Ensure quiz is an array
+                if (!Array.isArray(quiz)) {
+                    quiz = [quiz];
+                }
+                // Log the generated quiz for debugging
+                console.log('Generated quiz:', JSON.stringify(quiz, null, 2));
+                
+                // Validate each question
+                quiz = quiz.map(q => {
+                    // Ensure correct_answer matches one of the options exactly
+                    if (!q.options.includes(q.correct_answer)) {
+                        console.error('Invalid correct_answer:', q.correct_answer, 'Options:', q.options);
+                        q.correct_answer = q.options[0]; // Fallback to first option if invalid
+                    }
+                    return q;
+                });
             } catch (parseError) {
                 console.error('Failed to parse quiz JSON:', parseError);
                 quiz = [];  // Fallback to empty quiz if parsing fails

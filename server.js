@@ -10,6 +10,13 @@ const path = require('path');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Debug logging for environment variables
+logger.info('Environment check:', {
+    hasSupabaseUrl: !!process.env.SUPABASE_URL,
+    hasSupabaseKey: !!process.env.SUPABASE_ANON_KEY,
+    nodeEnv: process.env.NODE_ENV
+});
+
 // Initialize Supabase client
 const supabase = createClient(
     process.env.SUPABASE_URL,

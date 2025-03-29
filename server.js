@@ -170,15 +170,15 @@ app.post('/generate-story', async (req, res) => {
             2. Each question should test comprehension of key story elements
             3. Options should be plausible but only one should be correct
             4. Include a brief explanation of why the correct answer is right
-            5. The correct_answer must match EXACTLY with one of the options
-            6. Do not use A, B, C, D in the options or correct_answer
+            5. The correct_answer must be one of: "A", "B", "C", or "D"
+            6. Each question must have exactly 4 options
 
             Format your response EXACTLY like this JSON array:
             [
                 {
                     "question": "Question about specific story content?",
                     "options": ["First option", "Second option", "Third option", "Fourth option"],
-                    "correct_answer": "First option",
+                    "correct_answer": "A",
                     "explanation": "Explanation of why this is correct"
                 }
             ]
@@ -223,10 +223,15 @@ app.post('/generate-story', async (req, res) => {
                 
                 // Validate each question
                 quiz = quiz.map(q => {
-                    // Ensure correct_answer matches one of the options exactly
-                    if (!q.options.includes(q.correct_answer)) {
-                        console.error('Invalid correct_answer:', q.correct_answer, 'Options:', q.options);
-                        q.correct_answer = q.options[0]; // Fallback to first option if invalid
+                    // Ensure correct_answer is A, B, C, or D
+                    if (!['A', 'B', 'C', 'D'].includes(q.correct_answer)) {
+                        console.error('Invalid correct_answer:', q.correct_answer);
+                        q.correct_answer = 'A'; // Fallback to A if invalid
+                    }
+                    // Ensure exactly 4 options
+                    if (!q.options || q.options.length !== 4) {
+                        console.error('Invalid options:', q.options);
+                        q.options = ['Option A', 'Option B', 'Option C', 'Option D'];
                     }
                     return q;
                 });

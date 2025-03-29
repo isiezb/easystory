@@ -18,22 +18,44 @@ An interactive web application that generates educational stories tailored to yo
 
 ## Technologies Used
 
-- HTML5
-- CSS3 (with modern features like CSS Variables, Flexbox, Grid)
-- Vanilla JavaScript
-- Responsive Design
+- Frontend:
+  - HTML5
+  - CSS3 (with modern features like CSS Variables, Flexbox, Grid)
+  - Vanilla JavaScript
+  - Responsive Design
+- Backend:
+  - Node.js
+  - Express.js
+  - Google Gemini (via OpenRouter)
+  - Supabase for data storage
 - Local Storage for story saving
 
 ## Getting Started
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/didactic-story-generator.git
+git clone https://github.com/isiezb/quizlearner.git
 ```
 
-2. Open `index.html` in your web browser or serve it using a local server.
+2. Install dependencies:
+```bash
+npm install
+```
 
-3. Start generating stories!
+3. Set up environment variables:
+Create a `.env` file with:
+```
+OPENROUTER_API_KEY=your_api_key
+SUPABASE_URL=your_supabase_url
+SUPABASE_KEY=your_supabase_key
+```
+
+4. Start the server:
+```bash
+npm start
+```
+
+5. Open `http://localhost:3000` in your browser
 
 ## Usage
 

@@ -1,17 +1,40 @@
-const express = require('express');
-const axios = require('axios');
-const { createClient } = require('@supabase/supabase-js');
-const config = require('./config');
-const path = require('path');
-const cors = require('cors');
 require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const { createClient } = require('@supabase/supabase-js');
+const OpenAI = require('openai');
+const logger = require('./utils/logger');
+const { AppError, handleError } = require('./utils/errorHandler');
+const path = require('path');
 
 const app = express();
-const port = config.server.port;
+const port = process.env.PORT || 3000;
+
+// Initialize OpenAI
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY
+});
+
+// Initialize Supabase
+const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_ANON_KEY
+);
 
 // Middleware
-app.use(express.json());
 app.use(cors());
+app.use(express.json());
+
+// Request logging middleware
+app.use((req, res, next) => {
+    logger.info({
+        method: req.method,
+        url: req.url,
+        ip: req.ip,
+        userAgent: req.get('user-agent')
+    }, 'Incoming request');
+    next();
+});
 
 // Authentication middleware
 const authenticateUser = async (req, res, next) => {
@@ -66,19 +89,6 @@ app.use((req, res, next) => {
     next();
 });
 
-// Supabase client initialization
-let supabase;
-try {
-    supabase = createClient(
-        process.env.SUPABASE_URL,
-        process.env.SUPABASE_SERVICE_KEY
-    );
-    console.log('Supabase client initialized successfully');
-} catch (error) {
-    console.error('Failed to initialize Supabase client:', error);
-    process.exit(1);
-}
-
 // Test database connection
 const testConnection = async () => {
     try {
@@ -95,8 +105,8 @@ const testConnection = async () => {
 testConnection();
 
 // OpenRouter API configuration
-const OPENROUTER_API_KEY = config.openrouter.apiKey;
-const OPENROUTER_BASE_URL = config.openrouter.baseUrl;
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const OPENROUTER_BASE_URL = process.env.OPENROUTER_BASE_URL;
 
 // Input validation function
 const validateInputs = (inputs) => {
@@ -117,8 +127,8 @@ const validateInputs = (inputs) => {
     return true;
 };
 
-// Story generation endpoint
-app.post('/generate-story', authenticateUser, async (req, res) => {
+// Routes
+app.post('/generate-story', async (req, res, next) => {
     try {
         const {
             academic_grade,
@@ -128,96 +138,135 @@ app.post('/generate-story', authenticateUser, async (req, res) => {
             main_character,
             word_count,
             language,
-            generate_summary,
-            previous_story,
-            difficulty,
-            quiz_score
+            generate_vocabulary,
+            generate_summary
         } = req.body;
 
-        // Construct the prompt based on parameters
-        let prompt = `Create an educational story with the following specifications:
-- Academic Grade: ${academic_grade}
-- Subject: ${subject}
-${subject_specification ? `- Specific Topic: ${subject_specification}` : ''}
-${setting ? `- Setting: ${setting}` : ''}
-${main_character ? `- Main Character: ${main_character}` : ''}
-- Word Count: ${word_count}
-- Language: ${language}
-${generate_summary ? '- Include a brief 1-2 sentence summary of the story' : ''}
-${previous_story ? `- This is a continuation of the previous story: ${previous_story}` : ''}
-${difficulty ? `- Difficulty Level: ${difficulty}` : ''}
-${quiz_score ? `- Previous Quiz Score: ${quiz_score}` : ''}
-
-Please provide the story in the following JSON format:
-{
-    "story_title": "Title of the story",
-    "story_text": "The complete story text",
-    "learning_objectives": ["List of learning objectives"],
-    "quiz_questions": [
-        {
-            "question": "Question text",
-            "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
-            "correct_answer": "Correct option"
+        // Validate required fields
+        if (!academic_grade || !subject || !subject_specification) {
+            throw new AppError('Missing required fields', 400, {
+                required: ['academic_grade', 'subject', 'subject_specification']
+            });
         }
-    ],
-    "vocabulary_list": [
-        {
-            "word": "Word",
-            "definition": "Definition"
-        }
-    ]
-    ${generate_summary ? ',\n    "story_summary": "Brief summary of the story"' : ''}
-}`;
 
-        // Call OpenRouter API
-        const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
-            model: 'anthropic/claude-3-opus-20240229',
-            messages: [{ role: 'user', content: prompt }],
+        logger.info({
+            academic_grade,
+            subject,
+            subject_specification,
+            setting,
+            main_character,
+            word_count,
+            language,
+            generate_vocabulary,
+            generate_summary
+        }, 'Generating story with parameters');
+
+        // Construct the prompt
+        const prompt = `Create an educational story for ${academic_grade} level about ${subject}, specifically focusing on ${subject_specification}. 
+        ${setting ? `Set in ${setting}.` : ''} 
+        ${main_character ? `Main character: ${main_character}.` : ''} 
+        The story should be approximately ${word_count} words long and written in ${language}.
+        ${generate_vocabulary ? 'Include a vocabulary list at the end.' : ''}
+        ${generate_summary ? 'Include a brief summary at the beginning.' : ''}
+        Make it engaging and educational, suitable for the specified academic level.`;
+
+        // Generate story using OpenAI
+        const completion = await openai.chat.completions.create({
+            model: "gpt-4-turbo-preview",
+            messages: [
+                {
+                    role: "system",
+                    content: "You are an expert educational storyteller. Create engaging, age-appropriate stories that teach important concepts."
+                },
+                {
+                    role: "user",
+                    content: prompt
+                }
+            ],
             temperature: 0.7,
-            max_tokens: 4000
-        }, {
-            headers: {
-                'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-                'HTTP-Referer': 'https://github.com/isiezb/quiz-story',
-                'X-Title': 'Quiz Story Generator'
-            }
+            max_tokens: 2000
         });
 
-        // Parse and clean the response
-        const storyData = JSON.parse(response.data.choices[0].message.content);
+        const storyContent = completion.choices[0].message.content;
 
-        // Store the story in Supabase with user_id
-        const { data: story, error: insertError } = await supabase
-            .from('stories')
-            .insert({
-                user_id: req.user.id,
-                academic_grade,
-                subject,
-                subject_specification,
-                setting,
-                main_character,
-                word_count,
-                language,
-                story_text: storyData.story_text,
-                story_title: storyData.story_title,
-                learning_objectives: storyData.learning_objectives,
-                quiz_questions: storyData.quiz_questions,
-                vocabulary_list: storyData.vocabulary_list,
-                story_summary: storyData.story_summary,
-                is_continuation: !!previous_story
-            })
-            .select()
-            .single();
+        // Generate quiz questions
+        const quizPrompt = `Based on the following story, generate 5 multiple-choice questions to test understanding. 
+        Format the response as a JSON array with objects containing: question, options (array of 4), correct_answer (A, B, C, or D), and explanation.
+        Story: ${storyContent}`;
 
-        if (insertError) {
-            console.error('Supabase insert error:', insertError);
-            return res.status(500).json({ error: 'Failed to save story to database' });
+        const quizCompletion = await openai.chat.completions.create({
+            model: "gpt-4-turbo-preview",
+            messages: [
+                {
+                    role: "system",
+                    content: "You are an expert at creating educational quiz questions."
+                },
+                {
+                    role: "user",
+                    content: quizPrompt
+                }
+            ],
+            temperature: 0.7,
+            max_tokens: 1000
+        });
+
+        let quiz;
+        try {
+            quiz = JSON.parse(quizCompletion.choices[0].message.content);
+        } catch (error) {
+            logger.error({ error: error.message }, 'Failed to parse quiz JSON');
+            throw new AppError('Failed to generate quiz questions', 500);
         }
 
-        res.json(story);
+        // Save to database if user is authenticated
+        if (req.user) {
+            try {
+                const { data, error } = await supabase
+                    .from('stories')
+                    .insert([
+                        {
+                            user_id: req.user.id,
+                            story_title: subject_specification,
+                            story_text: storyContent,
+                            subject: subject,
+                            academic_level: academic_grade,
+                            created_at: new Date().toISOString()
+                        }
+                    ])
+                    .select();
+
+                if (error) throw error;
+
+                logger.info({
+                    story_id: data[0].id,
+                    user_id: req.user.id
+                }, 'Story saved to database');
+            } catch (error) {
+                logger.error({ error: error.message }, 'Failed to save story to database');
+                // Don't throw error here, just log it
+            }
+        }
+
+        // Send response
+        res.json({
+            story: {
+                title: subject_specification,
+                content: storyContent,
+                learning_objectives: [
+                    'Understanding the main concepts',
+                    'Analyzing key events',
+                    'Applying knowledge'
+                ]
+            },
+            quiz
+        });
+
     } catch (error) {
-        console.error('Error:', error);
-        res.status(500).json({ error: 'Failed to generate story' });
+        logger.error({
+            error: error.message,
+            stack: error.stack
+        }, 'Error generating story');
+        next(error);
     }
 });
 
@@ -242,7 +291,10 @@ app.get('/user-stories', authenticateUser, async (req, res) => {
     }
 });
 
+// Error handling middleware
+app.use(handleError);
+
 // Start server
 app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
+    logger.info(`Server running on port ${port}`);
 }); 

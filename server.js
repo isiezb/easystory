@@ -163,7 +163,7 @@ app.post('/generate-story', async (req, res) => {
             const generatedStory = response.data.choices[0].message.content;
 
             // After getting the story, generate quiz questions
-            const quizPrompt = `You are a quiz generator. Create exactly 3 multiple-choice questions that test understanding of the following story. Each question must be directly related to specific events, characters, or concepts from the story.
+            const quizPrompt = `Create exactly 3 multiple-choice questions that test understanding of the following story. Each question must be directly related to specific events, characters, or concepts from the story.
 
             Requirements:
             1. Questions must be based ONLY on the content of the story below
@@ -194,8 +194,7 @@ app.post('/generate-story', async (req, res) => {
                         role: 'user', 
                         content: quizPrompt 
                     }],
-                    temperature: 0.7,
-                    response_format: { type: "json_object" }
+                    temperature: 0.7
                 },
                 {
                     headers: {
@@ -209,11 +208,16 @@ app.post('/generate-story', async (req, res) => {
             // Add error handling for JSON parsing
             let quiz;
             try {
-                quiz = JSON.parse(quizResponse.data.choices[0].message.content);
+                const quizContent = quizResponse.data.choices[0].message.content;
+                // Clean the response to ensure valid JSON
+                const cleanContent = quizContent.replace(/```json\n?|\n?```/g, '').trim();
+                quiz = JSON.parse(cleanContent);
+                
                 // Ensure quiz is an array
                 if (!Array.isArray(quiz)) {
                     quiz = [quiz];
                 }
+                
                 // Log the generated quiz for debugging
                 console.log('Generated quiz:', JSON.stringify(quiz, null, 2));
                 

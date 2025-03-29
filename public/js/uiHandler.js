@@ -102,27 +102,48 @@ export const uiHandler = {
         `).join('');
     },
 
-    showError(message) {
+    showToast(message, type = 'info', duration = 5000) {
         const toast = document.querySelector('.toast-container');
-        toast.innerHTML = `
-            <div class="toast error">
-                <div class="toast-content">
-                    <div class="toast-title">Error</div>
-                    <div class="toast-message">${message}</div>
-                </div>
+        const toastElement = document.createElement('div');
+        toastElement.className = `toast ${type}`;
+        toastElement.innerHTML = `
+            <div class="toast-content">
+                <div class="toast-title">${type.charAt(0).toUpperCase() + type.slice(1)}</div>
+                <div class="toast-message">${message}</div>
             </div>
+            <button class="toast-close">&times;</button>
         `;
+
+        toast.appendChild(toastElement);
+
+        // Add close button functionality
+        const closeBtn = toastElement.querySelector('.toast-close');
+        closeBtn.addEventListener('click', () => {
+            toastElement.remove();
+        });
+
+        // Auto-remove after duration
+        setTimeout(() => {
+            toastElement.remove();
+        }, duration);
+    },
+
+    showError(error) {
+        let message = 'An error occurred';
+        
+        if (error instanceof Error) {
+            message = error.message;
+            if (error.details) {
+                message += `: ${error.details}`;
+            }
+        } else if (typeof error === 'string') {
+            message = error;
+        }
+
+        this.showToast(message, 'error');
     },
 
     showSuccess(message) {
-        const toast = document.querySelector('.toast-container');
-        toast.innerHTML = `
-            <div class="toast success">
-                <div class="toast-content">
-                    <div class="toast-title">Success</div>
-                    <div class="toast-message">${message}</div>
-                </div>
-            </div>
-        `;
+        this.showToast(message, 'success');
     }
 }; 

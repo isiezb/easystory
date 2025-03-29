@@ -49,7 +49,7 @@ form.addEventListener('submit', async (e) => {
 
     } catch (error) {
         console.error('Error:', error);
-        uiHandler.showError(error.message || 'Failed to generate story. Please try again later.');
+        uiHandler.showError(error);
     } finally {
         uiHandler.hideLoading();
         uiHandler.updateSubmitButton(submitButton, false);
@@ -92,7 +92,7 @@ window.viewStory = async (storyId) => {
         document.getElementById('storyOutput').scrollIntoView({ behavior: 'smooth' });
     } catch (error) {
         console.error('Error viewing story:', error);
-        uiHandler.showError('Error loading story. Please try again.');
+        uiHandler.showError(error);
     }
 };
 
@@ -105,9 +105,10 @@ window.deleteStory = async (storyId) => {
         if (session) {
             const stories = await apiService.fetchUserStories(session.user.id);
             uiHandler.displayStoriesGrid(stories);
+            uiHandler.showSuccess('Story deleted successfully');
         }
     } catch (error) {
         console.error('Error deleting story:', error);
-        uiHandler.showError('Error deleting story. Please try again.');
+        uiHandler.showError(error);
     }
 }; 

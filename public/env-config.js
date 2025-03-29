@@ -1,4 +1,4 @@
 window._env_ = {
-    SUPABASE_URL: '${process.env.SUPABASE_URL}',
-    SUPABASE_KEY: '${process.env.SUPABASE_KEY}'
+    SUPABASE_URL: 'https://your-project.supabase.co',
+    SUPABASE_KEY: 'your-anon-key'
 }; 

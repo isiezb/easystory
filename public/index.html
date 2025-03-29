@@ -1294,11 +1294,6 @@
                 </div>
             `).join('');
 
-            if (!quizHTML) {
-                console.error('No valid questions to display');
-                return;
-            }
-
             quizSection.innerHTML = `
                 <h3>Test Your Understanding</h3>
                 ${quizHTML}
@@ -1336,6 +1331,66 @@
             });
         }
 
+        function checkAnswers(quiz) {
+            let score = 0;
+            const totalQuestions = quiz.length;
+
+            // Reset all feedback and classes
+            document.querySelectorAll('.quiz-feedback').forEach(feedback => {
+                feedback.textContent = '';
+                feedback.className = 'quiz-feedback';
+            });
+            document.querySelectorAll('.quiz-option').forEach(option => {
+                option.classList.remove('correct', 'incorrect');
+            });
+
+            quiz.forEach((q, i) => {
+                const selected = document.querySelector(`input[name="q${i}"]:checked`);
+                if (!selected) {
+                    const feedback = document.querySelector(`#q${i}_0`).closest('.quiz-question').querySelector('.quiz-feedback');
+                    feedback.textContent = 'Please select an answer';
+                    feedback.className = 'quiz-feedback incorrect';
+                    return;
+                }
+
+                const selectedOption = selected.closest('.quiz-option');
+                const selectedValue = selected.value; // A, B, C, or D
+                const isCorrect = selectedValue === q.correct_answer;
+                const feedback = selectedOption.closest('.quiz-question').querySelector('.quiz-feedback');
+
+                if (isCorrect) {
+                    score++;
+                    selectedOption.classList.add('correct');
+                    feedback.textContent = `Correct! ${q.explanation || ''}`;
+                    feedback.className = 'quiz-feedback correct';
+                } else {
+                    selectedOption.classList.add('incorrect');
+                    
+                    // Find and highlight the correct option
+                    const allOptions = document.querySelectorAll(`input[name="q${i}"]`);
+                    allOptions.forEach(option => {
+                        if (option.value === q.correct_answer) {
+                            option.closest('.quiz-option').classList.add('correct');
+                        }
+                    });
+                    
+                    feedback.textContent = `Incorrect. The correct answer is ${q.correct_answer}. ${q.explanation || ''}`;
+                    feedback.className = 'quiz-feedback incorrect';
+                }
+            });
+
+            // Display final score
+            const finalScore = document.createElement('p');
+            finalScore.textContent = `Final Score: ${score}/${totalQuestions}`;
+            finalScore.style.textAlign = 'center';
+            finalScore.style.marginTop = '1rem';
+            finalScore.style.fontWeight = 'bold';
+            document.getElementById('checkAnswers').after(finalScore);
+
+            // Show continuation options after quiz is completed
+            displayStoryContinuation();
+        }
+
         function displayStoryContinuation() {
             const continuationSection = document.createElement('div');
             continuationSection.className = 'story-continuation';
@@ -1369,51 +1424,6 @@
                     generateContinuation(difficulty);
                 });
             });
-        }
-
-        function checkAnswers(quiz) {
-            let score = 0;
-            const totalQuestions = quiz.length;
-
-            quiz.forEach((q, i) => {
-                const selected = document.querySelector(`input[name="q${i}"]:checked`);
-                if (!selected) return;
-
-                const selectedOption = selected.closest('.quiz-option');
-                const selectedValue = selected.value; // A, B, C, or D
-                const isCorrect = selectedValue === q.correct_answer;
-                const feedback = selectedOption.closest('.quiz-question').querySelector('.quiz-feedback');
-
-                if (isCorrect) {
-                    score++;
-                    selectedOption.classList.add('correct');
-                    feedback.textContent = `Correct! ${q.explanation || ''}`;
-                    feedback.className = 'quiz-feedback correct';
-                } else {
-                    selectedOption.classList.add('incorrect');
-                    
-                    // Find and highlight the correct option
-                    const allOptions = document.querySelectorAll(`input[name="q${i}"]`);
-                    allOptions.forEach(option => {
-                        if (option.value === q.correct_answer) {
-                            option.closest('.quiz-option').classList.add('correct');
-                        }
-                    });
-                    
-                    feedback.textContent = `Incorrect. The correct answer is ${q.correct_answer}. ${q.explanation || ''}`;
-                    feedback.className = 'quiz-feedback incorrect';
-                }
-            });
-
-            const finalScore = document.createElement('p');
-            finalScore.textContent = `Final Score: ${score}/${totalQuestions}`;
-            finalScore.style.textAlign = 'center';
-            finalScore.style.marginTop = '1rem';
-            finalScore.style.fontWeight = 'bold';
-            document.getElementById('checkAnswers').after(finalScore);
-
-            // Show continuation options after quiz is completed
-            displayStoryContinuation();
         }
 
         async function generateContinuation(difficulty) {

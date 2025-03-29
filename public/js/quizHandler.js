@@ -6,48 +6,48 @@ export const quizHandler = {
         }
 
         const quizSection = document.createElement('div');
-        quizSection.className = 'quiz-section';
+        quizSection.className = 'quiz';
         
         const quizHTML = quiz.map((q, i) => `
-            <div class="quiz-question">
-                <p>${i + 1}. ${q.question}</p>
-                <div class="quiz-options">
+            <div class="quiz__question">
+                <p class="quiz__question-text">${i + 1}. ${q.question}</p>
+                <div class="quiz__options">
                     ${q.options.map((opt, j) => {
                         const letter = ['A', 'B', 'C', 'D'][j];
                         return `
-                            <div class="quiz-option">
+                            <div class="quiz__option">
                                 <input type="radio" name="q${i}" value="${letter}" id="q${i}_${j}">
                                 <label for="q${i}_${j}">${letter}. ${opt}</label>
-                                <svg class="option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                    <path class="correct-icon" d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/>
-                                    <path class="incorrect-icon" d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/>
+                                <svg class="quiz__option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path class="quiz__option-icon--correct" d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <path class="quiz__option-icon--incorrect" d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/>
                                 </svg>
                             </div>
                         `;
                     }).join('')}
                 </div>
-                <div class="quiz-feedback">
-                    <svg class="feedback-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path class="correct-icon" d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path class="incorrect-icon" d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/>
+                <div class="quiz__feedback">
+                    <svg class="quiz__feedback-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path class="quiz__feedback-icon--correct" d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path class="quiz__feedback-icon--incorrect" d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/>
                     </svg>
-                    <span class="feedback-text"></span>
+                    <span class="quiz__feedback-text"></span>
                 </div>
             </div>
         `).join('');
 
         quizSection.innerHTML = `
-            <h3>Test Your Understanding</h3>
+            <h3 class="quiz__title">Test Your Understanding</h3>
             ${quizHTML}
-            <button id="checkAnswers">Check Answers</button>
+            <button class="quiz__button" id="checkAnswers">Check Answers</button>
         `;
 
-        const existingQuiz = document.querySelector('.quiz-section');
+        const existingQuiz = document.querySelector('.quiz');
         if (existingQuiz) {
             existingQuiz.remove();
         }
 
-        const storyContent = document.querySelector('.story-content');
+        const storyContent = document.querySelector('.story__content');
         if (storyContent) {
             storyContent.after(quizSection);
         }
@@ -56,17 +56,17 @@ export const quizHandler = {
     },
 
     setupQuizHandlers(quiz) {
-        const quizOptions = document.querySelectorAll('.quiz-option');
+        const quizOptions = document.querySelectorAll('.quiz__option');
         quizOptions.forEach(option => {
             option.addEventListener('click', () => {
                 const radio = option.querySelector('input[type="radio"]');
                 if (radio) {
                     radio.checked = true;
-                    const question = option.closest('.quiz-question');
-                    question.querySelectorAll('.quiz-option').forEach(opt => {
-                        opt.classList.remove('selected');
+                    const question = option.closest('.quiz__question');
+                    question.querySelectorAll('.quiz__option').forEach(opt => {
+                        opt.classList.remove('quiz__option--selected');
                     });
-                    option.classList.add('selected');
+                    option.classList.add('quiz__option--selected');
                 }
             });
         });
@@ -85,19 +85,19 @@ export const quizHandler = {
 
         quiz.forEach((q, i) => {
             const selected = document.querySelector(`input[name="q${i}"]:checked`);
-            const feedback = document.querySelector(`#q${i}_0`).closest('.quiz-question').querySelector('.quiz-feedback');
-            const feedbackText = feedback.querySelector('.feedback-text');
-            const feedbackIcon = feedback.querySelector('.feedback-icon');
+            const feedback = document.querySelector(`#q${i}_0`).closest('.quiz__question').querySelector('.quiz__feedback');
+            const feedbackText = feedback.querySelector('.quiz__feedback-text');
+            const feedbackIcon = feedback.querySelector('.quiz__feedback-icon');
             
             if (!selected) {
                 this.showFeedback(feedback, feedbackText, feedbackIcon, false, 'Please select an answer');
                 return;
             }
 
-            const selectedOption = selected.closest('.quiz-option');
+            const selectedOption = selected.closest('.quiz__option');
             const selectedValue = selected.value;
             const isCorrect = selectedValue === q.correct_answer;
-            const selectedIcon = selectedOption.querySelector('.option-icon');
+            const selectedIcon = selectedOption.querySelector('.quiz__option-icon');
             
             if (isCorrect) {
                 score++;
@@ -111,33 +111,33 @@ export const quizHandler = {
     },
 
     resetQuizState() {
-        document.querySelectorAll('.quiz-feedback').forEach(feedback => {
-            feedback.querySelector('.feedback-text').textContent = '';
-            feedback.className = 'quiz-feedback';
-            feedback.classList.remove('show');
+        document.querySelectorAll('.quiz__feedback').forEach(feedback => {
+            feedback.querySelector('.quiz__feedback-text').textContent = '';
+            feedback.className = 'quiz__feedback';
+            feedback.classList.remove('quiz__feedback--show');
         });
-        document.querySelectorAll('.quiz-option').forEach(option => {
-            option.classList.remove('correct', 'incorrect');
-            option.querySelector('.option-icon').classList.remove('show', 'correct', 'incorrect');
+        document.querySelectorAll('.quiz__option').forEach(option => {
+            option.classList.remove('quiz__option--correct', 'quiz__option--incorrect');
+            option.querySelector('.quiz__option-icon').classList.remove('quiz__option-icon--show', 'quiz__option-icon--correct', 'quiz__option-icon--incorrect');
         });
     },
 
     markCorrect(option, icon, feedback, feedbackText, feedbackIcon, explanation) {
-        option.classList.add('correct');
-        icon.classList.add('correct', 'show');
+        option.classList.add('quiz__option--correct');
+        icon.classList.add('quiz__option-icon--correct', 'quiz__option-icon--show');
         this.showFeedback(feedback, feedbackText, feedbackIcon, true, `Correct! ${explanation || ''}`);
     },
 
     markIncorrect(option, icon, question, index, feedback, feedbackText, feedbackIcon) {
-        option.classList.add('incorrect');
-        icon.classList.add('incorrect', 'show');
+        option.classList.add('quiz__option--incorrect');
+        icon.classList.add('quiz__option-icon--incorrect', 'quiz__option-icon--show');
         
         const allOptions = document.querySelectorAll(`input[name="q${index}"]`);
         allOptions.forEach(opt => {
             if (opt.value === question.correct_answer) {
-                const correctOption = opt.closest('.quiz-option');
-                correctOption.classList.add('correct');
-                correctOption.querySelector('.option-icon').classList.add('correct', 'show');
+                const correctOption = opt.closest('.quiz__option');
+                correctOption.classList.add('quiz__option--correct');
+                correctOption.querySelector('.quiz__option-icon').classList.add('quiz__option-icon--correct', 'quiz__option-icon--show');
             }
         });
         
@@ -148,8 +148,8 @@ export const quizHandler = {
 
     showFeedback(feedback, feedbackText, feedbackIcon, isCorrect, message) {
         feedbackText.textContent = message;
-        feedback.className = `quiz-feedback ${isCorrect ? 'correct' : 'incorrect'} show`;
-        feedbackIcon.className = `feedback-icon ${isCorrect ? 'correct' : 'incorrect'}`;
+        feedback.className = `quiz__feedback ${isCorrect ? 'quiz__feedback--correct' : 'quiz__feedback--incorrect'} quiz__feedback--show`;
+        feedbackIcon.className = `quiz__feedback-icon ${isCorrect ? 'quiz__feedback-icon--correct' : 'quiz__feedback-icon--incorrect'}`;
     },
 
     displayFinalScore(score, total) {

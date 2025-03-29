@@ -22,33 +22,33 @@ export const uiHandler = {
         } : storyData.story;
         
         const storyHTML = `
-            <div class="story-content">
-                <h2>${story.title}</h2>
+            <div class="story__content">
+                <h2 class="story__title">${story.title}</h2>
                 ${story.summary ? `
-                    <div class="story-summary">
-                        <div class="story-summary-title">Story Summary</div>
-                        <div class="story-summary-content">${story.summary}</div>
+                    <div class="story__summary">
+                        <div class="story__summary-title">Story Summary</div>
+                        <div class="story__summary-content">${story.summary}</div>
                     </div>
                 ` : ''}
-                <div class="story-meta">
-                    <div class="learning-objectives">
+                <div class="story__meta">
+                    <div class="story__learning-objectives">
                         <h4>Learning Objectives:</h4>
                         <ul>
                             ${story.learning_objectives.map(obj => `<li>${obj}</li>`).join('')}
                         </ul>
                     </div>
                 </div>
-                <div class="story-text">
-                    ${story.content.split('\n').map(paragraph => `<p>${paragraph}</p>`).join('')}
+                <div class="story__text">
+                    ${story.content.split('\n').map(paragraph => `<p class="story__paragraph">${paragraph}</p>`).join('')}
                 </div>
-                <div class="story-actions">
-                    <button class="action-btn copy-btn">
+                <div class="story__actions">
+                    <button class="story__action-btn story__action-btn--copy">
                         <span>Copy</span>
                     </button>
-                    <button class="action-btn save-btn">
+                    <button class="story__action-btn story__action-btn--save">
                         <span>Save</span>
                     </button>
-                    <button class="action-btn print-btn">
+                    <button class="story__action-btn story__action-btn--print">
                         <span>Print</span>
                     </button>
                 </div>
@@ -60,19 +60,19 @@ export const uiHandler = {
     },
 
     setupStoryActions() {
-        const copyBtn = document.querySelector('.copy-btn');
+        const copyBtn = document.querySelector('.story__action-btn--copy');
         copyBtn.addEventListener('click', () => {
-            const storyText = document.querySelector('.story-text').textContent;
+            const storyText = document.querySelector('.story__text').textContent;
             navigator.clipboard.writeText(storyText);
-            copyBtn.classList.add('active');
+            copyBtn.classList.add('story__action-btn--active');
             copyBtn.querySelector('span').textContent = 'Copied!';
             setTimeout(() => {
-                copyBtn.classList.remove('active');
+                copyBtn.classList.remove('story__action-btn--active');
                 copyBtn.querySelector('span').textContent = 'Copy';
             }, 2000);
         });
         
-        const printBtn = document.querySelector('.print-btn');
+        const printBtn = document.querySelector('.story__action-btn--print');
         printBtn.addEventListener('click', () => {
             window.print();
         });

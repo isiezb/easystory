@@ -6,8 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "build": "echo 'No build step required'",
-    "postinstall": "echo 'No postinstall step required'"
+    "build": "npm ci",
+    "postinstall": "echo 'Dependencies installed'"
   },
   "engines": {
     "node": ">=18.0.0"

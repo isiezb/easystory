@@ -27,34 +27,33 @@ form.addEventListener('submit', async (e) => {
     
     uiHandler.updateSubmitButton(submitButton, true);
     uiHandler.showLoading();
-
+    
     try {
+        console.log('Form submitted');
         const formData = {
-            academic_grade: document.getElementById('academicGrade').value,
             subject: document.getElementById('subject').value,
-            subject_specification: document.getElementById('subjectSpecification').value,
-            setting: document.getElementById('setting').value,
-            main_character: document.getElementById('mainCharacter').value,
-            word_count: parseInt(document.getElementById('wordCount').value),
-            language: document.getElementById('language').value,
-            generate_vocabulary: document.getElementById('generateVocabulary').checked,
-            generate_summary: document.getElementById('generateSummary').checked
+            grade: document.getElementById('academicGrade').value,
+            topic: document.getElementById('subjectSpecification').value,
+            learning_objectives: [
+                "Understanding the main concepts",
+                "Analyzing key events",
+                "Applying knowledge"
+            ]
         };
-
-        console.log('Submitting form data:', formData);
+        
+        console.log('Collected form data:', formData);
         const data = await apiService.generateStory(formData);
         console.log('Received response:', data);
         
-        uiHandler.displayStory(data);
-        
-        if (data.quiz) {
-            quizHandler.displayQuiz(data.quiz);
+        if (data) {
+            uiHandler.displayStory(data);
+            if (data.quiz) {
+                quizHandler.displayQuiz(data.quiz);
+            }
+            uiHandler.showSuccess('Story generated successfully!');
         }
-
-        uiHandler.showSuccess('Story generated successfully!');
-
     } catch (error) {
-        console.error('Error:', error);
+        console.error('Form submission error:', error);
         uiHandler.showError(error.message || 'Failed to generate story');
     } finally {
         uiHandler.hideLoading();

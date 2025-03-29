@@ -133,7 +133,7 @@ const OPENROUTER_BASE_URL = process.env.OPENROUTER_BASE_URL;
 
 // Input validation function
 const validateInputs = (inputs) => {
-    const requiredFields = ['academic_grade', 'subject', 'word_count', 'language'];
+    const requiredFields = ['subject', 'grade', 'topic', 'learning_objectives'];
     
     // Check if all required fields are present
     for (const field of requiredFields) {
@@ -142,8 +142,8 @@ const validateInputs = (inputs) => {
         }
     }
     
-    // Validate word_count is a number
-    if (typeof inputs.word_count !== 'number') {
+    // Validate learning_objectives is an array
+    if (!Array.isArray(inputs.learning_objectives)) {
         return false;
     }
     
@@ -155,9 +155,9 @@ app.post('/generate-story', async (req, res) => {
     try {
         const { subject, grade, topic, learning_objectives } = req.body;
         
-        // Validate required fields
-        if (!subject || !grade || !topic || !learning_objectives) {
-            throw new AppError('Missing required fields', 400);
+        // Validate inputs
+        if (!validateInputs(req.body)) {
+            throw new AppError('Invalid input data', 400);
         }
 
         // Log request details

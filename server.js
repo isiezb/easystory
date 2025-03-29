@@ -13,9 +13,9 @@ const port = process.env.PORT || 3000;
 // Detailed environment variable logging
 logger.info('Environment variables check:', {
     hasSupabaseUrl: !!process.env.SUPABASE_URL,
-    hasSupabaseKey: !!process.env.SUPABASE_ANON_KEY,
+    hasSupabaseKey: !!process.env.SUPABASE_KEY,
     supabaseUrl: process.env.SUPABASE_URL,
-    supabaseKeyLength: process.env.SUPABASE_ANON_KEY?.length,
+    supabaseKeyLength: process.env.SUPABASE_KEY?.length,
     nodeEnv: process.env.NODE_ENV,
     hasOpenRouterKey: !!process.env.OPENROUTER_API_KEY
 });
@@ -26,8 +26,8 @@ if (!process.env.SUPABASE_URL) {
     process.exit(1);
 }
 
-if (!process.env.SUPABASE_ANON_KEY) {
-    logger.error('SUPABASE_ANON_KEY is not set');
+if (!process.env.SUPABASE_KEY) {
+    logger.error('SUPABASE_KEY is not set');
     process.exit(1);
 }
 
@@ -35,7 +35,7 @@ if (!process.env.SUPABASE_ANON_KEY) {
 try {
     const supabase = createClient(
         process.env.SUPABASE_URL,
-        process.env.SUPABASE_ANON_KEY
+        process.env.SUPABASE_KEY
     );
     logger.info('Supabase client initialized successfully');
 } catch (error) {

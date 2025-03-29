@@ -170,8 +170,9 @@ app.post('/generate-story', async (req, res) => {
             2. Each question should test comprehension of key story elements
             3. Options should be plausible but only one should be correct
             4. Include a brief explanation of why the correct answer is right
-            5. The correct_answer must be one of: "A", "B", "C", or "D"
+            5. The correct_answer MUST be exactly one of these letters: "A", "B", "C", or "D" (case sensitive)
             6. Each question must have exactly 4 options
+            7. The correct_answer must match the position of the correct option in the options array (A=0, B=1, C=2, D=3)
 
             Format your response EXACTLY like this JSON array:
             [
@@ -226,13 +227,27 @@ app.post('/generate-story', async (req, res) => {
                     // Ensure correct_answer is A, B, C, or D
                     if (!['A', 'B', 'C', 'D'].includes(q.correct_answer)) {
                         console.error('Invalid correct_answer:', q.correct_answer);
-                        q.correct_answer = 'A'; // Fallback to A if invalid
+                        // Try to infer correct answer from options array
+                        const correctIndex = q.options.findIndex(opt => opt.toLowerCase().includes('correct'));
+                        if (correctIndex !== -1) {
+                            q.correct_answer = ['A', 'B', 'C', 'D'][correctIndex];
+                        } else {
+                            q.correct_answer = 'A'; // Fallback to A if invalid
+                        }
                     }
+                    
                     // Ensure exactly 4 options
                     if (!q.options || q.options.length !== 4) {
                         console.error('Invalid options:', q.options);
                         q.options = ['Option A', 'Option B', 'Option C', 'Option D'];
                     }
+                    
+                    // Ensure correct_answer matches options array position
+                    const correctIndex = ['A', 'B', 'C', 'D'].indexOf(q.correct_answer);
+                    if (correctIndex === -1) {
+                        q.correct_answer = 'A';
+                    }
+                    
                     return q;
                 });
             } catch (parseError) {

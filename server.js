@@ -3,7 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
 const axios = require('axios');
-const { logger } = require('./utils/logger');
+const logger = require('./utils/logger');
 const { AppError, handleError } = require('./utils/errorHandler');
 const path = require('path');
 

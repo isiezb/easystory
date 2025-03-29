@@ -97,7 +97,8 @@ app.post('/generate-story', async (req, res) => {
             setting, 
             main_character, 
             word_count, 
-            language 
+            language,
+            generate_vocabulary 
         } = req.body;
 
         // Construct the prompt with optional fields
@@ -128,6 +129,13 @@ You must respond with a JSON object in the following exact format:
             "explanation": "Explanation of why this is correct"
         }
     ]
+    ${generate_vocabulary ? `,
+    "vocabulary": [
+        {
+            "word": "Important word from the story",
+            "definition": "Simple definition appropriate for ${academic_grade} level"
+        }
+    ]` : ''}
 }
 
 REQUIREMENTS:
@@ -140,6 +148,7 @@ REQUIREMENTS:
 7. All output must be in ${language}
 8. Story must be approximately ${word_count} words
 9. Learning objectives must be clear and measurable
+${generate_vocabulary ? `10. If vocabulary list is requested, include 5-10 key terms from the story with age-appropriate definitions` : ''}
 
 ${req.body.previous_story ? `PREVIOUS STORY TO CONTINUE:
 ${req.body.previous_story}
@@ -225,6 +234,7 @@ Note: Continue the story while maintaining the same characters, setting, and edu
                             story_title: result.story.title,
                             learning_objectives: result.story.learning_objectives,
                             quiz_questions: result.quiz,
+                            vocabulary_list: result.vocabulary || null,
                             is_continuation: !!req.body.previous_story
                         }
                     ]);

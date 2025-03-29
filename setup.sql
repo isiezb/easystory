@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS stories (
     story_title TEXT,
     learning_objectives TEXT[],
     quiz_questions JSONB,
+    vocabulary_list JSONB,
     is_continuation BOOLEAN DEFAULT FALSE,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
 );
@@ -61,6 +62,12 @@ BEGIN
         ALTER TABLE stories ADD COLUMN quiz_questions JSONB;
     END IF;
 
+    -- Add vocabulary_list if it doesn't exist
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                  WHERE table_name = 'stories' AND column_name = 'vocabulary_list') THEN
+        ALTER TABLE stories ADD COLUMN vocabulary_list JSONB;
+    END IF;
+
     -- Add is_continuation if it doesn't exist
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
                   WHERE table_name = 'stories' AND column_name = 'is_continuation') THEN
@@ -82,5 +89,6 @@ COMMENT ON COLUMN stories.story_text IS 'The actual content of the story';
 COMMENT ON COLUMN stories.story_title IS 'Title of the story';
 COMMENT ON COLUMN stories.learning_objectives IS 'Array of learning objectives for the story';
 COMMENT ON COLUMN stories.quiz_questions IS 'JSON array of quiz questions and answers';
+COMMENT ON COLUMN stories.vocabulary_list IS 'JSON array of vocabulary words and their definitions';
 COMMENT ON COLUMN stories.is_continuation IS 'Whether this story is a continuation of a previous story';
 COMMENT ON COLUMN stories.created_at IS 'Timestamp when the story was created'; 

@@ -1473,6 +1473,98 @@
                 max-width: none;
             }
         }
+
+        /* Add styles for vocabulary section */
+        .vocabulary-section {
+            margin-top: 3rem;
+            background: var(--card-bg);
+            border-radius: 32px;
+            padding: 3rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            backdrop-filter: var(--backdrop-blur);
+            transition: var(--transition);
+        }
+
+        .vocabulary-section:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--hover-shadow);
+        }
+
+        .vocabulary-section h3 {
+            font-size: 1.8rem;
+            margin-bottom: 2rem;
+            color: var(--primary);
+            text-align: center;
+            font-weight: 700;
+        }
+
+        .vocabulary-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .vocabulary-item {
+            background: var(--bg);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            transition: var(--transition);
+        }
+
+        .vocabulary-item:hover {
+            border-color: var(--primary);
+            transform: translateX(5px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .vocabulary-word {
+            font-family: var(--font-heading);
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.75rem;
+        }
+
+        .vocabulary-definition {
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--text);
+            opacity: 0.9;
+        }
+
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            user-select: none;
+            font-size: 1.1rem;
+            color: var(--text);
+        }
+
+        .checkbox-label input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        @media (max-width: 768px) {
+            .vocabulary-section {
+                padding: 2rem;
+                margin-top: 2rem;
+            }
+
+            .vocabulary-list {
+                grid-template-columns: 1fr;
+            }
+
+            .vocabulary-item {
+                padding: 1.25rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1573,6 +1665,12 @@
                                 </select>
                             </div>
                         </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="generateVocabulary" name="generate_vocabulary">
+                                <span>Generate Vocabulary List</span>
+                            </label>
+                        </div>
                     </fieldset>
                 </div>
                 <button type="submit">
@@ -1670,7 +1768,8 @@
                         setting: document.getElementById('setting').value,
                         main_character: document.getElementById('mainCharacter').value,
                         word_count: parseInt(document.getElementById('wordCount').value),
-                        language: document.getElementById('language').value
+                        language: document.getElementById('language').value,
+                        generate_vocabulary: document.getElementById('generateVocabulary').checked
                     };
 
                     const response = await fetch(`${config.serverUrl}/generate-story`, {
@@ -1781,6 +1880,11 @@
             printBtn.addEventListener('click', () => {
                 window.print();
             });
+
+            // Display vocabulary list if available
+            if (storyData.vocabulary) {
+                displayVocabulary(storyData.vocabulary);
+            }
         }
 
         function displayQuiz(quiz) {
@@ -2036,6 +2140,38 @@
             } catch (error) {
                 console.error('Error:', error);
                 toast.show(error.message || 'Failed to generate continuation. Please try again later.', 'error');
+            }
+        }
+
+        function displayVocabulary(vocabulary) {
+            // Remove any existing vocabulary section
+            const existingVocabulary = document.querySelector('.vocabulary-section');
+            if (existingVocabulary) {
+                existingVocabulary.remove();
+            }
+
+            // Create vocabulary section
+            const vocabularySection = document.createElement('div');
+            vocabularySection.className = 'vocabulary-section';
+            
+            const vocabularyHTML = `
+                <h3>Vocabulary List</h3>
+                <div class="vocabulary-list">
+                    ${vocabulary.map(item => `
+                        <div class="vocabulary-item">
+                            <div class="vocabulary-word">${item.word}</div>
+                            <div class="vocabulary-definition">${item.definition}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            vocabularySection.innerHTML = vocabularyHTML;
+            
+            // Insert vocabulary section after the story content
+            const storyContent = document.querySelector('.story-content');
+            if (storyContent) {
+                storyContent.after(vocabularySection);
             }
         }
 

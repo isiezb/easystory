@@ -10,6 +10,29 @@ const port = config.server.port;
 // Middleware
 app.use(express.json());
 
+// Authentication middleware
+const authenticateUser = async (req, res, next) => {
+    try {
+        const authHeader = req.headers.authorization;
+        if (!authHeader) {
+            return res.status(401).json({ error: 'No authorization header' });
+        }
+
+        const token = authHeader.split(' ')[1];
+        if (!token) {
+            return res.status(401).json({ error: 'No token provided' });
+        }
+
+        const { data: { user }, error } = await supabase.auth.getUser(token);
+        if (error) throw error;
+        req.user = user;
+        next();
+    } catch (error) {
+        console.error('Auth error:', error);
+        return res.status(401).json({ error: 'Invalid token' });
+    }
+};
+
 // Serve static files from the root directory
 app.use(express.static(path.join(__dirname, 'public')));
 
@@ -83,7 +106,7 @@ const validateInputs = (inputs) => {
 };
 
 // Story generation endpoint
-app.post('/generate-story', async (req, res) => {
+app.post('/generate-story', authenticateUser, async (req, res) => {
     try {
         // Validate inputs
         if (!validateInputs(req.body)) {
@@ -240,12 +263,13 @@ ${previous_story ? `12. Ensure the continuation maintains narrative consistency 
                 throw new Error('Failed to generate valid content');
             }
 
-            // Store in Supabase
+            // Store in Supabase with user ID
             try {
                 const { data, error: dbError } = await supabase
                     .from('stories')
                     .insert([
                         {
+                            user_id: req.user.id,
                             academic_grade,
                             subject,
                             subject_specification,
@@ -279,6 +303,23 @@ ${previous_story ? `12. Ensure the continuation maintains narrative consistency 
     } catch (error) {
         console.error('Error:', error);
         return res.status(500).json({ error: 'Failed to generate story' });
+    }
+});
+
+// Get user's stories endpoint
+app.get('/user-stories', authenticateUser, async (req, res) => {
+    try {
+        const { data, error } = await supabase
+            .from('stories')
+            .select('*')
+            .eq('user_id', req.user.id)
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        res.json(data);
+    } catch (error) {
+        console.error('Error fetching user stories:', error);
+        res.status(500).json({ error: 'Failed to fetch stories' });
     }
 });
 

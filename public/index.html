@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+Pro:wght@400;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root {
             /* Base Colors */
@@ -1603,9 +1604,286 @@
                 margin: 1.5rem 0;
             }
         }
+
+        /* Auth UI Styles */
+        .auth-container {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            display: flex;
+            gap: 1rem;
+            z-index: 100;
+        }
+
+        .auth-btn {
+            padding: 0.75rem 1.25rem;
+            border-radius: 12px;
+            background: var(--card-bg);
+            border: 2px solid var(--border);
+            color: var(--text);
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .auth-btn:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .auth-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(4px);
+        }
+
+        .auth-modal.show {
+            display: flex;
+        }
+
+        .auth-form {
+            background: var(--card-bg);
+            padding: 2rem;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: var(--shadow-xl);
+            border: 1px solid var(--border);
+        }
+
+        .auth-form h2 {
+            margin-bottom: 1.5rem;
+            text-align: center;
+            color: var(--primary);
+        }
+
+        .auth-form .form-group {
+            margin-bottom: 1.25rem;
+        }
+
+        .auth-form input {
+            width: 100%;
+            padding: 0.875rem;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .auth-form input:focus {
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(94, 124, 230, 0.1);
+        }
+
+        .auth-form button {
+            width: 100%;
+            padding: 1rem;
+            background: var(--gradient);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            margin-top: 1rem;
+        }
+
+        .auth-form button:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .auth-form .error-message {
+            color: var(--error);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+
+        .auth-form .success-message {
+            color: var(--success);
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            text-align: center;
+        }
+
+        .auth-form .close-btn {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 8px;
+            transition: var(--transition);
+        }
+
+        .auth-form .close-btn:hover {
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .social-login {
+            margin-top: 1.5rem;
+            text-align: center;
+        }
+
+        .social-login p {
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            position: relative;
+        }
+
+        .social-login p::before,
+        .social-login p::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            width: 45%;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .social-login p::before { left: 0; }
+        .social-login p::after { right: 0; }
+
+        .social-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+        }
+
+        .social-btn {
+            padding: 0.75rem;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            background: var(--bg);
+            color: var(--text);
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .social-btn:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .user-profile {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--primary);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+
+        .user-email {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+
+        @media (max-width: 768px) {
+            .auth-container {
+                top: 1rem;
+                right: 1rem;
+            }
+
+            .auth-btn {
+                padding: 0.5rem 1rem;
+                font-size: 0.875rem;
+            }
+
+            .auth-form {
+                margin: 1rem;
+                padding: 1.5rem;
+            }
+        }
     </style>
 </head>
 <body>
+    <div class="auth-container">
+        <button class="auth-btn" id="loginBtn">
+            <span>Login</span>
+        </button>
+        <button class="auth-btn" id="signupBtn">
+            <span>Sign Up</span>
+        </button>
+        <button class="auth-btn" id="logoutBtn" style="display: none;">
+            <span>Logout</span>
+        </button>
+        <div class="user-profile" id="userProfile" style="display: none;">
+            <div class="user-avatar" id="userAvatar"></div>
+            <span class="user-email" id="userEmail"></span>
+        </div>
+    </div>
+
+    <div class="auth-modal" id="authModal">
+        <div class="auth-form">
+            <button class="close-btn" id="closeAuthModal">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </button>
+            <h2 id="authTitle">Login</h2>
+            <form id="authForm">
+                <div class="form-group">
+                    <input type="email" id="authEmail" placeholder="Email" required>
+                </div>
+                <div class="form-group">
+                    <input type="password" id="authPassword" placeholder="Password" required>
+                </div>
+                <div class="error-message" id="authError"></div>
+                <div class="success-message" id="authSuccess"></div>
+                <button type="submit" id="authSubmit">Login</button>
+                <div class="social-login">
+                    <p>Or continue with</p>
+                    <div class="social-buttons">
+                        <button type="button" class="social-btn" id="googleLogin">
+                            <svg width="20" height="20" viewBox="0 0 24 24">
+                                <path fill="currentColor" d="M12.545,10.239v3.821h5.445c-0.712,2.315-2.647,3.972-5.445,3.972c-3.332,0-6.033-2.701-6.033-6.032s2.701-6.032,6.033-6.032c1.498,0,2.866,0.549,3.921,1.453l2.814-2.814C17.503,2.988,15.139,2,12.545,2C7.021,2,2.543,6.477,2.543,12s4.478,10,10.002,10c8.396,0,10.249-7.85,9.426-11.748L12.545,10.239z"/>
+                            </svg>
+                        </button>
+                        <button type="button" class="social-btn" id="githubLogin">
+                            <svg width="20" height="20" viewBox="0 0 24 24">
+                                <path fill="currentColor" d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <button class="theme-toggle action-btn" id="themeToggle">
         <span>🌙</span>
         <span>Dark Mode</span>
@@ -1743,6 +2021,168 @@
         const config = {
             serverUrl: window.location.origin
         };
+
+        // Initialize Supabase client
+        const supabaseUrl = 'YOUR_SUPABASE_URL';
+        const supabaseKey = 'YOUR_SUPABASE_ANON_KEY';
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+        // Auth state management
+        let currentUser = null;
+        let isSignUp = false;
+
+        // DOM Elements
+        const loginBtn = document.getElementById('loginBtn');
+        const signupBtn = document.getElementById('signupBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const authModal = document.getElementById('authModal');
+        const closeAuthModal = document.getElementById('closeAuthModal');
+        const authForm = document.getElementById('authForm');
+        const authTitle = document.getElementById('authTitle');
+        const authEmail = document.getElementById('authEmail');
+        const authPassword = document.getElementById('authPassword');
+        const authError = document.getElementById('authError');
+        const authSuccess = document.getElementById('authSuccess');
+        const authSubmit = document.getElementById('authSubmit');
+        const googleLoginBtn = document.getElementById('googleLogin');
+        const githubLoginBtn = document.getElementById('githubLogin');
+        const userProfile = document.getElementById('userProfile');
+        const userAvatar = document.getElementById('userAvatar');
+        const userEmail = document.getElementById('userEmail');
+
+        // Event Listeners
+        loginBtn.addEventListener('click', () => {
+            isSignUp = false;
+            authTitle.textContent = 'Login';
+            authSubmit.textContent = 'Login';
+            showAuthModal();
+        });
+
+        signupBtn.addEventListener('click', () => {
+            isSignUp = true;
+            authTitle.textContent = 'Sign Up';
+            authSubmit.textContent = 'Sign Up';
+            showAuthModal();
+        });
+
+        closeAuthModal.addEventListener('click', hideAuthModal);
+        logoutBtn.addEventListener('click', handleLogout);
+
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = authEmail.value;
+            const password = authPassword.value;
+
+            try {
+                if (isSignUp) {
+                    const { data, error } = await supabase.auth.signUp({
+                        email,
+                        password
+                    });
+                    if (error) throw error;
+                    showSuccess('Check your email for the confirmation link!');
+                } else {
+                    const { data, error } = await supabase.auth.signInWithPassword({
+                        email,
+                        password
+                    });
+                    if (error) throw error;
+                    handleAuthSuccess(data.user);
+                }
+            } catch (error) {
+                showError(error.message);
+            }
+        });
+
+        googleLoginBtn.addEventListener('click', async () => {
+            try {
+                const { data, error } = await supabase.auth.signInWithOAuth({
+                    provider: 'google'
+                });
+                if (error) throw error;
+            } catch (error) {
+                showError(error.message);
+            }
+        });
+
+        githubLoginBtn.addEventListener('click', async () => {
+            try {
+                const { data, error } = await supabase.auth.signInWithOAuth({
+                    provider: 'github'
+                });
+                if (error) throw error;
+            } catch (error) {
+                showError(error.message);
+            }
+        });
+
+        // Auth state change listener
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (event === 'SIGNED_IN') {
+                handleAuthSuccess(session.user);
+            } else if (event === 'SIGNED_OUT') {
+                handleAuthSignOut();
+            }
+        });
+
+        // Helper functions
+        function showAuthModal() {
+            authModal.classList.add('show');
+            authError.textContent = '';
+            authSuccess.textContent = '';
+        }
+
+        function hideAuthModal() {
+            authModal.classList.remove('show');
+            authForm.reset();
+        }
+
+        function showError(message) {
+            authError.textContent = message;
+            authSuccess.textContent = '';
+        }
+
+        function showSuccess(message) {
+            authSuccess.textContent = message;
+            authError.textContent = '';
+        }
+
+        function handleAuthSuccess(user) {
+            currentUser = user;
+            loginBtn.style.display = 'none';
+            signupBtn.style.display = 'none';
+            logoutBtn.style.display = 'flex';
+            userProfile.style.display = 'flex';
+            userEmail.textContent = user.email;
+            userAvatar.textContent = user.email[0].toUpperCase();
+            hideAuthModal();
+            showSuccess('Successfully authenticated!');
+        }
+
+        function handleAuthSignOut() {
+            currentUser = null;
+            loginBtn.style.display = 'flex';
+            signupBtn.style.display = 'flex';
+            logoutBtn.style.display = 'none';
+            userProfile.style.display = 'none';
+            showSuccess('Successfully logged out!');
+        }
+
+        async function handleLogout() {
+            try {
+                const { error } = await supabase.auth.signOut();
+                if (error) throw error;
+            } catch (error) {
+                showError(error.message);
+            }
+        }
+
+        // Check initial auth state
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) {
+                handleAuthSuccess(session.user);
+            }
+        });
 
         // Theme handling
         const themeToggle = document.getElementById('themeToggle');

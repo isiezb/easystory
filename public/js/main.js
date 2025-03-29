@@ -25,6 +25,13 @@ form.addEventListener('submit', async (e) => {
     const submitButton = e.target.querySelector('button[type="submit"]');
     if (submitButton.disabled) return;
     
+    // Check if user is authenticated
+    const { data: { session } } = await auth.supabase.auth.getSession();
+    if (!session) {
+        uiHandler.showError('Please sign in to generate stories');
+        return;
+    }
+    
     uiHandler.updateSubmitButton(submitButton, true);
     uiHandler.showLoading();
     

@@ -98,7 +98,8 @@ app.post('/generate-story', async (req, res) => {
             main_character, 
             word_count, 
             language,
-            generate_vocabulary 
+            generate_vocabulary,
+            generate_summary 
         } = req.body;
 
         // Construct the prompt with optional fields
@@ -120,6 +121,8 @@ You must respond with a JSON object in the following exact format:
         "title": "Story title here",
         "content": "The story content here...",
         "learning_objectives": ["objective 1", "objective 2", "objective 3"]
+        ${generate_summary ? `,
+        "summary": "A brief 1-2 sentence summary of the story's key theme and main points"` : ''}
     },
     "quiz": [
         {
@@ -149,6 +152,7 @@ REQUIREMENTS:
 8. Story must be approximately ${word_count} words
 9. Learning objectives must be clear and measurable
 ${generate_vocabulary ? `10. If vocabulary list is requested, include 5-10 key terms from the story with age-appropriate definitions` : ''}
+${generate_summary ? `11. If summary is requested, provide a concise 1-2 sentence summary that captures the main theme and key points of the story` : ''}
 
 ${req.body.previous_story ? `PREVIOUS STORY TO CONTINUE:
 ${req.body.previous_story}
@@ -235,6 +239,7 @@ Note: Continue the story while maintaining the same characters, setting, and edu
                             learning_objectives: result.story.learning_objectives,
                             quiz_questions: result.quiz,
                             vocabulary_list: result.vocabulary || null,
+                            story_summary: result.story.summary || null,
                             is_continuation: !!req.body.previous_story
                         }
                     ]);

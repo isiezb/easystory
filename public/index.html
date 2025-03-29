@@ -1565,6 +1565,44 @@
                 padding: 1.25rem;
             }
         }
+
+        /* Add styles for story summary */
+        .story-summary {
+            background: var(--bg);
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            transition: var(--transition);
+        }
+
+        .story-summary:hover {
+            border-color: var(--primary);
+            transform: translateX(5px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .story-summary-title {
+            font-family: var(--font-heading);
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 0.75rem;
+        }
+
+        .story-summary-content {
+            font-size: 1rem;
+            line-height: 1.6;
+            color: var(--text);
+            opacity: 0.9;
+        }
+
+        @media (max-width: 768px) {
+            .story-summary {
+                padding: 1.25rem;
+                margin: 1.5rem 0;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1671,6 +1709,12 @@
                                 <span>Generate Vocabulary List</span>
                             </label>
                         </div>
+                        <div class="form-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="generateSummary" name="generate_summary">
+                                <span>Generate Story Summary</span>
+                            </label>
+                        </div>
                     </fieldset>
                 </div>
                 <button type="submit">
@@ -1769,7 +1813,8 @@
                         main_character: document.getElementById('mainCharacter').value,
                         word_count: parseInt(document.getElementById('wordCount').value),
                         language: document.getElementById('language').value,
-                        generate_vocabulary: document.getElementById('generateVocabulary').checked
+                        generate_vocabulary: document.getElementById('generateVocabulary').checked,
+                        generate_summary: document.getElementById('generateSummary').checked
                     };
 
                     const response = await fetch(`${config.serverUrl}/generate-story`, {
@@ -1825,6 +1870,12 @@
             const storyHTML = `
                 <div class="story-content">
                     <h2>${story.title}</h2>
+                    ${story.summary ? `
+                        <div class="story-summary">
+                            <div class="story-summary-title">Story Summary</div>
+                            <div class="story-summary-content">${story.summary}</div>
+                        </div>
+                    ` : ''}
                     <div class="story-meta">
                         <div class="learning-objectives">
                             <h4>Learning Objectives:</h4>

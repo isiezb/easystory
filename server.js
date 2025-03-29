@@ -3,9 +3,14 @@ const axios = require('axios');
 const { createClient } = require('@supabase/supabase-js');
 const config = require('./config');
 const path = require('path');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
 const port = config.server.port;
+
+// Initialize Google Generative AI
+const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
+const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-001' });
 
 // Middleware
 app.use(express.json());
@@ -147,41 +152,25 @@ ${req.body.previous_story}
 Note: Continue the story while maintaining the same characters, setting, and educational focus but adjusting complexity for ${academic_grade} level.` : ''}`;
 
         try {
-            // Make request to Google Gemini API
-            const response = await axios.post(
-                `${GEMINI_API_URL}/models/gemini-2.0-flash-001:generateContent`,
-                {
-                    contents: [{ 
-                        parts: [{ text: prompt }]
-                    }],
-                    generationConfig: {
-                        temperature: 0.7
-                    }
-                },
-                {
-                    headers: {
-                        'x-goog-api-key': GEMINI_API_KEY,
-                        'Content-Type': 'application/json'
-                    }
-                }
-            );
-
-            // Parse and validate the response
-            let result;
+            // Generate content using Google Generative AI
+            const result = await model.generateContent(prompt);
+            const response = await result.response;
+            const text = response.text();
+            
+            // Clean the response to ensure valid JSON
+            const cleanContent = text.replace(/```json\n?|\n?```/g, '').trim();
+            let parsedResult;
+            
             try {
-                // The Gemini response format is different from OpenRouter
-                const content = response.data.candidates[0].content.parts[0].text;
-                // Clean the response to ensure valid JSON
-                const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
-                result = JSON.parse(cleanContent);
+                parsedResult = JSON.parse(cleanContent);
                 
                 // Validate the structure
-                if (!result.story || !result.quiz) {
+                if (!parsedResult.story || !parsedResult.quiz) {
                     throw new Error('Invalid response structure');
                 }
                 
                 // Validate quiz format
-                result.quiz = result.quiz.map(q => {
+                parsedResult.quiz = parsedResult.quiz.map(q => {
                     // Ensure correct_answer is A, B, C, or D
                     if (!['A', 'B', 'C', 'D'].includes(q.correct_answer)) {
                         console.error('Invalid correct_answer:', q.correct_answer);
@@ -196,12 +185,12 @@ Note: Continue the story while maintaining the same characters, setting, and edu
                 });
                 
                 // Ensure exactly 3 questions
-                if (result.quiz.length !== 3) {
-                    result.quiz = result.quiz.slice(0, 3);
+                if (parsedResult.quiz.length !== 3) {
+                    parsedResult.quiz = parsedResult.quiz.slice(0, 3);
                 }
                 
                 // Log the generated content for debugging
-                console.log('Generated content:', JSON.stringify(result, null, 2));
+                console.log('Generated content:', JSON.stringify(parsedResult, null, 2));
                 
             } catch (parseError) {
                 console.error('Failed to parse response:', parseError);
@@ -221,10 +210,10 @@ Note: Continue the story while maintaining the same characters, setting, and edu
                             main_character,
                             word_count,
                             language,
-                            story_text: result.story.content,
-                            story_title: result.story.title,
-                            learning_objectives: result.story.learning_objectives,
-                            quiz_questions: result.quiz,
+                            story_text: parsedResult.story.content,
+                            story_title: parsedResult.story.title,
+                            learning_objectives: parsedResult.story.learning_objectives,
+                            quiz_questions: parsedResult.quiz,
                             is_continuation: !!req.body.previous_story
                         }
                     ]);
@@ -235,11 +224,11 @@ Note: Continue the story while maintaining the same characters, setting, and edu
             }
 
             // Return the complete result
-            return res.status(200).json(result);
+            return res.status(200).json(parsedResult);
         } catch (error) {
-            console.error('Google Gemini API Error:', error.response ? error.response.data : error.message);
+            console.error('Google Gemini API Error:', error);
             return res.status(500).json({ 
-                error: error.response?.data?.error?.message || 'Failed to generate story'
+                error: error.message || 'Failed to generate story'
             });
         }
     } catch (error) {

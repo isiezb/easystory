@@ -99,7 +99,10 @@ app.post('/generate-story', async (req, res) => {
             word_count, 
             language,
             generate_vocabulary,
-            generate_summary 
+            generate_summary,
+            previous_story,
+            difficulty,
+            quiz_score 
         } = req.body;
 
         // Construct the prompt with optional fields
@@ -113,6 +116,26 @@ ${setting ? `- Setting: ${setting}` : '- Setting: Appropriate environment'}
 ${main_character ? `- Main Character: ${main_character}` : '- Main Character: Relatable protagonist'}
 - Word Count: ${word_count}
 - Language: ${language}
+${difficulty ? `- Difficulty Level: ${difficulty}` : ''}
+${quiz_score !== undefined ? `- Previous Quiz Score: ${quiz_score}` : ''}
+
+${previous_story ? `PREVIOUS STORY CONTEXT:
+${previous_story}
+
+CONTINUATION REQUIREMENTS:
+1. Maintain narrative consistency with the previous story
+2. Keep the same characters and setting
+3. Build upon the established plot and themes
+4. ${difficulty === 'easier' ? 'Use simpler sentence structures and vocabulary appropriate for the new grade level' : 
+  difficulty === 'harder' ? 'Introduce more complex vocabulary and slightly more sophisticated plot points' : 
+  'Maintain the same level of complexity and vocabulary'}
+5. ${quiz_score !== undefined ? 
+  (quiz_score < 0.7 ? 'Provide additional context and explanations for key concepts' : 
+   quiz_score > 0.9 ? 'Introduce new challenges and advanced concepts' : 
+   'Maintain a balanced approach to concept introduction') : 
+  'Maintain a balanced approach to concept introduction'}
+6. Ensure the continuation flows naturally from the previous story
+7. Keep the educational focus while maintaining engagement` : ''}
 
 OUTPUT FORMAT:
 You must respond with a JSON object in the following exact format:
@@ -153,11 +176,7 @@ REQUIREMENTS:
 9. Learning objectives must be clear and measurable
 ${generate_vocabulary ? `10. If vocabulary list is requested, include 5-10 key terms from the story with age-appropriate definitions` : ''}
 ${generate_summary ? `11. If summary is requested, provide a concise 1-2 sentence summary that captures the main theme and key points of the story` : ''}
-
-${req.body.previous_story ? `PREVIOUS STORY TO CONTINUE:
-${req.body.previous_story}
-
-Note: Continue the story while maintaining the same characters, setting, and educational focus but adjusting complexity for ${academic_grade} level.` : ''}`;
+${previous_story ? `12. Ensure the continuation maintains narrative consistency and builds upon the previous story's themes and concepts` : ''}`;
 
         try {
             // Make request to OpenRouter API with Google's Gemini model
@@ -240,7 +259,7 @@ Note: Continue the story while maintaining the same characters, setting, and edu
                             quiz_questions: result.quiz,
                             vocabulary_list: result.vocabulary || null,
                             story_summary: result.story.summary || null,
-                            is_continuation: !!req.body.previous_story
+                            is_continuation: !!previous_story
                         }
                     ]);
 

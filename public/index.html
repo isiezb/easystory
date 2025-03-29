@@ -2146,8 +2146,19 @@
                 main_character: document.getElementById('mainCharacter').value,
                 word_count: parseInt(document.getElementById('wordCount').value),
                 language: document.getElementById('language').value,
-                previous_story: document.querySelector('.story-text').textContent
+                previous_story: document.querySelector('.story-text').textContent,
+                difficulty: difficulty,
+                generate_vocabulary: document.getElementById('generateVocabulary').checked,
+                generate_summary: document.getElementById('generateSummary').checked
             };
+
+            // Calculate quiz score if available
+            const quizSection = document.querySelector('.quiz-section');
+            if (quizSection) {
+                const totalQuestions = document.querySelectorAll('.quiz-question').length;
+                const correctAnswers = document.querySelectorAll('.quiz-option.correct').length;
+                currentData.quiz_score = totalQuestions > 0 ? correctAnswers / totalQuestions : undefined;
+            }
 
             // Adjust grade based on difficulty
             if (difficulty === 'easier') {

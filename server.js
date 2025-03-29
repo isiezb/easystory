@@ -2,20 +2,15 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const { createClient } = require('@supabase/supabase-js');
-const OpenAI = require('openai');
-const logger = require('./utils/logger');
+const axios = require('axios');
+const { logger } = require('./utils/logger');
 const { AppError, handleError } = require('./utils/errorHandler');
 const path = require('path');
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Initialize OpenAI
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY
-});
-
-// Initialize Supabase
+// Initialize Supabase client
 const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_ANON_KEY
@@ -172,21 +167,26 @@ app.post('/generate-story', async (req, res) => {
             }
         }`;
 
-        // Generate story and quiz using OpenAI
-        const completion = await openai.chat.completions.create({
-            model: "gpt-4",
+        // Generate story and quiz using OpenRouter
+        const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
+            model: "google/gemini-pro",
             messages: [
                 { role: "system", content: "You are an expert educational storyteller and quiz creator." },
                 { role: "user", content: prompt }
             ],
             response_format: { type: "json_object" }
+        }, {
+            headers: {
+                'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+                'Content-Type': 'application/json'
+            }
         });
 
-        let response;
+        let storyData;
         try {
-            response = JSON.parse(completion.choices[0].message.content);
+            storyData = response.data.choices[0].message.content;
         } catch (error) {
-            logger.error('Failed to parse OpenAI response', { error: error.message });
+            logger.error('Failed to parse OpenRouter response', { error: error.message });
             throw new AppError('Invalid response format from AI', 500);
         }
 
@@ -196,16 +196,16 @@ app.post('/generate-story', async (req, res) => {
                 .from('stories')
                 .insert([{
                     user_id: req.user.id,
-                    story_title: response.story.title,
-                    story_text: response.story.content,
+                    story_title: storyData.story.title,
+                    story_text: storyData.story.content,
                     subject: subject,
                     grade: grade,
                     topic: topic,
-                    learning_objectives: response.story.learning_objectives,
-                    image_prompt: response.story.imagePrompt,
-                    audio_url: response.story.audioUrl,
-                    image_url: response.story.imageUrl,
-                    quiz_questions: response.quiz.questions
+                    learning_objectives: storyData.story.learning_objectives,
+                    image_prompt: storyData.story.imagePrompt,
+                    audio_url: storyData.story.audioUrl,
+                    image_url: storyData.story.imageUrl,
+                    quiz_questions: storyData.quiz.questions
                 }])
                 .select()
                 .single();
@@ -222,10 +222,10 @@ app.post('/generate-story', async (req, res) => {
             success: true,
             data: {
                 story: {
-                    ...response.story,
+                    ...storyData.story,
                     id: story?.id // Include the database ID if available
                 },
-                quiz: response.quiz
+                quiz: storyData.quiz
             }
         });
 

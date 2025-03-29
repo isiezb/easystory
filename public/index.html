@@ -6,18 +6,57 @@
     <title>EASY STORY EASY LIFE</title>
     <style>
         :root {
-            --primary: #4f46e5;
-            --primary-dark: #4338ca;
-            --bg: #ffffff;
-            --text: #1a1a1a;
-            --border: #e5e7eb;
-            --success: #10b981;
-            --error: #ef4444;
+            /* Base Colors */
+            --primary-100: #dde4ff;
+            --primary-200: #bbc9ff;
+            --primary-300: #98afff;
+            --primary-400: #7694ff;
+            --primary: #5e7ce6;            /* Primary */
+            --primary-600: #4a63b9;        /* Primary Dark */
+            --primary-700: #394c8f;
+            
+            --secondary-100: #d8f3e6;
+            --secondary-200: #b2e7ce;
+            --secondary-300: #8cdbbb;
+            --secondary: #62bf9d;          /* Secondary */
+            --secondary-500: #429678;
+            
+            --accent-100: #ffe5d9;
+            --accent-200: #ffc8b3;
+            --accent-300: #ffaa8c;
+            --accent: #ff8c66;             /* Accent */
+            --accent-500: #e6633d;
+            
+            --success: #68d391;            /* Success */
+            --error: #f56565;              /* Error */
+            --warning: #f6ad55;            /* Warning */
+            
+            /* Neutral Colors */
+            --gray-50: #f8f9fa;
+            --gray-100: #f1f3f5;
+            --gray-200: #e9ecef;
+            --gray-300: #dee2e6;
+            --gray-400: #ced4da;
+            --gray-500: #adb5bd;
+            --gray-600: #6c757d;
+            --gray-700: #495057;
+            --gray-800: #343a40;
+            --gray-900: #212529;
+            
+            /* Light Theme Colors */
+            --bg: var(--gray-50);
+            --card-bg: #ffffff;
+            --text: var(--gray-800);
+            --text-secondary: var(--gray-600);
+            --border: var(--gray-200);
+            
+            /* Gradients */
+            --gradient: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            --gradient-text: linear-gradient(135deg, var(--primary-600) 0%, var(--primary) 100%);
+            
+            /* Effects */
             --shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
             --hover-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
-            --gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            --gradient-text: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-            --card-bg: rgba(255, 255, 255, 0.9);
             --backdrop-blur: blur(12px);
             --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             --font-serif: 'Merriweather', Georgia, 'Times New Roman', serif;
@@ -25,13 +64,19 @@
         }
 
         [data-theme="dark"] {
-            --bg: #0f172a;
-            --text: #f8fafc;
-            --border: #1e293b;
-            --card-bg: rgba(15, 23, 42, 0.95);
+            --bg: var(--gray-900);
+            --card-bg: var(--gray-800);
+            --text: var(--gray-100);
+            --text-secondary: var(--gray-300);
+            --border: var(--gray-700);
+            
+            --primary: #7694ff;
+            --primary-600: #98afff;
+            
+            --gradient: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            --gradient-text: linear-gradient(135deg, var(--primary) 0%, var(--primary-200) 100%);
+            
             --shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
-            --gradient-text: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
-            --gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
         }
 
         [data-theme="dark"] body {
@@ -229,8 +274,8 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: radial-gradient(circle at top right, rgba(79, 70, 229, 0.1), transparent 50%),
-                        radial-gradient(circle at bottom left, rgba(124, 58, 237, 0.1), transparent 50%);
+            background: radial-gradient(circle at top right, rgba(94, 124, 230, 0.1), transparent 50%),
+                        radial-gradient(circle at bottom left, rgba(98, 191, 157, 0.1), transparent 50%);
             z-index: 0;
         }
 
@@ -451,22 +496,23 @@
 
         .quiz-feedback {
             margin-top: 1.5rem;
-            padding: 1.25rem;
-            border-radius: 12px;
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 2px solid var(--border);
             font-weight: 500;
-            transition: all 0.3s;
+            background: var(--bg);
         }
 
         .quiz-feedback.correct {
-            background: rgba(16, 185, 129, 0.1);
+            border-color: var(--success);
             color: var(--success);
-            border: 1px solid var(--success);
+            background-color: rgba(104, 211, 145, 0.1);
         }
 
         .quiz-feedback.incorrect {
-            background: rgba(239, 68, 68, 0.1);
+            border-color: var(--error);
             color: var(--error);
-            border: 1px solid var(--error);
+            background-color: rgba(245, 101, 101, 0.1);
         }
 
         #checkAnswers {
@@ -668,20 +714,20 @@
 
         .quiz-option.selected {
             border-color: var(--primary);
-            background: rgba(79, 70, 229, 0.3);
-            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+            background-color: rgba(94, 124, 230, 0.1);
+            box-shadow: 0 4px 12px rgba(94, 124, 230, 0.15);
         }
 
         .quiz-option.correct {
+            background-color: var(--success);
+            color: white;
             border-color: var(--success);
-            background: rgba(16, 185, 129, 0.3);
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
         }
 
         .quiz-option.incorrect {
+            background-color: var(--error);
+            color: white;
             border-color: var(--error);
-            background: rgba(239, 68, 68, 0.3);
-            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
         }
 
         [data-theme="dark"] .quiz-option.selected,
@@ -986,6 +1032,24 @@
             line-height: 1.7;
             color: var(--text);
             opacity: 0.9;
+        }
+
+        .difficulty-btn {
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            background: var(--bg);
+            color: var(--text);
+            border: 2px solid var(--border);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .difficulty-btn:hover {
+            border-color: var(--primary);
+            background-color: rgba(94, 124, 230, 0.05);
+            color: var(--primary);
+            transform: translateY(-2px);
         }
     </style>
 </head>
@@ -1485,4 +1549,4 @@
         }
     </script>
 </body>
-</html> 
+</html>

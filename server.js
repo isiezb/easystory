@@ -31,9 +31,10 @@ if (!process.env.SUPABASE_KEY) {
     process.exit(1);
 }
 
-// Initialize Supabase client with validation
+// Initialize Supabase client
+let supabase;
 try {
-    const supabase = createClient(
+    supabase = createClient(
         process.env.SUPABASE_URL,
         process.env.SUPABASE_KEY
     );
@@ -116,9 +117,9 @@ const testConnection = async () => {
     try {
         const { data, error } = await supabase.from('stories').select('count').limit(1);
         if (error) throw error;
-        console.log('Database connection successful');
+        logger.info('Database connection successful');
     } catch (error) {
-        console.error('Database connection failed:', error);
+        logger.error('Database connection failed:', error);
         process.exit(1);
     }
 };

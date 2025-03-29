@@ -1316,11 +1316,15 @@
             const quizOptions = quizSection.querySelectorAll('.quiz-option');
             quizOptions.forEach(option => {
                 option.addEventListener('click', () => {
-                    const question = option.closest('.quiz-question');
-                    question.querySelectorAll('.quiz-option').forEach(opt => {
-                        opt.classList.remove('selected');
-                    });
-                    option.classList.add('selected');
+                    const radio = option.querySelector('input[type="radio"]');
+                    if (radio) {
+                        radio.checked = true;
+                        const question = option.closest('.quiz-question');
+                        question.querySelectorAll('.quiz-option').forEach(opt => {
+                            opt.classList.remove('selected');
+                        });
+                        option.classList.add('selected');
+                    }
                 });
             });
 

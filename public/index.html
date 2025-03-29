@@ -1154,6 +1154,56 @@
             color: var(--primary);
             transform: translateY(-2px);
         }
+
+        /* Loading Indicator Styles */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            backdrop-filter: blur(4px);
+        }
+
+        [data-theme="dark"] .loading-overlay {
+            background: rgba(17, 24, 39, 0.9);
+        }
+
+        .loading-container {
+            text-align: center;
+        }
+
+        .loading-spinner {
+            width: 64px;
+            height: 64px;
+            border: 4px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1.5rem;
+        }
+
+        .loading-text {
+            font-family: var(--font-heading);
+            font-size: 1.25rem;
+            color: var(--text);
+            margin-bottom: 0.5rem;
+        }
+
+        .loading-subtext {
+            font-family: var(--font-body);
+            font-size: 1rem;
+            color: var(--text-secondary);
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -1268,6 +1318,14 @@
         </section>
     </div>
 
+    <div class="loading-overlay">
+        <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">Generating Your Story</div>
+            <div class="loading-subtext">This may take a few moments...</div>
+        </div>
+    </div>
+
     <script>
         const config = {
             serverUrl: window.location.origin
@@ -1316,6 +1374,7 @@
             const output = document.getElementById('storyOutput');
             const subjectSelect = document.getElementById('subject');
             const otherSubjectGroup = document.getElementById('otherSubjectGroup');
+            const loadingOverlay = document.querySelector('.loading-overlay');
 
             subjectSelect.addEventListener('change', () => {
                 otherSubjectGroup.style.display = subjectSelect.value === 'other' ? 'block' : 'none';
@@ -1328,6 +1387,9 @@
                 const originalText = submitButton.textContent;
                 submitButton.disabled = true;
                 submitButton.querySelector('span').textContent = 'Generating Story...';
+
+                // Show loading overlay
+                loadingOverlay.style.display = 'flex';
 
                 try {
                     const formData = {
@@ -1368,6 +1430,8 @@
                     console.error('Error:', error);
                     alert(error.message || 'Failed to generate story. Please try again.');
                 } finally {
+                    // Hide loading overlay
+                    loadingOverlay.style.display = 'none';
                     submitButton.disabled = false;
                     submitButton.querySelector('span').textContent = originalText;
                 }

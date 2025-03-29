@@ -1,5 +1,5 @@
 -- Drop existing table if needed (uncomment if you want to start fresh)
--- DROP TABLE IF EXISTS stories;
+DROP TABLE IF EXISTS stories;
 
 -- Enable necessary extensions
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
@@ -140,7 +140,7 @@ CREATE TABLE IF NOT EXISTS auth.sso_domains (
 );
 
 -- Create stories table with user_id
-CREATE TABLE IF NOT EXISTS stories (
+CREATE TABLE stories (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     academic_grade TEXT NOT NULL,
@@ -167,26 +167,23 @@ CREATE INDEX IF NOT EXISTS idx_stories_created_at ON stories(created_at);
 CREATE INDEX IF NOT EXISTS idx_stories_subject ON stories(subject);
 CREATE INDEX IF NOT EXISTS idx_stories_academic_grade ON stories(academic_grade);
 
--- Create RLS policies
+-- Enable RLS
 ALTER TABLE stories ENABLE ROW LEVEL SECURITY;
 
--- Policy to allow users to view their own stories
+-- Create RLS policies
 CREATE POLICY "Users can view their own stories"
     ON stories FOR SELECT
     USING (auth.uid() = user_id);
 
--- Policy to allow users to insert their own stories
 CREATE POLICY "Users can insert their own stories"
     ON stories FOR INSERT
     WITH CHECK (auth.uid() = user_id);
 
--- Policy to allow users to update their own stories
 CREATE POLICY "Users can update their own stories"
     ON stories FOR UPDATE
     USING (auth.uid() = user_id)
     WITH CHECK (auth.uid() = user_id);
 
--- Policy to allow users to delete their own stories
 CREATE POLICY "Users can delete their own stories"
     ON stories FOR DELETE
     USING (auth.uid() = user_id);
@@ -209,6 +206,7 @@ CREATE TRIGGER on_user_deletion
 -- Add comments to columns for better documentation
 COMMENT ON TABLE stories IS 'Stores educational stories with their associated metadata and quizzes';
 COMMENT ON COLUMN stories.id IS 'Unique identifier for each story';
+COMMENT ON COLUMN stories.user_id IS 'Reference to the user who created the story';
 COMMENT ON COLUMN stories.academic_grade IS 'Target academic grade level for the story';
 COMMENT ON COLUMN stories.subject IS 'Main subject area of the story';
 COMMENT ON COLUMN stories.subject_specification IS 'Specific topic or focus within the subject';

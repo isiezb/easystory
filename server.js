@@ -186,7 +186,7 @@ Please provide the story in the following JSON format:
         // Parse and clean the response
         const storyData = JSON.parse(response.data.choices[0].message.content);
 
-        // Store the story in Supabase
+        // Store the story in Supabase with user_id
         const { data: story, error: insertError } = await supabase
             .from('stories')
             .insert({

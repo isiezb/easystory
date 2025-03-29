@@ -128,145 +128,109 @@ const validateInputs = (inputs) => {
 };
 
 // Routes
-app.post('/generate-story', async (req, res, next) => {
+app.post('/generate-story', async (req, res) => {
     try {
-        const {
-            academic_grade,
-            subject,
-            subject_specification,
-            setting,
-            main_character,
-            word_count,
-            language,
-            generate_vocabulary,
-            generate_summary
-        } = req.body;
-
+        const { subject, grade, topic, learning_objectives } = req.body;
+        
         // Validate required fields
-        if (!academic_grade || !subject || !subject_specification) {
-            throw new AppError('Missing required fields', 400, {
-                required: ['academic_grade', 'subject', 'subject_specification']
-            });
+        if (!subject || !grade || !topic || !learning_objectives) {
+            throw new AppError('Missing required fields', 400);
         }
 
-        logger.info({
-            academic_grade,
+        // Log request details
+        logger.info('Generating story', {
             subject,
-            subject_specification,
-            setting,
-            main_character,
-            word_count,
-            language,
-            generate_vocabulary,
-            generate_summary
-        }, 'Generating story with parameters');
+            grade,
+            topic,
+            learning_objectives
+        });
 
         // Construct the prompt
-        const prompt = `Create an educational story for ${academic_grade} level about ${subject}, specifically focusing on ${subject_specification}. 
-        ${setting ? `Set in ${setting}.` : ''} 
-        ${main_character ? `Main character: ${main_character}.` : ''} 
-        The story should be approximately ${word_count} words long and written in ${language}.
-        ${generate_vocabulary ? 'Include a vocabulary list at the end.' : ''}
-        ${generate_summary ? 'Include a brief summary at the beginning.' : ''}
-        Make it engaging and educational, suitable for the specified academic level.`;
+        const prompt = `Create an educational story for ${grade} grade students about ${topic} in ${subject}. 
+        The story should be engaging and help students understand the following learning objectives:
+        ${learning_objectives.map(obj => `- ${obj}`).join('\n')}
+        
+        Please provide the response in the following JSON format:
+        {
+            "story": {
+                "title": "Story title",
+                "summary": "Brief summary of the story",
+                "content": "The full story text with paragraphs separated by newlines",
+                "learning_objectives": ["List of learning objectives"],
+                "imagePrompt": "A detailed prompt for generating an illustration for this story",
+                "audioUrl": null,
+                "imageUrl": null
+            },
+            "quiz": {
+                "questions": [
+                    {
+                        "question": "Question text",
+                        "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
+                        "correctAnswer": 0
+                    }
+                ]
+            }
+        }`;
 
-        // Generate story using OpenAI
+        // Generate story and quiz using OpenAI
         const completion = await openai.chat.completions.create({
-            model: "gpt-4-turbo-preview",
+            model: "gpt-4",
             messages: [
-                {
-                    role: "system",
-                    content: "You are an expert educational storyteller. Create engaging, age-appropriate stories that teach important concepts."
-                },
-                {
-                    role: "user",
-                    content: prompt
-                }
+                { role: "system", content: "You are an expert educational storyteller and quiz creator." },
+                { role: "user", content: prompt }
             ],
-            temperature: 0.7,
-            max_tokens: 2000
+            response_format: { type: "json_object" }
         });
 
-        const storyContent = completion.choices[0].message.content;
-
-        // Generate quiz questions
-        const quizPrompt = `Based on the following story, generate 5 multiple-choice questions to test understanding. 
-        Format the response as a JSON array with objects containing: question, options (array of 4), correct_answer (A, B, C, or D), and explanation.
-        Story: ${storyContent}`;
-
-        const quizCompletion = await openai.chat.completions.create({
-            model: "gpt-4-turbo-preview",
-            messages: [
-                {
-                    role: "system",
-                    content: "You are an expert at creating educational quiz questions."
-                },
-                {
-                    role: "user",
-                    content: quizPrompt
-                }
-            ],
-            temperature: 0.7,
-            max_tokens: 1000
-        });
-
-        let quiz;
+        let response;
         try {
-            quiz = JSON.parse(quizCompletion.choices[0].message.content);
+            response = JSON.parse(completion.choices[0].message.content);
         } catch (error) {
-            logger.error({ error: error.message }, 'Failed to parse quiz JSON');
-            throw new AppError('Failed to generate quiz questions', 500);
+            logger.error('Failed to parse OpenAI response', { error: error.message });
+            throw new AppError('Invalid response format from AI', 500);
         }
 
-        // Save to database if user is authenticated
-        if (req.user) {
-            try {
-                const { data, error } = await supabase
-                    .from('stories')
-                    .insert([
-                        {
-                            user_id: req.user.id,
-                            story_title: subject_specification,
-                            story_text: storyContent,
-                            subject: subject,
-                            academic_level: academic_grade,
-                            created_at: new Date().toISOString()
-                        }
-                    ])
-                    .select();
+        // Save to database
+        try {
+            const { data: story, error: dbError } = await supabase
+                .from('stories')
+                .insert([{
+                    user_id: req.user.id,
+                    story_title: response.story.title,
+                    story_text: response.story.content,
+                    subject: subject,
+                    grade: grade,
+                    topic: topic,
+                    learning_objectives: response.story.learning_objectives,
+                    image_prompt: response.story.imagePrompt,
+                    audio_url: response.story.audioUrl,
+                    image_url: response.story.imageUrl,
+                    quiz_questions: response.quiz.questions
+                }])
+                .select()
+                .single();
 
-                if (error) throw error;
-
-                logger.info({
-                    story_id: data[0].id,
-                    user_id: req.user.id
-                }, 'Story saved to database');
-            } catch (error) {
-                logger.error({ error: error.message }, 'Failed to save story to database');
-                // Don't throw error here, just log it
-            }
+            if (dbError) throw dbError;
+            logger.info('Story saved to database', { storyId: story.id });
+        } catch (error) {
+            logger.error('Failed to save story to database', { error: error.message });
+            // Don't throw here, just log the error
         }
 
         // Send response
         res.json({
-            story: {
-                title: subject_specification,
-                content: storyContent,
-                learning_objectives: [
-                    'Understanding the main concepts',
-                    'Analyzing key events',
-                    'Applying knowledge'
-                ]
-            },
-            quiz
+            success: true,
+            data: {
+                story: {
+                    ...response.story,
+                    id: story?.id // Include the database ID if available
+                },
+                quiz: response.quiz
+            }
         });
 
     } catch (error) {
-        logger.error({
-            error: error.message,
-            stack: error.stack
-        }, 'Error generating story');
-        next(error);
+        handleError(error, req, res);
     }
 });
 

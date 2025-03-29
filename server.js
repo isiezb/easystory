@@ -3,12 +3,15 @@ const axios = require('axios');
 const { createClient } = require('@supabase/supabase-js');
 const config = require('./config');
 const path = require('path');
+const cors = require('cors');
+require('dotenv').config();
 
 const app = express();
 const port = config.server.port;
 
 // Middleware
 app.use(express.json());
+app.use(cors());
 
 // Authentication middleware
 const authenticateUser = async (req, res, next) => {
@@ -23,13 +26,19 @@ const authenticateUser = async (req, res, next) => {
             return res.status(401).json({ error: 'No token provided' });
         }
 
+        // Verify the JWT token with Supabase
         const { data: { user }, error } = await supabase.auth.getUser(token);
-        if (error) throw error;
+        
+        if (error || !user) {
+            return res.status(401).json({ error: 'Invalid token' });
+        }
+
+        // Attach user to request object
         req.user = user;
         next();
     } catch (error) {
         console.error('Auth error:', error);
-        return res.status(401).json({ error: 'Invalid token' });
+        res.status(401).json({ error: 'Authentication failed' });
     }
 };
 
@@ -60,7 +69,10 @@ app.use((req, res, next) => {
 // Supabase client initialization
 let supabase;
 try {
-    supabase = createClient(config.supabase.url, config.supabase.key);
+    supabase = createClient(
+        process.env.SUPABASE_URL,
+        process.env.SUPABASE_SERVICE_KEY
+    );
     console.log('Supabase client initialized successfully');
 } catch (error) {
     console.error('Failed to initialize Supabase client:', error);
@@ -108,217 +120,124 @@ const validateInputs = (inputs) => {
 // Story generation endpoint
 app.post('/generate-story', authenticateUser, async (req, res) => {
     try {
-        // Validate inputs
-        if (!validateInputs(req.body)) {
-            return res.status(400).json({ error: 'Invalid or missing required inputs' });
-        }
-
-        const { 
-            academic_grade, 
-            subject, 
-            subject_specification, 
-            setting, 
-            main_character, 
-            word_count, 
+        const {
+            academic_grade,
+            subject,
+            subject_specification,
+            setting,
+            main_character,
+            word_count,
             language,
-            generate_vocabulary,
             generate_summary,
             previous_story,
             difficulty,
-            quiz_score 
+            quiz_score
         } = req.body;
 
-        // Construct the prompt with optional fields
-        let prompt = `Create an educational story and quiz based on the following parameters:
-
-STORY PARAMETERS:
-- Grade Level: ${academic_grade}
+        // Construct the prompt based on parameters
+        let prompt = `Create an educational story with the following specifications:
+- Academic Grade: ${academic_grade}
 - Subject: ${subject}
-${subject_specification ? `- Subject Specification: ${subject_specification}` : ''}
-${setting ? `- Setting: ${setting}` : '- Setting: Appropriate environment'}
-${main_character ? `- Main Character: ${main_character}` : '- Main Character: Relatable protagonist'}
+${subject_specification ? `- Specific Topic: ${subject_specification}` : ''}
+${setting ? `- Setting: ${setting}` : ''}
+${main_character ? `- Main Character: ${main_character}` : ''}
 - Word Count: ${word_count}
 - Language: ${language}
+${generate_summary ? '- Include a brief 1-2 sentence summary of the story' : ''}
+${previous_story ? `- This is a continuation of the previous story: ${previous_story}` : ''}
 ${difficulty ? `- Difficulty Level: ${difficulty}` : ''}
-${quiz_score !== undefined ? `- Previous Quiz Score: ${quiz_score}` : ''}
+${quiz_score ? `- Previous Quiz Score: ${quiz_score}` : ''}
 
-${previous_story ? `PREVIOUS STORY CONTEXT:
-${previous_story}
-
-CONTINUATION REQUIREMENTS:
-1. Maintain narrative consistency with the previous story
-2. Keep the same characters and setting
-3. Build upon the established plot and themes
-4. ${difficulty === 'easier' ? 'Use simpler sentence structures and vocabulary appropriate for the new grade level' : 
-  difficulty === 'harder' ? 'Introduce more complex vocabulary and slightly more sophisticated plot points' : 
-  'Maintain the same level of complexity and vocabulary'}
-5. ${quiz_score !== undefined ? 
-  (quiz_score < 0.7 ? 'Provide additional context and explanations for key concepts' : 
-   quiz_score > 0.9 ? 'Introduce new challenges and advanced concepts' : 
-   'Maintain a balanced approach to concept introduction') : 
-  'Maintain a balanced approach to concept introduction'}
-6. Ensure the continuation flows naturally from the previous story
-7. Keep the educational focus while maintaining engagement` : ''}
-
-OUTPUT FORMAT:
-You must respond with a JSON object in the following exact format:
+Please provide the story in the following JSON format:
 {
-    "story": {
-        "title": "Story title here",
-        "content": "The story content here...",
-        "learning_objectives": ["objective 1", "objective 2", "objective 3"]
-        ${generate_summary ? `,
-        "summary": "A brief 1-2 sentence summary of the story's key theme and main points"` : ''}
-    },
-    "quiz": [
+    "story_title": "Title of the story",
+    "story_text": "The complete story text",
+    "learning_objectives": ["List of learning objectives"],
+    "quiz_questions": [
         {
-            "question": "Question about specific story content?",
-            "options": ["First option", "Second option", "Third option", "Fourth option"],
-            "correct_answer": "A",
-            "explanation": "Explanation of why this is correct"
+            "question": "Question text",
+            "options": ["Option 1", "Option 2", "Option 3", "Option 4"],
+            "correct_answer": "Correct option"
+        }
+    ],
+    "vocabulary_list": [
+        {
+            "word": "Word",
+            "definition": "Definition"
         }
     ]
-    ${generate_vocabulary ? `,
-    "vocabulary": [
-        {
-            "word": "Important word from the story",
-            "definition": "Simple definition appropriate for ${academic_grade} level"
-        }
-    ]` : ''}
-}
+    ${generate_summary ? ',\n    "story_summary": "Brief summary of the story"' : ''}
+}`;
 
-REQUIREMENTS:
-1. Story must be educational and engaging
-2. Story must be appropriate for ${academic_grade} level
-3. Quiz must have exactly 3 questions
-4. Each question must have exactly 4 options
-5. Correct answers must be A, B, C, or D (matching option position)
-6. Questions must test comprehension of key story elements
-7. All output must be in ${language}
-8. Story must be approximately ${word_count} words
-9. Learning objectives must be clear and measurable
-${generate_vocabulary ? `10. If vocabulary list is requested, include 5-10 key terms from the story with age-appropriate definitions` : ''}
-${generate_summary ? `11. If summary is requested, provide a concise 1-2 sentence summary that captures the main theme and key points of the story` : ''}
-${previous_story ? `12. Ensure the continuation maintains narrative consistency and builds upon the previous story's themes and concepts` : ''}`;
-
-        try {
-            // Make request to OpenRouter API with Google's Gemini model
-            const response = await axios.post(
-                `${OPENROUTER_BASE_URL}/chat/completions`,
-                {
-                    model: 'google/gemini-2.0-flash-001',
-                    messages: [{ 
-                        role: 'user', 
-                        content: prompt 
-                    }],
-                    temperature: 0.7
-                },
-                {
-                    headers: {
-                        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-                        'Content-Type': 'application/json',
-                        'HTTP-Referer': config.server.frontendUrl,
-                    }
-                }
-            );
-
-            // Parse and validate the response
-            let result;
-            try {
-                const content = response.data.choices[0].message.content;
-                // Clean the response to ensure valid JSON
-                const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
-                result = JSON.parse(cleanContent);
-                
-                // Validate the structure
-                if (!result.story || !result.quiz) {
-                    throw new Error('Invalid response structure');
-                }
-                
-                // Validate quiz format
-                result.quiz = result.quiz.map(q => {
-                    // Ensure correct_answer is A, B, C, or D
-                    if (!['A', 'B', 'C', 'D'].includes(q.correct_answer)) {
-                        console.error('Invalid correct_answer:', q.correct_answer);
-                        q.correct_answer = 'A';
-                    }
-                    // Ensure exactly 4 options
-                    if (!q.options || q.options.length !== 4) {
-                        console.error('Invalid options:', q.options);
-                        q.options = ['Option A', 'Option B', 'Option C', 'Option D'];
-                    }
-                    return q;
-                });
-                
-                // Ensure exactly 3 questions
-                if (result.quiz.length !== 3) {
-                    result.quiz = result.quiz.slice(0, 3);
-                }
-                
-                // Log the generated content for debugging
-                console.log('Generated content:', JSON.stringify(result, null, 2));
-                
-            } catch (parseError) {
-                console.error('Failed to parse response:', parseError);
-                throw new Error('Failed to generate valid content');
+        // Call OpenRouter API
+        const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
+            model: 'anthropic/claude-3-opus-20240229',
+            messages: [{ role: 'user', content: prompt }],
+            temperature: 0.7,
+            max_tokens: 4000
+        }, {
+            headers: {
+                'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+                'HTTP-Referer': 'https://github.com/isiezb/quiz-story',
+                'X-Title': 'Quiz Story Generator'
             }
+        });
 
-            // Store in Supabase with user ID
-            try {
-                const { data, error: dbError } = await supabase
-                    .from('stories')
-                    .insert([
-                        {
-                            user_id: req.user.id,
-                            academic_grade,
-                            subject,
-                            subject_specification,
-                            setting,
-                            main_character,
-                            word_count,
-                            language,
-                            story_text: result.story.content,
-                            story_title: result.story.title,
-                            learning_objectives: result.story.learning_objectives,
-                            quiz_questions: result.quiz,
-                            vocabulary_list: result.vocabulary || null,
-                            story_summary: result.story.summary || null,
-                            is_continuation: !!previous_story
-                        }
-                    ]);
+        // Parse and clean the response
+        const storyData = JSON.parse(response.data.choices[0].message.content);
 
-                if (dbError) throw dbError;
-            } catch (dbError) {
-                console.error('Supabase error:', dbError);
-            }
+        // Store the story in Supabase
+        const { data: story, error: insertError } = await supabase
+            .from('stories')
+            .insert({
+                user_id: req.user.id,
+                academic_grade,
+                subject,
+                subject_specification,
+                setting,
+                main_character,
+                word_count,
+                language,
+                story_text: storyData.story_text,
+                story_title: storyData.story_title,
+                learning_objectives: storyData.learning_objectives,
+                quiz_questions: storyData.quiz_questions,
+                vocabulary_list: storyData.vocabulary_list,
+                story_summary: storyData.story_summary,
+                is_continuation: !!previous_story
+            })
+            .select()
+            .single();
 
-            // Return the complete result
-            return res.status(200).json(result);
-        } catch (error) {
-            console.error('OpenRouter API Error:', error.response ? error.response.data : error.message);
-            return res.status(500).json({ 
-                error: error.response?.data?.error?.message || 'Failed to generate story'
-            });
+        if (insertError) {
+            console.error('Supabase insert error:', insertError);
+            return res.status(500).json({ error: 'Failed to save story to database' });
         }
+
+        res.json(story);
     } catch (error) {
         console.error('Error:', error);
-        return res.status(500).json({ error: 'Failed to generate story' });
+        res.status(500).json({ error: 'Failed to generate story' });
     }
 });
 
 // Get user's stories endpoint
 app.get('/user-stories', authenticateUser, async (req, res) => {
     try {
-        const { data, error } = await supabase
+        const { data: stories, error } = await supabase
             .from('stories')
             .select('*')
             .eq('user_id', req.user.id)
             .order('created_at', { ascending: false });
 
-        if (error) throw error;
-        res.json(data);
+        if (error) {
+            console.error('Supabase query error:', error);
+            return res.status(500).json({ error: 'Failed to fetch stories' });
+        }
+
+        res.json(stories);
     } catch (error) {
-        console.error('Error fetching user stories:', error);
+        console.error('Error:', error);
         res.status(500).json({ error: 'Failed to fetch stories' });
     }
 });

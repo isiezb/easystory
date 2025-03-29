@@ -547,6 +547,8 @@
             transition: var(--transition);
             background: var(--bg);
             margin-bottom: 1.25rem;
+            position: relative;
+            padding-right: 3rem;
         }
 
         .quiz-option:hover {
@@ -576,6 +578,17 @@
             border: 2px solid var(--border);
             font-weight: 500;
             background: var(--bg);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+        }
+
+        .quiz-feedback.show {
+            opacity: 1;
+            transform: translateY(0);
         }
 
         .quiz-feedback.correct {
@@ -588,6 +601,43 @@
             border-color: var(--error);
             color: var(--error);
             background-color: rgba(245, 101, 101, 0.1);
+        }
+
+        .feedback-icon {
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        .feedback-icon.correct {
+            color: var(--success);
+        }
+
+        .feedback-icon.incorrect {
+            color: var(--error);
+        }
+
+        .option-icon {
+            position: absolute;
+            right: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .option-icon.show {
+            opacity: 1;
+        }
+
+        .option-icon.correct {
+            color: var(--success);
+        }
+
+        .option-icon.incorrect {
+            color: var(--error);
         }
 
         #checkAnswers {
@@ -1653,11 +1703,21 @@
                                 <div class="quiz-option">
                                     <input type="radio" name="q${i}" value="${letter}" id="q${i}_${j}">
                                     <label for="q${i}_${j}">${letter}. ${opt}</label>
+                                    <svg class="option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path class="correct-icon" d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <path class="incorrect-icon" d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/>
+                                    </svg>
                                 </div>
                             `;
                         }).join('')}
                     </div>
-                    <div class="quiz-feedback"></div>
+                    <div class="quiz-feedback">
+                        <svg class="feedback-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path class="correct-icon" d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path class="incorrect-icon" d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        <span class="feedback-text"></span>
+                    </div>
                 </div>
             `).join('');
 
@@ -1708,55 +1768,77 @@
 
             // Reset all feedback and classes
             document.querySelectorAll('.quiz-feedback').forEach(feedback => {
-                feedback.textContent = '';
+                feedback.querySelector('.feedback-text').textContent = '';
                 feedback.className = 'quiz-feedback';
+                feedback.classList.remove('show');
             });
             document.querySelectorAll('.quiz-option').forEach(option => {
                 option.classList.remove('correct', 'incorrect');
+                option.querySelector('.option-icon').classList.remove('show', 'correct', 'incorrect');
             });
 
             quiz.forEach((q, i) => {
                 const selected = document.querySelector(`input[name="q${i}"]:checked`);
+                const feedback = document.querySelector(`#q${i}_0`).closest('.quiz-question').querySelector('.quiz-feedback');
+                const feedbackText = feedback.querySelector('.feedback-text');
+                const feedbackIcon = feedback.querySelector('.feedback-icon');
+                
                 if (!selected) {
-                    const feedback = document.querySelector(`#q${i}_0`).closest('.quiz-question').querySelector('.quiz-feedback');
-                    feedback.textContent = 'Please select an answer';
-                    feedback.className = 'quiz-feedback incorrect';
+                    feedbackText.textContent = 'Please select an answer';
+                    feedback.className = 'quiz-feedback incorrect show';
+                    feedbackIcon.className = 'feedback-icon incorrect';
                     return;
                 }
 
                 const selectedOption = selected.closest('.quiz-option');
-                const selectedValue = selected.value; // A, B, C, or D
+                const selectedValue = selected.value;
                 const isCorrect = selectedValue === q.correct_answer;
-                const feedback = selectedOption.closest('.quiz-question').querySelector('.quiz-feedback');
-
+                const selectedIcon = selectedOption.querySelector('.option-icon');
+                
                 if (isCorrect) {
                     score++;
                     selectedOption.classList.add('correct');
-                    feedback.textContent = `Correct! ${q.explanation || ''}`;
-                    feedback.className = 'quiz-feedback correct';
+                    selectedIcon.classList.add('correct', 'show');
+                    feedbackText.textContent = `Correct! ${q.explanation || ''}`;
+                    feedback.className = 'quiz-feedback correct show';
+                    feedbackIcon.className = 'feedback-icon correct';
                 } else {
                     selectedOption.classList.add('incorrect');
+                    selectedIcon.classList.add('incorrect', 'show');
                     
                     // Find and highlight the correct option
                     const allOptions = document.querySelectorAll(`input[name="q${i}"]`);
                     allOptions.forEach(option => {
                         if (option.value === q.correct_answer) {
-                            option.closest('.quiz-option').classList.add('correct');
+                            const correctOption = option.closest('.quiz-option');
+                            correctOption.classList.add('correct');
+                            correctOption.querySelector('.option-icon').classList.add('correct', 'show');
                         }
                     });
                     
-                    feedback.textContent = `Incorrect. The correct answer is ${q.correct_answer}. ${q.explanation || ''}`;
-                    feedback.className = 'quiz-feedback incorrect';
+                    const correctOption = q.options[['A', 'B', 'C', 'D'].indexOf(q.correct_answer)];
+                    feedbackText.textContent = `Incorrect. The correct answer is ${q.correct_answer}. ${correctOption}. ${q.explanation || ''}`;
+                    feedback.className = 'quiz-feedback incorrect show';
+                    feedbackIcon.className = 'feedback-icon incorrect';
                 }
             });
 
-            // Display final score
+            // Display final score with animation
             const finalScore = document.createElement('p');
             finalScore.textContent = `Final Score: ${score}/${totalQuestions}`;
             finalScore.style.textAlign = 'center';
             finalScore.style.marginTop = '1rem';
             finalScore.style.fontWeight = 'bold';
+            finalScore.style.opacity = '0';
+            finalScore.style.transform = 'translateY(10px)';
             document.getElementById('checkAnswers').after(finalScore);
+            
+            // Animate final score
+            setTimeout(() => {
+                finalScore.style.transition = 'all 0.3s ease';
+                finalScore.style.opacity = '1';
+                finalScore.style.transform = 'translateY(0)';
+            }, 100);
 
             // Show continuation options after quiz is completed
             displayStoryContinuation();

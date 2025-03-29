@@ -23,7 +23,12 @@ export const uiHandler = {
         
         const storyHTML = `
             <div class="story__content">
-                <h2 class="story__title">${story.title}</h2>
+                <div class="story__header">
+                    <h2 class="story__title">${story.title}</h2>
+                    <button id="tts-button" class="story__tts-btn" aria-label="Text to Speech" disabled>
+                        <span class="story__tts-icon">🔊</span>
+                    </button>
+                </div>
                 ${story.summary ? `
                     <div class="story__summary">
                         <div class="story__summary-title">Story Summary</div>
@@ -38,8 +43,16 @@ export const uiHandler = {
                         </ul>
                     </div>
                 </div>
+                <div id="story-image-placeholder" class="story__image-placeholder" style="display: none;"></div>
                 <div class="story__text">
-                    ${story.content.split('\n').map(paragraph => `<p class="story__paragraph">${paragraph}</p>`).join('')}
+                    ${story.content.split('\n').map(paragraph => `
+                        <div class="story__paragraph-container">
+                            <p class="story__paragraph">${paragraph}</p>
+                            <button class="story__tts-btn story__tts-btn--paragraph" aria-label="Read paragraph" disabled>
+                                <span class="story__tts-icon">🔊</span>
+                            </button>
+                        </div>
+                    `).join('')}
                 </div>
                 <div class="story__actions">
                     <button class="story__action-btn story__action-btn--copy">

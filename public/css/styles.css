@@ -92,4 +92,59 @@
         transform: translateX(100%);
         opacity: 0;
     }
+}
+
+.story__header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.story__tts-btn {
+    background: none;
+    border: none;
+    padding: 0.5rem;
+    cursor: pointer;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.story__tts-btn:not(:disabled):hover {
+    opacity: 1;
+    background-color: var(--hover-bg);
+}
+
+.story__tts-btn:disabled {
+    cursor: not-allowed;
+}
+
+.story__tts-icon {
+    font-size: 1.2rem;
+}
+
+.story__paragraph-container {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.story__paragraph {
+    flex: 1;
+    margin: 0;
+}
+
+.story__image-placeholder {
+    margin: 2rem 0;
+    padding: 1rem;
+    border: 2px dashed var(--border-color);
+    border-radius: 8px;
+    text-align: center;
+    color: var(--text-muted);
+    background-color: var(--bg-secondary);
 } 

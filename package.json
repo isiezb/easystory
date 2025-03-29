@@ -20,5 +20,9 @@
   },
   "devDependencies": {
     "nodemon": "^3.0.3"
+  },
+  "render": {
+    "startCommand": "npm start",
+    "healthCheckPath": "/health"
   }
 }

@@ -13,6 +13,11 @@ app.use(express.json());
 // Serve static files from the root directory
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Health check endpoint for Render
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok' });
+});
+
 // Serve index.html for all routes (SPA support)
 app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'public', 'index.html'));

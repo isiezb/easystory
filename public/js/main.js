@@ -20,8 +20,11 @@ subjectSelect.addEventListener('change', () => {
 
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
+    e.stopPropagation();
     
     const submitButton = e.target.querySelector('button[type="submit"]');
+    if (submitButton.disabled) return;
+    
     uiHandler.updateSubmitButton(submitButton, true);
     uiHandler.showLoading();
 
@@ -38,7 +41,10 @@ form.addEventListener('submit', async (e) => {
             generate_summary: document.getElementById('generateSummary').checked
         };
 
+        console.log('Submitting form data:', formData);
         const data = await apiService.generateStory(formData);
+        console.log('Received response:', data);
+        
         uiHandler.displayStory(data);
         
         if (data.quiz) {
@@ -49,7 +55,7 @@ form.addEventListener('submit', async (e) => {
 
     } catch (error) {
         console.error('Error:', error);
-        uiHandler.showError(error);
+        uiHandler.showError(error.message || 'Failed to generate story');
     } finally {
         uiHandler.hideLoading();
         uiHandler.updateSubmitButton(submitButton, false);

@@ -101,99 +101,59 @@ app.post('/generate-story', async (req, res) => {
         } = req.body;
 
         // Construct the prompt with optional fields
-        let prompt = `Create a didactic story for ${academic_grade} students about ${subject}`;
-        
-        if (subject_specification) {
-            prompt += `, specifically focusing on ${subject_specification}`;
-        }
-        
-        if (setting) {
-            prompt += `, set in ${setting}`;
-        } else {
-            prompt += `, set in an appropriate environment`;
-        }
-        
-        if (main_character) {
-            prompt += `, featuring ${main_character}`;
-        } else {
-            prompt += `, featuring a relatable protagonist`;
-        }
-        
-        prompt += `, approximately ${word_count} words, in ${language}. The story should be educational and engaging, with clear learning objectives appropriate for ${academic_grade} level.`;
+        let prompt = `Create an educational story and quiz based on the following parameters:
 
-        // Add continuation context if previous story exists
-        if (req.body.previous_story) {
-            prompt = `Continue the following story, maintaining the same characters, setting, and educational focus but adjusting the complexity for ${academic_grade} level students. The continuation should be approximately ${word_count} words and in ${language}. Make sure to maintain the same style and tone while advancing the plot naturally. Include new learning objectives appropriate for the ${academic_grade} level. Previous story:\n\n${req.body.previous_story}\n\nContinue the story while maintaining educational value and engagement.`;
-        }
+STORY PARAMETERS:
+- Grade Level: ${academic_grade}
+- Subject: ${subject}
+${subject_specification ? `- Subject Specification: ${subject_specification}` : ''}
+${setting ? `- Setting: ${setting}` : '- Setting: Appropriate environment'}
+${main_character ? `- Main Character: ${main_character}` : '- Main Character: Relatable protagonist'}
+- Word Count: ${word_count}
+- Language: ${language}
 
-        // Make request to OpenRouter API
+OUTPUT FORMAT:
+You must respond with a JSON object in the following exact format:
+{
+    "story": {
+        "title": "Story title here",
+        "content": "The story content here...",
+        "learning_objectives": ["objective 1", "objective 2", "objective 3"]
+    },
+    "quiz": [
+        {
+            "question": "Question about specific story content?",
+            "options": ["First option", "Second option", "Third option", "Fourth option"],
+            "correct_answer": "A",
+            "explanation": "Explanation of why this is correct"
+        }
+    ]
+}
+
+REQUIREMENTS:
+1. Story must be educational and engaging
+2. Story must be appropriate for ${academic_grade} level
+3. Quiz must have exactly 3 questions
+4. Each question must have exactly 4 options
+5. Correct answers must be A, B, C, or D (matching option position)
+6. Questions must test comprehension of key story elements
+7. All output must be in ${language}
+8. Story must be approximately ${word_count} words
+9. Learning objectives must be clear and measurable
+
+${req.body.previous_story ? `PREVIOUS STORY TO CONTINUE:
+${req.body.previous_story}
+
+Note: Continue the story while maintaining the same characters, setting, and educational focus but adjusting complexity for ${academic_grade} level.` : ''}`;
+
         try {
             const response = await axios.post(
                 `${OPENROUTER_BASE_URL}/chat/completions`,
                 {
                     model: 'google/gemini-2.0-flash-001',
-                    messages: [{ role: 'user', content: prompt }],
-                    max_tokens: word_count * 2,
-                    temperature: 0.7
-                },
-                {
-                    headers: {
-                        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-                        'Content-Type': 'application/json',
-                        'HTTP-Referer': config.server.frontendUrl,
-                        'X-Title': 'EASY STORY EASY LIFE',
-                        'OpenAI-Organization': 'org-123',
-                        'HTTP-Origin': config.server.frontendUrl
-                    }
-                }
-            );
-
-            console.log('OpenRouter API Response:', JSON.stringify(response.data, null, 2));
-
-            if (response.data.error) {
-                console.error('OpenRouter API Error:', response.data.error);
-                throw new Error(response.data.error.message || 'API Error');
-            }
-
-            if (!response.data.choices || !response.data.choices[0] || !response.data.choices[0].message) {
-                console.error('Invalid API response format:', response.data);
-                throw new Error('Invalid API response format');
-            }
-
-            const generatedStory = response.data.choices[0].message.content;
-
-            // After getting the story, generate quiz questions
-            const quizPrompt = `Create exactly 3 multiple-choice questions that test understanding of the following story. Each question must be directly related to specific events, characters, or concepts from the story.
-
-            Requirements:
-            1. Questions must be based ONLY on the content of the story below
-            2. Each question should test comprehension of key story elements
-            3. Options should be plausible but only one should be correct
-            4. Include a brief explanation of why the correct answer is right
-            5. The correct_answer MUST be exactly one of these letters: "A", "B", "C", or "D" (case sensitive)
-            6. Each question must have exactly 4 options
-            7. The correct_answer must match the position of the correct option in the options array (A=0, B=1, C=2, D=3)
-
-            Format your response EXACTLY like this JSON array:
-            [
-                {
-                    "question": "Question about specific story content?",
-                    "options": ["First option", "Second option", "Third option", "Fourth option"],
-                    "correct_answer": "A",
-                    "explanation": "Explanation of why this is correct"
-                }
-            ]
-
-            Story to generate questions from:
-            ${generatedStory}`;
-
-            const quizResponse = await axios.post(
-                `${OPENROUTER_BASE_URL}/chat/completions`,
-                {
-                    model: 'google/gemini-2.0-flash-001',
                     messages: [{ 
                         role: 'user', 
-                        content: quizPrompt 
+                        content: prompt 
                     }],
                     temperature: 0.7
                 },
@@ -206,56 +166,48 @@ app.post('/generate-story', async (req, res) => {
                 }
             );
 
-            // Add error handling for JSON parsing
-            let quiz;
+            // Parse and validate the response
+            let result;
             try {
-                const quizContent = quizResponse.data.choices[0].message.content;
+                const content = response.data.choices[0].message.content;
                 // Clean the response to ensure valid JSON
-                const cleanContent = quizContent.replace(/```json\n?|\n?```/g, '').trim();
-                quiz = JSON.parse(cleanContent);
+                const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
+                result = JSON.parse(cleanContent);
                 
-                // Ensure quiz is an array
-                if (!Array.isArray(quiz)) {
-                    quiz = [quiz];
+                // Validate the structure
+                if (!result.story || !result.quiz) {
+                    throw new Error('Invalid response structure');
                 }
                 
-                // Log the generated quiz for debugging
-                console.log('Generated quiz:', JSON.stringify(quiz, null, 2));
-                
-                // Validate each question
-                quiz = quiz.map(q => {
+                // Validate quiz format
+                result.quiz = result.quiz.map(q => {
                     // Ensure correct_answer is A, B, C, or D
                     if (!['A', 'B', 'C', 'D'].includes(q.correct_answer)) {
                         console.error('Invalid correct_answer:', q.correct_answer);
-                        // Try to infer correct answer from options array
-                        const correctIndex = q.options.findIndex(opt => opt.toLowerCase().includes('correct'));
-                        if (correctIndex !== -1) {
-                            q.correct_answer = ['A', 'B', 'C', 'D'][correctIndex];
-                        } else {
-                            q.correct_answer = 'A'; // Fallback to A if invalid
-                        }
+                        q.correct_answer = 'A';
                     }
-                    
                     // Ensure exactly 4 options
                     if (!q.options || q.options.length !== 4) {
                         console.error('Invalid options:', q.options);
                         q.options = ['Option A', 'Option B', 'Option C', 'Option D'];
                     }
-                    
-                    // Ensure correct_answer matches options array position
-                    const correctIndex = ['A', 'B', 'C', 'D'].indexOf(q.correct_answer);
-                    if (correctIndex === -1) {
-                        q.correct_answer = 'A';
-                    }
-                    
                     return q;
                 });
+                
+                // Ensure exactly 3 questions
+                if (result.quiz.length !== 3) {
+                    result.quiz = result.quiz.slice(0, 3);
+                }
+                
+                // Log the generated content for debugging
+                console.log('Generated content:', JSON.stringify(result, null, 2));
+                
             } catch (parseError) {
-                console.error('Failed to parse quiz JSON:', parseError);
-                quiz = [];  // Fallback to empty quiz if parsing fails
+                console.error('Failed to parse response:', parseError);
+                throw new Error('Failed to generate valid content');
             }
 
-            // Store in Supabase with both story and quiz
+            // Store in Supabase
             try {
                 const { data, error: dbError } = await supabase
                     .from('stories')
@@ -268,8 +220,10 @@ app.post('/generate-story', async (req, res) => {
                             main_character,
                             word_count,
                             language,
-                            story_text: generatedStory,
-                            quiz_questions: quiz,
+                            story_text: result.story.content,
+                            story_title: result.story.title,
+                            learning_objectives: result.story.learning_objectives,
+                            quiz_questions: result.quiz,
                             is_continuation: !!req.body.previous_story
                         }
                     ]);
@@ -279,11 +233,8 @@ app.post('/generate-story', async (req, res) => {
                 console.error('Supabase error:', dbError);
             }
 
-            // Return both story and quiz
-            return res.status(200).json({ 
-                story: generatedStory,
-                quiz: quiz
-            });
+            // Return the complete result
+            return res.status(200).json(result);
         } catch (error) {
             console.error('OpenRouter API Error:', error.response ? error.response.data : error.message);
             return res.status(500).json({ 

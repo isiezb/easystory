@@ -1224,49 +1224,25 @@
             });
         });
 
-        function displayStory(story) {
+        function displayStory(storyData) {
             const storyOutput = document.getElementById('storyOutput');
+            const story = storyData.story;
             
-            // Clean up the story text
-            const cleanStory = story
-                .replace(/^[^a-zA-Z0-9\u00C0-\u024F]+/u, '') // Remove any non-letter prefix
-                .trim();
-
-            const wordCount = cleanStory.trim().split(/\s+/).length;
-            const readingTime = Math.ceil(wordCount / 200);
-
-            // Format story with paragraphs, preserving any existing paragraph structure
-            const formattedStory = cleanStory
-                .split(/\n\s*\n/)  // Split on multiple newlines
-                .map(paragraph => paragraph.trim())
-                .filter(paragraph => paragraph.length > 0)
-                .map((paragraph, index) => {
-                    // Add special formatting for the first paragraph
-                    if (index === 0) {
-                        return `<p class="story-intro">${paragraph}</p>`;
-                    }
-                    // Check if paragraph is a quote (starts with " or ')
-                    if (paragraph.startsWith('"') || paragraph.startsWith("'")) {
-                        return `<blockquote>${paragraph}</blockquote>`;
-                    }
-                    // Check if paragraph is a heading (starts with #)
-                    if (paragraph.startsWith('#')) {
-                        const level = paragraph.match(/^#+/)[0].length;
-                        const text = paragraph.replace(/^#+\s*/, '');
-                        return `<h${level}>${text}</h${level}>`;
-                    }
-                    return `<p>${paragraph}</p>`;
-                })
-                .join('');
-
-            // Create story content with meta information
-            storyOutput.innerHTML = `
-                <div class="story-meta">
-                    <span>${wordCount} words</span>
-                    <span>${readingTime} min read</span>
-                </div>
+            // Create story content HTML
+            const storyHTML = `
                 <div class="story-content">
-                    <div class="story-text">${formattedStory}</div>
+                    <h2>${story.title}</h2>
+                    <div class="story-meta">
+                        <div class="learning-objectives">
+                            <h4>Learning Objectives:</h4>
+                            <ul>
+                                ${story.learning_objectives.map(obj => `<li>${obj}</li>`).join('')}
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="story-text">
+                        ${story.content.split('\n').map(paragraph => `<p>${paragraph}</p>`).join('')}
+                    </div>
                     <div class="story-actions">
                         <button class="action-btn copy-btn">
                             <span>Copy</span>
@@ -1280,31 +1256,33 @@
                     </div>
                 </div>
             `;
-
-            // Add event listeners for the action buttons
+            
+            // Clear previous content and add new story
+            storyOutput.innerHTML = storyHTML;
+            
+            // Add event listeners for action buttons
             const copyBtn = storyOutput.querySelector('.copy-btn');
-            copyBtn.addEventListener('click', async () => {
-                const storyText = storyOutput.querySelector('.story-text').textContent.trim();
-                await navigator.clipboard.writeText(storyText);
+            copyBtn.addEventListener('click', () => {
+                navigator.clipboard.writeText(story.content);
                 copyBtn.classList.add('active');
-                copyBtn.querySelector('span:last-child').textContent = 'Copied!';
+                copyBtn.querySelector('span').textContent = 'Copied!';
                 setTimeout(() => {
                     copyBtn.classList.remove('active');
-                    copyBtn.querySelector('span:last-child').textContent = 'Copy';
+                    copyBtn.querySelector('span').textContent = 'Copy';
                 }, 2000);
             });
-
+            
             const saveBtn = storyOutput.querySelector('.save-btn');
             saveBtn.addEventListener('click', () => {
                 saveStory(story);
                 saveBtn.classList.add('active');
-                saveBtn.querySelector('span:last-child').textContent = 'Saved!';
+                saveBtn.querySelector('span').textContent = 'Saved!';
                 setTimeout(() => {
                     saveBtn.classList.remove('active');
-                    saveBtn.querySelector('span:last-child').textContent = 'Save';
+                    saveBtn.querySelector('span').textContent = 'Save';
                 }, 2000);
             });
-
+            
             const printBtn = storyOutput.querySelector('.print-btn');
             printBtn.addEventListener('click', () => {
                 window.print();

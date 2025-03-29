@@ -283,6 +283,15 @@ app.get('/user-stories', authenticateUser, async (req, res) => {
     }
 });
 
+// Serve environment variables
+app.get('/env-config.js', (req, res) => {
+    res.setHeader('Content-Type', 'application/javascript');
+    res.send(`window._env_ = {
+        SUPABASE_URL: '${process.env.SUPABASE_URL}',
+        SUPABASE_KEY: '${process.env.SUPABASE_KEY}'
+    };`);
+});
+
 // Error handling middleware
 app.use(handleError);
 

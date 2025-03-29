@@ -1,5 +1,5 @@
 export const config = {
     serverUrl: window.location.origin,
-    supabaseUrl: 'YOUR_SUPABASE_URL',
-    supabaseKey: 'YOUR_SUPABASE_ANON_KEY'
+    supabaseUrl: window._env_?.SUPABASE_URL,
+    supabaseKey: window._env_?.SUPABASE_KEY
 }; 

@@ -73,6 +73,9 @@ export const apiService = {
     async generateStory(formData) {
         return this.retryWithBackoff(async () => {
             try {
+                console.log('Generating story with formData:', formData);
+                console.log('Server URL:', config.serverUrl);
+                
                 const response = await fetch(`${config.serverUrl}/generate-story`, {
                     method: 'POST',
                     headers: {
@@ -82,8 +85,21 @@ export const apiService = {
                     body: JSON.stringify(formData)
                 });
 
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => null);
+                    console.error('Error response:', errorData);
+                    throw new ApiError(
+                        errorData?.message || 'Failed to generate story',
+                        response.status,
+                        errorData?.details
+                    );
+                }
+
                 return await this.handleResponse(response);
             } catch (error) {
+                console.error('Error in generateStory:', error);
                 if (error instanceof ApiError) throw error;
                 throw new ApiError(
                     'Network error while generating story',

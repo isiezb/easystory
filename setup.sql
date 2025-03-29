@@ -188,6 +188,10 @@ CREATE POLICY "Users can delete their own stories"
     ON stories FOR DELETE
     USING (auth.uid() = user_id);
 
+-- Drop existing trigger and function if they exist
+DROP TRIGGER IF EXISTS on_user_deletion ON auth.users;
+DROP FUNCTION IF EXISTS handle_user_deletion() CASCADE;
+
 -- Create function to handle user deletion
 CREATE OR REPLACE FUNCTION handle_user_deletion()
 RETURNS TRIGGER AS $$

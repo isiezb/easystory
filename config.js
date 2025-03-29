@@ -1,9 +1,9 @@
 require('dotenv').config();
 
 module.exports = {
-    openrouter: {
-        apiKey: process.env.OPENROUTER_API_KEY,
-        baseUrl: 'https://openrouter.ai/api/v1'
+    gemini: {
+        apiKey: process.env.GEMINI_API_KEY,
+        apiUrl: 'https://generativelanguage.googleapis.com/v1'
     },
     supabase: {
         url: process.env.SUPABASE_URL,

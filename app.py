@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
-import openai
+import google.generativeai as genai
 import os
 from dotenv import load_dotenv
 
@@ -9,21 +9,18 @@ load_dotenv()
 app = Flask(__name__, static_folder='.')
 CORS(app)
 
-openai.api_key = os.getenv('OPENAI_API_KEY')
+genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
 
 def get_llm_response(system_prompt, user_prompt):
-    """Get response from OpenAI API."""
+    """Get response from Google Gemini API."""
     try:
-        response = openai.ChatCompletion.create(
-            model="gpt-4",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt}
-            ],
-            temperature=0.7,
-            max_tokens=2000
-        )
-        return response.choices[0].message.content
+        # Combine system and user prompts for Gemini (doesn't support separate system prompts)
+        combined_prompt = f"{system_prompt}\n\n{user_prompt}"
+        
+        model = genai.GenerativeModel('gemini-2.0-flash-001')
+        response = model.generate_content(combined_prompt)
+        
+        return response.text
     except Exception as e:
         print(f"Error getting LLM response: {e}")
         raise

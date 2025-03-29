@@ -5,7 +5,7 @@ const config = require('./config');
 const path = require('path');
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = config.server.port;
 
 // Middleware
 app.use(express.json());
@@ -59,9 +59,9 @@ const testConnection = async () => {
 // Run connection test on startup
 testConnection();
 
-// OpenRouter API configuration
-const OPENROUTER_API_KEY = config.openrouter.apiKey;
-const OPENROUTER_BASE_URL = config.openrouter.baseUrl;
+// Initialize configuration variables
+const GEMINI_API_KEY = config.gemini.apiKey;
+const GEMINI_API_URL = config.gemini.apiUrl;
 
 // Input validation function
 const validateInputs = (inputs) => {
@@ -147,21 +147,21 @@ ${req.body.previous_story}
 Note: Continue the story while maintaining the same characters, setting, and educational focus but adjusting complexity for ${academic_grade} level.` : ''}`;
 
         try {
+            // Make request to Google Gemini API
             const response = await axios.post(
-                `${OPENROUTER_BASE_URL}/chat/completions`,
+                `${GEMINI_API_URL}/models/gemini-2.0-flash-001:generateContent`,
                 {
-                    model: 'google/gemini-2.0-flash-001',
-                    messages: [{ 
-                        role: 'user', 
-                        content: prompt 
+                    contents: [{ 
+                        parts: [{ text: prompt }]
                     }],
-                    temperature: 0.7
+                    generationConfig: {
+                        temperature: 0.7
+                    }
                 },
                 {
                     headers: {
-                        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-                        'Content-Type': 'application/json',
-                        'HTTP-Referer': config.server.frontendUrl,
+                        'x-goog-api-key': GEMINI_API_KEY,
+                        'Content-Type': 'application/json'
                     }
                 }
             );
@@ -169,7 +169,8 @@ Note: Continue the story while maintaining the same characters, setting, and edu
             // Parse and validate the response
             let result;
             try {
-                const content = response.data.choices[0].message.content;
+                // The Gemini response format is different from OpenRouter
+                const content = response.data.candidates[0].content.parts[0].text;
                 // Clean the response to ensure valid JSON
                 const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
                 result = JSON.parse(cleanContent);
@@ -236,7 +237,7 @@ Note: Continue the story while maintaining the same characters, setting, and edu
             // Return the complete result
             return res.status(200).json(result);
         } catch (error) {
-            console.error('OpenRouter API Error:', error.response ? error.response.data : error.message);
+            console.error('Google Gemini API Error:', error.response ? error.response.data : error.message);
             return res.status(500).json({ 
                 error: error.response?.data?.error?.message || 'Failed to generate story'
             });

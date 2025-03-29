@@ -1377,12 +1377,18 @@
                 existingQuiz.remove();
             }
 
-            // Insert quiz section after the story continuation section
+            // Insert quiz section after the story text and before the continuation section
+            const storyText = document.querySelector('.story-text');
             const storyContinuation = document.querySelector('.story-continuation');
-            if (storyContinuation) {
-                storyContinuation.after(quizSection);
-                    } else {
-                // Fallback: insert after story output if continuation section doesn't exist
+            
+            if (storyText) {
+                if (storyContinuation) {
+                    storyContinuation.parentNode.insertBefore(quizSection, storyContinuation);
+                } else {
+                    storyText.after(quizSection);
+                }
+            } else {
+                // Fallback: insert after story output if story text doesn't exist
                 document.querySelector('#storyOutput').after(quizSection);
             }
 

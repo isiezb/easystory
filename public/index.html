@@ -6,40 +6,32 @@
     <title>EASY STORY EASY LIFE</title>
     <style>
         :root {
-            --primary: #3b82f6;
-            --primary-dark: #2563eb;
-            --secondary: #8b5cf6;
-            --accent: #818cf8;
-            --text: #0f172a;
-            --text-light: #64748b;
+            --primary: #4f46e5;
+            --primary-dark: #4338ca;
             --bg: #ffffff;
-            --bg-alt: #f8fafc;
-            --border: #e2e8f0;
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            --gradient: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
-            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            --backdrop-blur: blur(8px);
-            --success: #22c55e;
+            --text: #1a1a1a;
+            --border: #e5e7eb;
+            --success: #10b981;
             --error: #ef4444;
-            --card-bg: rgba(255, 255, 255, 0.95);
-            --radius: 12px;
+            --shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.03);
+            --hover-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            --gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            --gradient-text: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            --card-bg: rgba(255, 255, 255, 0.9);
+            --backdrop-blur: blur(12px);
+            --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-serif: 'Merriweather', Georgia, 'Times New Roman', serif;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         [data-theme="dark"] {
-            --primary: #60a5fa;
-            --primary-dark: #3b82f6;
-            --secondary: #a78bfa;
-            --accent: #c4b5fd;
-            --text: #f8fafc;
-            --text-light: #cbd5e1;
             --bg: #0f172a;
-            --bg-alt: #1e293b;
-            --border: #334155;
-            --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+            --text: #f8fafc;
+            --border: #1e293b;
             --card-bg: rgba(15, 23, 42, 0.95);
+            --shadow: 0 8px 16px -4px rgba(0, 0, 0, 0.3), 0 4px 6px -2px rgba(0, 0, 0, 0.2);
+            --gradient-text: linear-gradient(135deg, #818cf8 0%, #a78bfa 100%);
+            --gradient: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
         }
 
         [data-theme="dark"] body {
@@ -163,7 +155,7 @@
             width: 100%;
             min-height: 100vh;
             margin: 0;
-            padding: 3rem 2rem;
+            padding: 1rem;
             box-sizing: border-box;
             background: var(--bg);
             overflow-x: hidden;
@@ -181,226 +173,751 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        .header {
+        h1 {
             text-align: center;
-            margin-bottom: 4rem;
-            position: relative;
-        }
-
-        .title {
-            font-size: 3.5rem;
-            font-weight: 800;
-            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            margin-bottom: 1.5rem;
+            font-size: 4.5rem;
+            background: var(--gradient-text);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 1rem;
-            letter-spacing: -0.02em;
+            animation: slideIn 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            line-height: 1;
+            color: var(--primary);
         }
 
-        .header p {
-            font-size: 1.25rem;
-            color: var(--text-light);
-            max-width: 600px;
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .header-subtitle {
+            text-align: center;
+            color: var(--text);
+            opacity: 0.9;
+            font-size: 1.4rem;
+            margin-bottom: 0;
+            animation: fadeIn 0.8s cubic-bezier(0.4, 0, 0.2, 1) 0.2s both;
+            max-width: 700px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.6;
+            font-weight: 400;
+        }
+
+        .header-container {
+            width: 100%;
+            max-width: 1200px;
             margin: 0 auto;
+            position: relative;
+            padding: 6rem 3rem 5rem;
+            margin-bottom: 5rem;
+            background: var(--card-bg);
+            border-radius: 40px;
+            overflow: hidden;
+            backdrop-filter: var(--backdrop-blur);
+            border: 1px solid var(--border);
+            box-shadow: var(--shadow);
+            transition: var(--transition);
         }
 
-        .form-grid {
+        .header-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at top right, rgba(79, 70, 229, 0.1), transparent 50%),
+                        radial-gradient(circle at bottom left, rgba(124, 58, 237, 0.1), transparent 50%);
+            z-index: 0;
+        }
+
+        .header-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .form-section {
+            background: var(--card-bg);
+            border-radius: 32px;
+            padding: 4rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 4rem;
+            border: 1px solid var(--border);
+            transition: var(--transition);
+            backdrop-filter: var(--backdrop-blur);
+        }
+
+        .form-section:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--hover-shadow);
+        }
+
+        .form-container {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 2rem;
-            margin-bottom: 2rem;
+            gap: 3rem;
         }
 
         .form-group {
             margin-bottom: 1.5rem;
-        }
-
-        .form-group.full-width {
-            grid-column: 1 / -1;
+            position: relative;
         }
 
         label {
             display: block;
             margin-bottom: 0.75rem;
-            color: var(--text-light);
-            font-weight: 500;
-            font-size: 0.95rem;
-        }
-
-        .input {
-            width: 100%;
-            padding: 1rem 1.25rem;
-            border: 2px solid var(--border);
-            border-radius: var(--radius);
-            background: var(--bg);
+            font-weight: 600;
             color: var(--text);
-            font-size: 1rem;
+            font-size: 1.1rem;
+            letter-spacing: -0.01em;
             transition: var(--transition);
         }
 
-        .input:focus {
-            outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.1);
+        input, select {
+            width: 100%;
+            padding: 1.25rem;
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            background: var(--bg);
+            color: var(--text);
+            font-size: 1.1rem;
+            transition: var(--transition);
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 1rem center;
+            background-size: 1.2em;
         }
 
-        .button {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            padding: 1rem 2rem;
-            border: none;
-            border-radius: var(--radius);
-            background: var(--primary);
+        input:hover, select:hover {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+        }
+
+        input:focus, select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.15);
+            outline: none;
+        }
+
+        button[type="submit"] {
+            width: 100%;
+            padding: 1.75rem;
+            background: var(--gradient);
             color: white;
-            font-size: 1.1rem;
+            border: none;
+            border-radius: 20px;
+            font-size: 1.3rem;
             font-weight: 600;
             cursor: pointer;
             transition: var(--transition);
-            width: 100%;
-            max-width: 300px;
-            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+            letter-spacing: 0.5px;
+            margin-top: 3rem;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
-        .button:hover {
-            background: var(--primary-dark);
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
+        button[type="submit"]:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 24px rgba(79, 70, 229, 0.25);
         }
 
-        .button:disabled {
-            opacity: 0.7;
-            cursor: not-allowed;
-            transform: none;
+        button[type="submit"]:active {
+            transform: translateY(-1px);
         }
 
-        .story-section {
-            margin-top: 4rem;
+        .spinner {
+            display: none;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s linear infinite;
+            position: absolute;
+            right: 1.5rem;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        @keyframes spin {
+            to { transform: translateY(-50%) rotate(360deg); }
+        }
+
+        button:disabled .spinner {
+            display: block;
+        }
+
+        #storyOutput {
+            background: var(--card-bg);
+            border-radius: 20px;
             padding: 2.5rem;
-            background: var(--bg-alt);
-            border-radius: var(--radius);
+            margin-bottom: 2rem;
             box-shadow: var(--shadow);
-            transition: var(--transition);
+            line-height: 1.8;
+            border: 1px solid var(--border);
+            transition: transform 0.2s, box-shadow 0.2s;
+            backdrop-filter: var(--backdrop-blur);
         }
 
-        .story-section:hover {
-            box-shadow: var(--shadow-lg);
-        }
-
-        .story-section h2 {
-            font-size: 1.75rem;
-            margin-bottom: 1.5rem;
-            color: var(--text);
+        #storyOutput:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--hover-shadow);
         }
 
         .quiz-section {
-            margin-top: 3rem;
+            margin-top: 5rem;
+            background: var(--card-bg);
+            border-radius: 32px;
+            padding: 4rem;
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border);
+            backdrop-filter: var(--backdrop-blur);
+            transition: var(--transition);
         }
 
-        .quiz-section h2 {
-            font-size: 1.75rem;
-            margin-bottom: 2rem;
-            color: var(--text);
+        .quiz-section:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--hover-shadow);
+        }
+
+        .quiz-section h3 {
+            font-size: 1.8rem;
+            margin-bottom: 2.5rem;
+            color: var(--primary);
+            text-align: center;
+            font-weight: 700;
         }
 
         .quiz-question {
-            background: var(--bg-alt);
-            padding: 2rem;
-            border-radius: var(--radius);
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow);
+            background: var(--bg);
+            border: 2px solid var(--border);
+            border-radius: 24px;
+            padding: 3rem;
+            margin-bottom: 3rem;
             transition: var(--transition);
         }
 
-        .quiz-question:hover {
-            box-shadow: var(--shadow-lg);
+        .quiz-question p {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            line-height: 1.5;
         }
 
-        .quiz-question h3 {
-            font-size: 1.25rem;
-            margin-bottom: 1rem;
-            color: var(--text);
+        .quiz-options {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin: 1.5rem 0;
         }
 
         .quiz-option {
-            display: block;
-            padding: 1.25rem;
-            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+            padding: 1.75rem;
             border: 2px solid var(--border);
-            border-radius: var(--radius);
+            border-radius: 16px;
             cursor: pointer;
             transition: var(--transition);
-            position: relative;
+            background: var(--bg);
+            margin-bottom: 1.25rem;
         }
 
         .quiz-option:hover {
             border-color: var(--primary);
-            background: var(--bg);
+            transform: translateX(10px);
+            background: rgba(79, 70, 229, 0.05);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.1);
         }
 
         .quiz-option input[type="radio"] {
-            margin-right: 1rem;
+            width: 24px;
+            height: 24px;
+            margin: 0;
+            cursor: pointer;
+            accent-color: var(--primary);
         }
 
-        .quiz-option.correct {
-            border-color: #22c55e;
-            background: rgba(34, 197, 94, 0.1);
-        }
-
-        .quiz-option.incorrect {
-            border-color: #ef4444;
-            background: rgba(239, 68, 68, 0.1);
+        .quiz-option span {
+            flex: 1;
+            font-size: 1.1rem;
         }
 
         .quiz-feedback {
-            margin-top: 1rem;
-            padding: 1rem;
-            border-radius: var(--radius);
-            background: var(--bg);
-            font-size: 0.95rem;
+            margin-top: 1.5rem;
+            padding: 1.25rem;
+            border-radius: 12px;
+            font-weight: 500;
+            transition: all 0.3s;
         }
 
-        .theme-toggle {
-            position: fixed;
-            top: 2rem;
-            right: 2rem;
-            padding: 0.75rem;
-            border: none;
-            border-radius: 50%;
-            background: var(--bg-alt);
+        .quiz-feedback.correct {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .quiz-feedback.incorrect {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--error);
+            border: 1px solid var(--error);
+        }
+
+        #checkAnswers {
+            margin-top: 3rem;
+            background: var(--gradient);
+            padding: 1.75rem;
+            font-size: 1.3rem;
+            letter-spacing: 0.5px;
+            border-radius: 20px;
+            font-weight: 600;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            transition: var(--transition);
+        }
+
+        #checkAnswers:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 24px rgba(79, 70, 229, 0.25);
+        }
+
+        .story-continuation {
+            margin-top: 3rem;
+            padding-top: 3rem;
+            border-top: 2px solid var(--border);
+            text-align: center;
+        }
+
+        .difficulty-buttons {
+            display: flex;
+            gap: 1.5rem;
+            justify-content: center;
+            margin-top: 1.5rem;
+        }
+
+        .continue-btn {
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            border: 2px solid var(--border);
+            background: var(--bg);
             color: var(--text);
             cursor: pointer;
-            transition: var(--transition);
-            box-shadow: var(--shadow);
-            z-index: 100;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 500;
+            font-size: 1.1rem;
         }
 
-        .theme-toggle:hover {
-            transform: scale(1.1);
-            box-shadow: var(--shadow-lg);
+        .continue-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--hover-shadow);
+        }
+
+        .continue-btn.easier { border-color: var(--success); }
+        .continue-btn.same { border-color: var(--primary); }
+        .continue-btn.harder { border-color: var(--error); }
+
+        .story-content {
+            position: relative;
+            font-size: 1.2rem;
+            line-height: 1.8;
+            padding-top: 4rem;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .story-content p {
+            margin-bottom: 1.75rem;
+            text-align: justify;
+            color: var(--text);
+            opacity: 0.9;
+            font-size: 1.1rem;
+            line-height: 1.8;
+        }
+
+        .story-content p:first-of-type {
+            font-size: 1.3rem;
+            line-height: 1.7;
+            font-weight: 500;
+            color: var(--text);
+            opacity: 1;
+            margin-bottom: 2rem;
+        }
+
+        .story-content h2, .story-content h3 {
+            margin: 3rem 0 1.5rem;
+            color: var(--primary);
+            font-size: 1.8rem;
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        .story-content blockquote {
+            border-left: 4px solid var(--primary);
+            padding: 1.5rem 2rem;
+            margin: 2.5rem 0;
+            font-style: italic;
+            font-size: 1.1rem;
+            background: rgba(79, 70, 229, 0.05);
+            border-radius: 0 12px 12px 0;
+            color: var(--text);
+            opacity: 0.9;
+        }
+
+        .story-content ul, .story-content ol {
+            margin: 2.5rem 0;
+            padding-left: 2.5rem;
+        }
+
+        .story-content li {
+            margin-bottom: 1rem;
+            line-height: 1.7;
+            color: var(--text);
+            opacity: 0.9;
+        }
+
+        .story-actions {
+            position: static;
+            display: flex;
+            gap: 1.25rem;
+            justify-content: flex-end;
+            margin-bottom: 3rem;
+            background: var(--card-bg);
+            padding: 1.5rem;
+            border-radius: 20px;
+            box-shadow: var(--shadow);
+            z-index: 10;
+            width: fit-content;
+            margin-left: auto;
+            border: 1px solid var(--border);
+            backdrop-filter: var(--backdrop-blur);
+            transition: var(--transition);
+        }
+
+        .story-actions:hover {
+            box-shadow: var(--hover-shadow);
+        }
+
+        .story-meta {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 2.5rem;
+            color: var(--text);
+            opacity: 0.8;
+            font-size: 1rem;
+            padding: 1.25rem;
+            background: rgba(79, 70, 229, 0.05);
+            border-radius: 16px;
+            justify-content: center;
+            border: 1px solid rgba(79, 70, 229, 0.1);
+        }
+
+        .story-meta span {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-weight: 500;
+        }
+
+        .action-btn {
+            padding: 1rem 1.75rem;
+            background: var(--bg);
+            border: 2px solid var(--border);
+            border-radius: 14px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            transition: var(--transition);
+            white-space: nowrap;
+            font-weight: 500;
+        }
+
+        .action-btn:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            background: rgba(79, 70, 229, 0.05);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.1);
+        }
+
+        .action-btn.active {
+            background: var(--gradient);
+            color: white;
+            border-color: transparent;
+        }
+
+        .copy-btn {
+            position: static;
+        }
+
+        .quiz-option.selected,
+        .quiz-option.correct,
+        .quiz-option.incorrect {
+            transform: translateX(10px);
+            font-weight: 600;
+            border-width: 3px;
+        }
+
+        .quiz-option.selected {
+            border-color: var(--primary);
+            background: rgba(79, 70, 229, 0.3);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        .quiz-option.correct {
+            border-color: var(--success);
+            background: rgba(16, 185, 129, 0.3);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .quiz-option.incorrect {
+            border-color: var(--error);
+            background: rgba(239, 68, 68, 0.3);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        [data-theme="dark"] .quiz-option.selected,
+        [data-theme="dark"] .quiz-option.correct,
+        [data-theme="dark"] .quiz-option.incorrect {
+            background-opacity: 0.4;
+        }
+
+        [data-theme="dark"] .quiz-option.selected {
+            background: rgba(99, 102, 241, 0.4);
+            border-color: #6366f1;
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+
+        [data-theme="dark"] .quiz-option.correct {
+            background: rgba(16, 185, 129, 0.4);
+            border-color: #10b981;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        }
+
+        [data-theme="dark"] .quiz-option.incorrect {
+            background: rgba(239, 68, 68, 0.4);
+            border-color: #ef4444;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
         }
 
         @media (max-width: 768px) {
+            body {
+                padding: 0.5rem;
+            }
+            
             .container {
-                padding: 2rem 1rem;
+                padding: 0 0.5rem;
             }
 
-            .title {
+            .header-container {
+                padding-top: 4rem;
+            }
+
+            h1 {
                 font-size: 2.5rem;
+                margin-bottom: 1rem;
+            }
+            
+            .header-subtitle {
+                font-size: 1.1rem;
+                padding: 0 0.5rem;
             }
 
-            .form-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .story-section, .quiz-question {
+            .form-section {
                 padding: 1.5rem;
+                border-radius: 20px;
+                margin-bottom: 2rem;
+            }
+
+            .form-container {
+                grid-template-columns: 1fr;
+                gap: 1.25rem;
+            }
+
+            .form-group {
+                margin-bottom: 1rem;
+            }
+
+            input, select {
+                padding: 0.875rem;
+                font-size: 1rem;
+            }
+
+            button[type="submit"] {
+                padding: 1.25rem;
+                font-size: 1.1rem;
+                margin-top: 2rem;
+            }
+
+            .story-content {
+                padding-top: 2rem;
+            }
+
+            .story-actions {
+                position: static;
+                flex-wrap: wrap;
+                justify-content: center;
+                width: 100%;
+                padding: 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .action-btn {
+                flex: 1;
+                min-width: 120px;
+                justify-content: center;
+                padding: 0.75rem 1rem;
+                font-size: 0.95rem;
+            }
+
+            .story-meta {
+                flex-direction: column;
+                align-items: center;
+                gap: 0.75rem;
+                padding: 1rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .story-text {
+                padding: 1rem 0;
+            }
+
+            .story-text p {
+                font-size: 1rem;
+                line-height: 1.7;
+                margin-bottom: 1.5rem;
+            }
+
+            .story-text p:first-of-type {
+                font-size: 1.1rem;
+                line-height: 1.6;
+                margin-bottom: 1.5rem;
+            }
+
+            .story-continuation {
+                margin-top: 2rem;
+                padding-top: 2rem;
+            }
+
+            .story-continuation h3 {
+                font-size: 1.2rem;
+                margin-bottom: 1rem;
+            }
+
+            .difficulty-buttons {
+                flex-direction: column;
+                gap: 0.75rem;
+                padding: 0 0.5rem;
+            }
+
+            .continue-btn {
+                width: 100%;
+                padding: 0.875rem 1rem;
+                font-size: 1rem;
+                justify-content: center;
+            }
+
+            .quiz-section {
+                padding: 1.5rem;
+                margin-top: 2rem;
+                border-radius: 20px;
+            }
+
+            .quiz-section h3 {
+                font-size: 1.3rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .quiz-question {
+                padding: 1.5rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .quiz-question p {
+                font-size: 1.1rem;
+                margin-bottom: 1rem;
+            }
+
+            .quiz-option {
+                padding: 1rem;
+                margin-bottom: 0.75rem;
+            }
+
+            .quiz-option span {
+                font-size: 0.95rem;
+            }
+
+            #checkAnswers {
+                width: 100%;
+                padding: 1rem;
+                font-size: 1.1rem;
+                margin-top: 1.5rem;
             }
 
             .theme-toggle {
-                top: 1rem;
-                right: 1rem;
+                top: 0.5rem;
+                right: 0.5rem;
+                padding: 0.5rem 0.75rem;
+                font-size: 0.9rem;
             }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 0.25rem;
+            }
+
+            .container {
+                padding: 0 0.25rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .header-container {
+                padding: 2rem 1rem 1.5rem;
+            }
+
+            .form-section, .quiz-section {
+                padding: 1rem;
+            }
+
+            .story-text p {
+                font-size: 0.95rem;
+            }
+
+            .action-btn {
+                min-width: 100px;
+                padding: 0.625rem 0.75rem;
+            }
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 1.5rem;
+            right: 1.5rem;
+            z-index: 100;
+            padding: 0.75rem 1.25rem;
+            border-radius: 12px;
+            background: var(--card-bg);
+            border: 2px solid var(--border);
+            box-shadow: var(--shadow);
+            transition: all 0.3s;
+            backdrop-filter: var(--backdrop-blur);
+        }
+
+        .theme-toggle:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--hover-shadow);
         }
 
         @media print {
@@ -478,14 +995,16 @@
         <span>Dark Mode</span>
     </button>
     <div class="container">
-        <div class="header">
-            <h1 class="title">EASY STORY EASY LIFE</h1>
-            <p>Create engaging stories tailored to your needs. Perfect for learning and teaching.</p>
+        <div class="header-container">
+            <div class="header-content">
+                <h1>EASY STORY EASY LIFE</h1>
+                <p class="header-subtitle">Create engaging stories tailored to your needs. Perfect for learning and teaching.</p>
+            </div>
         </div>
         
         <section class="form-section">
     <form id="storyForm">
-                <div class="form-grid">
+                <div class="form-container">
         <div class="form-group">
             <label for="academicGrade">Academic Grade:</label>
             <select id="academicGrade" name="academic_grade" required>
@@ -567,15 +1086,6 @@
         </section>
     </div>
 
-    <div class="loading-overlay">
-        <div class="loading-content">
-            <div class="loading-spinner"></div>
-            <div class="loading-text">Generating your story...</div>
-        </div>
-    </div>
-
-    <div class="error-toast"></div>
-
     <script>
         const config = {
             serverUrl: window.location.origin
@@ -632,12 +1142,6 @@
             form.addEventListener('submit', async (e) => {
                 e.preventDefault();
                 
-                if (!utils.validateForm(form)) {
-                    utils.showError('Please fill in all required fields');
-                    return;
-                }
-                
-                utils.showLoading();
                 const submitButton = e.target.querySelector('button[type="submit"]');
                 const originalText = submitButton.textContent;
                 submitButton.disabled = true;
@@ -652,13 +1156,28 @@
                         main_character: document.getElementById('mainCharacter').value,
                         word_count: parseInt(document.getElementById('wordCount').value),
                         language: document.getElementById('language').value,
-                        response_format: 'story_only'
+                        response_format: 'story_only'  // First get just the story
                     };
 
-                    const data = await utils.handleApiRequest(`${config.serverUrl}/generate-story`, formData);
+                    const response = await fetch(`${config.serverUrl}/generate-story`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(formData)
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(data.error || 'Failed to generate story');
+                    }
+
+                    // Display the story first
                     displayStory(data.story);
 
-                    const quizData = await utils.handleApiRequest(`${config.serverUrl}/generate-story`, {
+                    // Then generate the quiz with the story data
+                    const quizRequestData = {
                         ...formData,
                         response_format: 'quiz_only',
                         story_data: data.story,
@@ -667,21 +1186,40 @@
                             question_types: ['comprehension', 'analysis'],
                             number_of_questions: 3
                         }
+                    };
+
+                    console.log('Requesting quiz with story data:', quizRequestData);
+
+                    const quizResponse = await fetch(`${config.serverUrl}/generate-story`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(quizRequestData)
                     });
 
+                    const quizResponseData = await quizResponse.json();
+                    console.log('Received quiz data:', quizResponseData);
+
+                    if (!quizResponse.ok) {
+                        throw new Error(quizResponseData.error || 'Failed to generate quiz');
+                    }
+
+                    // Display the quiz after a short delay
                     setTimeout(() => {
-                        if (quizData && quizData.quiz) {
-                            displayQuiz(quizData.quiz);
+                        if (quizResponseData && quizResponseData.quiz) {
+                            displayQuiz(quizResponseData.quiz);
+                        } else {
+                            console.error('No quiz data received');
                         }
-                    }, 2000);
+                    }, 2000); // 2 second delay
 
                 } catch (error) {
                     console.error('Error:', error);
-                    utils.showError(error.message || 'Failed to generate story. Please try again.');
+                    alert(error.message || 'Failed to generate story. Please try again.');
                 } finally {
                     submitButton.disabled = false;
                     submitButton.querySelector('span').textContent = originalText;
-                    utils.hideLoading();
                 }
             });
         });
@@ -721,45 +1259,27 @@
                 })
                 .join('');
 
+            // Create story content with meta information
             storyOutput.innerHTML = `
+                <div class="story-meta">
+                    <span>${wordCount} words</span>
+                    <span>${readingTime} min read</span>
+                </div>
                 <div class="story-content">
+                    <div class="story-text">${formattedStory}</div>
                     <div class="story-actions">
                         <button class="action-btn copy-btn">
-                            <span>📋</span>
                             <span>Copy</span>
-                            </button>
+                        </button>
                         <button class="action-btn save-btn">
-                            <span>💾</span>
                             <span>Save</span>
                         </button>
                         <button class="action-btn print-btn">
-                            <span>🖨️</span>
                             <span>Print</span>
                         </button>
-                            </div>
-                    <div class="story-meta">
-                        <span>📝 ${wordCount} words</span>
-                        <span>⏱️ ${readingTime} min read</span>
-                            </div>
-                    <div class="story-text">
-                        ${formattedStory}
-                            </div>
-                </div>
-                <div class="story-continuation">
-                    <h3>Continue the story with:</h3>
-                    <div class="difficulty-buttons">
-                        <button class="continue-btn easier" data-difficulty="easier">
-                            <span>📉</span> Easier
-                        </button>
-                        <button class="continue-btn same" data-difficulty="same">
-                            <span>➡️</span> Same Level
-                        </button>
-                        <button class="continue-btn harder" data-difficulty="harder">
-                            <span>📈</span> More Challenging
-                        </button>
                     </div>
-                            </div>
-                        `;
+                </div>
+            `;
 
             // Add event listeners for the action buttons
             const copyBtn = storyOutput.querySelector('.copy-btn');
@@ -839,19 +1359,10 @@
                 existingQuiz.remove();
             }
 
-            // Insert quiz section after the story text and before the continuation section
-            const storyText = document.querySelector('.story-text');
-            const storyContinuation = document.querySelector('.story-continuation');
-            
-            if (storyText) {
-                if (storyContinuation) {
-                    storyContinuation.parentNode.insertBefore(quizSection, storyContinuation);
-                } else {
-                    storyText.after(quizSection);
-                }
-            } else {
-                // Fallback: insert after story output if story text doesn't exist
-                document.querySelector('#storyOutput').after(quizSection);
+            // Insert quiz section directly after the story content
+            const storyContent = document.querySelector('.story-content');
+            if (storyContent) {
+                storyContent.after(quizSection);
             }
 
             // Add click handlers for quiz options
@@ -866,235 +1377,147 @@
                 });
             });
 
-            document.getElementById('checkAnswers').addEventListener('click', () => {
-                let score = 0;
-                const totalQuestions = quiz.length;
-
-                quiz.forEach((q, i) => {
-                    const selected = document.querySelector(`input[name="q${i}"]:checked`);
-                    if (!selected) return;
-
-                    const selectedOption = selected.closest('.quiz-option');
-                    const selectedValue = selected.value; // A, B, C, or D
-                    const isCorrect = selectedValue === q.correct_answer;
-                    const feedback = selectedOption.closest('.quiz-question').querySelector('.quiz-feedback');
-
-                    // Log values for debugging
-                    console.log('Checking answer:', {
-                        questionNum: i + 1,
-                        selectedValue,
-                        correctAnswer: q.correct_answer,
-                        isCorrect
-                    });
-
-                    if (isCorrect) {
-                        score++;
-                        selectedOption.classList.add('correct');
-                        feedback.textContent = `Correct! ${q.explanation || ''}`;
-                        feedback.className = 'quiz-feedback correct';
-                    } else {
-                        selectedOption.classList.add('incorrect');
-                        
-                        // Find and highlight the correct option
-                        const allOptions = document.querySelectorAll(`input[name="q${i}"]`);
-                        allOptions.forEach(option => {
-                            if (option.value === q.correct_answer) {
-                                option.closest('.quiz-option').classList.add('correct');
-                            }
-                        });
-                        
-                        feedback.textContent = `Incorrect. The correct answer is ${q.correct_answer}. ${q.explanation || ''}`;
-                        feedback.className = 'quiz-feedback incorrect';
-                    }
-                });
-
-                const finalScore = document.createElement('p');
-                finalScore.textContent = `Final Score: ${score}/${totalQuestions}`;
-                finalScore.style.textAlign = 'center';
-                finalScore.style.marginTop = '1rem';
-                finalScore.style.fontWeight = 'bold';
-                document.getElementById('checkAnswers').after(finalScore);
+            // Add check answers button handler
+            const checkAnswersBtn = quizSection.querySelector('#checkAnswers');
+            checkAnswersBtn.addEventListener('click', () => {
+                checkAnswers(quiz);
             });
         }
 
-        document.addEventListener('click', async (e) => {
-            if (e.target.closest('.continue-btn')) {
-                const button = e.target.closest('.continue-btn');
-                const difficulty = button.dataset.difficulty;
+        function displayStoryContinuation() {
+            const continuationSection = document.createElement('div');
+            continuationSection.className = 'story-continuation';
+            continuationSection.innerHTML = `
+                <h3>Continue the Story</h3>
+                <p>Would you like to continue this story with a different difficulty level?</p>
+                <div class="difficulty-options">
+                    <button class="difficulty-btn" data-difficulty="easier">Easier</button>
+                    <button class="difficulty-btn" data-difficulty="same">Same Level</button>
+                    <button class="difficulty-btn" data-difficulty="harder">Harder</button>
+                </div>
+            `;
 
-                // Disable all difficulty buttons
-                const buttons = document.querySelectorAll('.continue-btn');
-                buttons.forEach(btn => {
-                    btn.disabled = true;
-                    btn.style.opacity = '0.5';
-                    btn.style.cursor = 'not-allowed';
-                });
-
-                // Store original button text
-                const originalText = button.innerHTML;
-                button.innerHTML = '<span>⏳</span> Generating...';
-
-                const currentData = {
-                    academic_grade: document.getElementById('academicGrade').value,
-                    subject: document.getElementById('subject').value,
-                    subject_specification: document.getElementById('subjectSpecification').value,
-                    setting: document.getElementById('setting').value,
-                    main_character: document.getElementById('mainCharacter').value,
-                    word_count: parseInt(document.getElementById('wordCount').value),
-                    language: document.getElementById('language').value
-                };
-
-                // Adjust grade based on difficulty
-                if (difficulty === 'easier') {
-                    const grades = ['expert', 'university', 'high_school', 'middle_school', 'elementary'];
-                    const currentIndex = grades.indexOf(currentData.academic_grade);
-                    if (currentIndex < grades.length - 1) {
-                        currentData.academic_grade = grades[currentIndex + 1];
-                    }
-                } else if (difficulty === 'harder') {
-                    const grades = ['elementary', 'middle_school', 'high_school', 'university', 'expert'];
-                    const currentIndex = grades.indexOf(currentData.academic_grade);
-                    if (currentIndex < grades.length - 1) {
-                        currentData.academic_grade = grades[currentIndex + 1];
-                    }
-                }
-
-                try {
-                    const response = await fetch(`${config.serverUrl}/generate-story`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(currentData)
-                    });
-
-                    const data = await response.json();
-
-                    if (!response.ok) {
-                        throw new Error(data.error || 'Failed to generate story');
-                    }
-
-                    displayStory(data.story);
-                    displayQuiz(data.quiz);
-
-                } catch (error) {
-                    console.error('Error:', error);
-                    alert(error.message || 'Failed to generate continuation. Please try again.');
-                } finally {
-                    // Re-enable buttons and restore text
-                    buttons.forEach(btn => {
-                        btn.disabled = false;
-                        btn.style.opacity = '1';
-                        btn.style.cursor = 'pointer';
-                    });
-                    button.innerHTML = originalText;
-                }
+            // Remove any existing continuation section
+            const existingContinuation = document.querySelector('.story-continuation');
+            if (existingContinuation) {
+                existingContinuation.remove();
             }
-        });
 
-        function showLoading(message = 'Generating your story...') {
-            const overlay = document.querySelector('.loading-overlay');
-            overlay.querySelector('.loading-text').textContent = message;
-            overlay.style.display = 'flex';
+            // Insert continuation section after the quiz section
+            const quizSection = document.querySelector('.quiz-section');
+            if (quizSection) {
+                quizSection.after(continuationSection);
+            }
+
+            // Add click handlers for difficulty buttons
+            const difficultyBtns = continuationSection.querySelectorAll('.difficulty-btn');
+            difficultyBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const difficulty = btn.dataset.difficulty;
+                    generateContinuation(difficulty);
+                });
+            });
         }
 
-        function hideLoading() {
-            document.querySelector('.loading-overlay').style.display = 'none';
-        }
+        function checkAnswers(quiz) {
+            let score = 0;
+            const totalQuestions = quiz.length;
 
-        function showError(message) {
-            const toast = document.querySelector('.error-toast');
-            toast.textContent = message;
-            toast.style.display = 'block';
-            setTimeout(() => {
-                toast.style.display = 'none';
-            }, 5000);
-        }
+            quiz.forEach((q, i) => {
+                const selected = document.querySelector(`input[name="q${i}"]:checked`);
+                if (!selected) return;
 
-        // Add keyboard navigation for quiz
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-                const selectedOption = document.querySelector('.quiz-option.selected');
-                if (!selectedOption) return;
-                
-                const options = Array.from(document.querySelectorAll('.quiz-option'));
-                const currentIndex = options.indexOf(selectedOption);
-                let nextIndex;
-                
-                if (e.key === 'ArrowDown') {
-                    nextIndex = currentIndex < options.length - 1 ? currentIndex + 1 : 0;
+                const selectedOption = selected.closest('.quiz-option');
+                const selectedValue = selected.value; // A, B, C, or D
+                const correctIndex = ['A', 'B', 'C', 'D'].indexOf(selectedValue);
+                const isCorrect = q.options[correctIndex] === q.correct_answer;
+                const feedback = selectedOption.closest('.quiz-question').querySelector('.quiz-feedback');
+
+                if (isCorrect) {
+                    score++;
+                    selectedOption.classList.add('correct');
+                    feedback.textContent = `Correct! ${q.explanation || ''}`;
+                    feedback.className = 'quiz-feedback correct';
                 } else {
-                    nextIndex = currentIndex > 0 ? currentIndex - 1 : options.length - 1;
+                    selectedOption.classList.add('incorrect');
+                    
+                    // Find and highlight the correct option
+                    const correctLetterIndex = q.options.indexOf(q.correct_answer);
+                    const correctLetter = ['A', 'B', 'C', 'D'][correctLetterIndex];
+                    
+                    const allOptions = document.querySelectorAll(`input[name="q${i}"]`);
+                    allOptions.forEach(option => {
+                        if (option.value === correctLetter) {
+                            option.closest('.quiz-option').classList.add('correct');
+                        }
+                    });
+                    
+                    feedback.textContent = `Incorrect. The correct answer is ${correctLetter}. ${q.explanation || ''}`;
+                    feedback.className = 'quiz-feedback incorrect';
                 }
-                
-                options[currentIndex].classList.remove('selected');
-                options[nextIndex].classList.add('selected');
-                options[nextIndex].querySelector('input').checked = true;
+            });
+
+            const finalScore = document.createElement('p');
+            finalScore.textContent = `Final Score: ${score}/${totalQuestions}`;
+            finalScore.style.textAlign = 'center';
+            finalScore.style.marginTop = '1rem';
+            finalScore.style.fontWeight = 'bold';
+            document.getElementById('checkAnswers').after(finalScore);
+
+            // Show continuation options after quiz is completed
+            displayStoryContinuation();
+        }
+
+        async function generateContinuation(difficulty) {
+            const currentData = {
+                academic_grade: document.getElementById('academicGrade').value,
+                subject: document.getElementById('subject').value,
+                subject_specification: document.getElementById('subjectSpecification').value,
+                setting: document.getElementById('setting').value,
+                main_character: document.getElementById('mainCharacter').value,
+                word_count: parseInt(document.getElementById('wordCount').value),
+                language: document.getElementById('language').value,
+                previous_story: document.querySelector('.story-text').textContent
+            };
+
+            // Adjust grade based on difficulty
+            if (difficulty === 'easier') {
+                const grades = ['expert', 'university', 'high_school', 'middle_school', 'elementary'];
+                const currentIndex = grades.indexOf(currentData.academic_grade);
+                if (currentIndex < grades.length - 1) {
+                    currentData.academic_grade = grades[currentIndex + 1];
+                }
+            } else if (difficulty === 'harder') {
+                const grades = ['elementary', 'middle_school', 'high_school', 'university', 'expert'];
+                const currentIndex = grades.indexOf(currentData.academic_grade);
+                if (currentIndex < grades.length - 1) {
+                    currentData.academic_grade = grades[currentIndex + 1];
+                }
             }
-        });
 
-        const utils = {
-            showLoading(message = 'Generating your story...') {
-                const overlay = document.querySelector('.loading-overlay');
-                overlay.querySelector('.loading-text').textContent = message;
-                overlay.style.display = 'flex';
-            },
-
-            hideLoading() {
-                document.querySelector('.loading-overlay').style.display = 'none';
-            },
-
-            showError(message) {
-                const toast = document.querySelector('.error-toast');
-                toast.textContent = message;
-                toast.style.display = 'block';
-                setTimeout(() => {
-                    toast.style.display = 'none';
-                }, 5000);
-            },
-
-            validateForm(form) {
-                let hasError = false;
-                const requiredFields = form.querySelectorAll('[required]');
-                
-                // Reset previous errors
-                form.querySelectorAll('.form-group').forEach(group => {
-                    group.classList.remove('error');
-                    const errorMessage = group.querySelector('.error-message');
-                    if (errorMessage) errorMessage.remove();
-                });
-
-                // Validate fields
-                requiredFields.forEach(field => {
-                    if (!field.value) {
-                        const group = field.closest('.form-group');
-                        group.classList.add('error');
-                        const errorMessage = document.createElement('div');
-                        errorMessage.className = 'error-message';
-                        errorMessage.textContent = 'This field is required';
-                        group.appendChild(errorMessage);
-                        hasError = true;
-                    }
-                });
-
-                return !hasError;
-            },
-
-            async handleApiRequest(url, data) {
-                const response = await fetch(url, {
+            try {
+                const response = await fetch(`${config.serverUrl}/generate-story`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(currentData)
                 });
 
-                const responseData = await response.json();
+                const data = await response.json();
+
                 if (!response.ok) {
-                    throw new Error(responseData.error || 'Request failed');
+                    throw new Error(data.error || 'Failed to generate story');
                 }
 
-                return responseData;
+                displayStory(data.story);
+                displayQuiz(data.quiz);
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert(error.message || 'Failed to generate continuation. Please try again.');
             }
-        };
+        }
     </script>
 </body>
 </html> 

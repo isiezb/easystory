@@ -106,12 +106,19 @@ export const uiHandler = {
         const toast = document.querySelector('.toast-container');
         const toastElement = document.createElement('div');
         toastElement.className = `toast ${type}`;
+        
+        // Add icon based on type
+        const icon = this.getToastIcon(type);
+        
         toastElement.innerHTML = `
             <div class="toast-content">
-                <div class="toast-title">${type.charAt(0).toUpperCase() + type.slice(1)}</div>
+                <div class="toast-header">
+                    ${icon}
+                    <div class="toast-title">${type.charAt(0).toUpperCase() + type.slice(1)}</div>
+                </div>
                 <div class="toast-message">${message}</div>
             </div>
-            <button class="toast-close">&times;</button>
+            <button class="toast-close" aria-label="Close">&times;</button>
         `;
 
         toast.appendChild(toastElement);
@@ -128,19 +135,55 @@ export const uiHandler = {
         }, duration);
     },
 
+    getToastIcon(type) {
+        const icons = {
+            error: '❌',
+            success: '✅',
+            warning: '⚠️',
+            info: 'ℹ️'
+        };
+        return `<span class="toast-icon">${icons[type] || icons.info}</span>`;
+    },
+
     showError(error) {
         let message = 'An error occurred';
+        let type = 'error';
         
         if (error instanceof Error) {
-            message = error.message;
-            if (error.details) {
-                message += `: ${error.details}`;
+            if (error.name === 'ApiError') {
+                // Handle specific status codes
+                switch (error.status) {
+                    case 401:
+                        message = 'Please sign in to continue';
+                        type = 'warning';
+                        break;
+                    case 403:
+                        message = 'You do not have permission to perform this action';
+                        type = 'warning';
+                        break;
+                    case 429:
+                        message = 'Too many requests. Please try again later';
+                        type = 'warning';
+                        break;
+                    case 503:
+                        message = 'Service temporarily unavailable. Please try again later';
+                        type = 'warning';
+                        break;
+                    default:
+                        message = error.message;
+                }
+                
+                if (error.details) {
+                    message += `: ${error.details}`;
+                }
+            } else {
+                message = error.message;
             }
         } else if (typeof error === 'string') {
             message = error;
         }
 
-        this.showToast(message, 'error');
+        this.showToast(message, type);
     },
 
     showSuccess(message) {

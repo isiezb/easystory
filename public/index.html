@@ -1155,8 +1155,7 @@
                         setting: document.getElementById('setting').value,
                         main_character: document.getElementById('mainCharacter').value,
                         word_count: parseInt(document.getElementById('wordCount').value),
-                        language: document.getElementById('language').value,
-                        response_format: 'story_only'  // First get just the story
+                        language: document.getElementById('language').value
                     };
 
                     const response = await fetch(`${config.serverUrl}/generate-story`, {
@@ -1173,46 +1172,15 @@
                         throw new Error(data.error || 'Failed to generate story');
                     }
 
-                    // Display the story first
-                    displayStory(data.story);
+                    // Display the story
+                    displayStory(data);
 
-                    // Then generate the quiz with the story data
-                    const quizRequestData = {
-                        ...formData,
-                        response_format: 'quiz_only',
-                        story_data: data.story,
-                        quiz_requirements: {
-                            use_story_content: true,
-                            question_types: ['comprehension', 'analysis'],
-                            number_of_questions: 3
-                        }
-                    };
-
-                    console.log('Requesting quiz with story data:', quizRequestData);
-
-                    const quizResponse = await fetch(`${config.serverUrl}/generate-story`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify(quizRequestData)
-                    });
-
-                    const quizResponseData = await quizResponse.json();
-                    console.log('Received quiz data:', quizResponseData);
-
-                    if (!quizResponse.ok) {
-                        throw new Error(quizResponseData.error || 'Failed to generate quiz');
+                    // Display the quiz immediately since we have the data
+                    if (data.quiz) {
+                        displayQuiz(data.quiz);
+                    } else {
+                        console.error('No quiz data received');
                     }
-
-                    // Display the quiz after a short delay
-                    setTimeout(() => {
-                        if (quizResponseData && quizResponseData.quiz) {
-                            displayQuiz(quizResponseData.quiz);
-                        } else {
-                            console.error('No quiz data received');
-                        }
-                    }, 2000); // 2 second delay
 
                 } catch (error) {
                     console.error('Error:', error);
@@ -1226,7 +1194,13 @@
 
         function displayStory(storyData) {
             const storyOutput = document.getElementById('storyOutput');
-            const story = storyData.story;
+            
+            // Handle both old and new story formats
+            const story = typeof storyData === 'string' ? {
+                title: 'Story',
+                content: storyData,
+                learning_objectives: ['Understanding the main concepts', 'Analyzing key events', 'Applying knowledge']
+            } : storyData.story;
             
             // Create story content HTML
             const storyHTML = `
@@ -1484,8 +1458,11 @@
                     throw new Error(data.error || 'Failed to generate story');
                 }
 
-                displayStory(data.story);
-                displayQuiz(data.quiz);
+                // Display both story and quiz
+                displayStory(data);
+                if (data.quiz) {
+                    displayQuiz(data.quiz);
+                }
 
             } catch (error) {
                 console.error('Error:', error);

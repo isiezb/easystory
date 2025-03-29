@@ -9,7 +9,14 @@ const port = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json());
-app.use(express.static(path.join(__dirname)));
+
+// Serve static files from the root directory
+app.use(express.static(path.join(__dirname, 'public')));
+
+// Serve index.html for all routes (SPA support)
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 // CORS middleware
 app.use((req, res, next) => {
@@ -258,16 +265,6 @@ app.post('/generate-story', async (req, res) => {
         console.error('Error:', error);
         return res.status(500).json({ error: 'Failed to generate story' });
     }
-});
-
-// Root path handler
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// Catch-all route for SPA
-app.use('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Start server

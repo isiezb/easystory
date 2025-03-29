@@ -3,14 +3,9 @@ const axios = require('axios');
 const { createClient } = require('@supabase/supabase-js');
 const config = require('./config');
 const path = require('path');
-const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
 const port = config.server.port;
-
-// Initialize Google Generative AI
-const genAI = new GoogleGenerativeAI(config.gemini.apiKey);
-const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash-001' });
 
 // Middleware
 app.use(express.json());
@@ -64,9 +59,9 @@ const testConnection = async () => {
 // Run connection test on startup
 testConnection();
 
-// Initialize configuration variables
-const GEMINI_API_KEY = config.gemini.apiKey;
-const GEMINI_API_URL = config.gemini.apiUrl;
+// OpenRouter API configuration
+const OPENROUTER_API_KEY = config.openrouter.apiKey;
+const OPENROUTER_BASE_URL = config.openrouter.baseUrl;
 
 // Input validation function
 const validateInputs = (inputs) => {
@@ -152,25 +147,41 @@ ${req.body.previous_story}
 Note: Continue the story while maintaining the same characters, setting, and educational focus but adjusting complexity for ${academic_grade} level.` : ''}`;
 
         try {
-            // Generate content using Google Generative AI
-            const result = await model.generateContent(prompt);
-            const response = await result.response;
-            const text = response.text();
-            
-            // Clean the response to ensure valid JSON
-            const cleanContent = text.replace(/```json\n?|\n?```/g, '').trim();
-            let parsedResult;
-            
+            // Make request to OpenRouter API with Google's Gemini model
+            const response = await axios.post(
+                `${OPENROUTER_BASE_URL}/chat/completions`,
+                {
+                    model: 'google/gemini-2.0-flash-001',
+                    messages: [{ 
+                        role: 'user', 
+                        content: prompt 
+                    }],
+                    temperature: 0.7
+                },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                        'Content-Type': 'application/json',
+                        'HTTP-Referer': config.server.frontendUrl,
+                    }
+                }
+            );
+
+            // Parse and validate the response
+            let result;
             try {
-                parsedResult = JSON.parse(cleanContent);
+                const content = response.data.choices[0].message.content;
+                // Clean the response to ensure valid JSON
+                const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
+                result = JSON.parse(cleanContent);
                 
                 // Validate the structure
-                if (!parsedResult.story || !parsedResult.quiz) {
+                if (!result.story || !result.quiz) {
                     throw new Error('Invalid response structure');
                 }
                 
                 // Validate quiz format
-                parsedResult.quiz = parsedResult.quiz.map(q => {
+                result.quiz = result.quiz.map(q => {
                     // Ensure correct_answer is A, B, C, or D
                     if (!['A', 'B', 'C', 'D'].includes(q.correct_answer)) {
                         console.error('Invalid correct_answer:', q.correct_answer);
@@ -185,12 +196,12 @@ Note: Continue the story while maintaining the same characters, setting, and edu
                 });
                 
                 // Ensure exactly 3 questions
-                if (parsedResult.quiz.length !== 3) {
-                    parsedResult.quiz = parsedResult.quiz.slice(0, 3);
+                if (result.quiz.length !== 3) {
+                    result.quiz = result.quiz.slice(0, 3);
                 }
                 
                 // Log the generated content for debugging
-                console.log('Generated content:', JSON.stringify(parsedResult, null, 2));
+                console.log('Generated content:', JSON.stringify(result, null, 2));
                 
             } catch (parseError) {
                 console.error('Failed to parse response:', parseError);
@@ -210,10 +221,10 @@ Note: Continue the story while maintaining the same characters, setting, and edu
                             main_character,
                             word_count,
                             language,
-                            story_text: parsedResult.story.content,
-                            story_title: parsedResult.story.title,
-                            learning_objectives: parsedResult.story.learning_objectives,
-                            quiz_questions: parsedResult.quiz,
+                            story_text: result.story.content,
+                            story_title: result.story.title,
+                            learning_objectives: result.story.learning_objectives,
+                            quiz_questions: result.quiz,
                             is_continuation: !!req.body.previous_story
                         }
                     ]);
@@ -224,11 +235,11 @@ Note: Continue the story while maintaining the same characters, setting, and edu
             }
 
             // Return the complete result
-            return res.status(200).json(parsedResult);
+            return res.status(200).json(result);
         } catch (error) {
-            console.error('Google Gemini API Error:', error);
+            console.error('OpenRouter API Error:', error.response ? error.response.data : error.message);
             return res.status(500).json({ 
-                error: error.message || 'Failed to generate story'
+                error: error.response?.data?.error?.message || 'Failed to generate story'
             });
         }
     } catch (error) {

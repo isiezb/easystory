@@ -26,7 +26,7 @@ An interactive web application that generates educational stories tailored to yo
 - Backend:
   - Node.js
   - Express.js
-  - Google Gemini 2.0 Flash
+  - Google Gemini 2.0 Flash (via OpenRouter)
   - Supabase for data storage
 - Local Storage for story saving
 
@@ -45,7 +45,7 @@ npm install
 3. Set up environment variables:
 Create a `.env` file with:
 ```
-GEMINI_API_KEY=your_gemini_api_key
+OPENROUTER_API_KEY=your_openrouter_api_key
 SUPABASE_URL=your_supabase_url
 SUPABASE_KEY=your_supabase_key
 ```

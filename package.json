@@ -1,7 +1,7 @@
 {
   "name": "didactic-story-generator",
   "version": "1.0.0",
-  "description": "Backend for generating didactic stories using Google Gemini API and Supabase",
+  "description": "Backend for generating didactic stories using OpenRouter API with Google Gemini 2.0 Flash and Supabase",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

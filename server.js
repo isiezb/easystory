@@ -10,18 +10,38 @@ const path = require('path');
 const app = express();
 const port = process.env.PORT || 3000;
 
-// Debug logging for environment variables
-logger.info('Environment check:', {
+// Detailed environment variable logging
+logger.info('Environment variables check:', {
     hasSupabaseUrl: !!process.env.SUPABASE_URL,
     hasSupabaseKey: !!process.env.SUPABASE_ANON_KEY,
-    nodeEnv: process.env.NODE_ENV
+    supabaseUrl: process.env.SUPABASE_URL,
+    supabaseKeyLength: process.env.SUPABASE_ANON_KEY?.length,
+    nodeEnv: process.env.NODE_ENV,
+    hasOpenRouterKey: !!process.env.OPENROUTER_API_KEY
 });
 
-// Initialize Supabase client
-const supabase = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_ANON_KEY
-);
+// Validate required environment variables
+if (!process.env.SUPABASE_URL) {
+    logger.error('SUPABASE_URL is not set');
+    process.exit(1);
+}
+
+if (!process.env.SUPABASE_ANON_KEY) {
+    logger.error('SUPABASE_ANON_KEY is not set');
+    process.exit(1);
+}
+
+// Initialize Supabase client with validation
+try {
+    const supabase = createClient(
+        process.env.SUPABASE_URL,
+        process.env.SUPABASE_ANON_KEY
+    );
+    logger.info('Supabase client initialized successfully');
+} catch (error) {
+    logger.error('Failed to initialize Supabase client:', error);
+    process.exit(1);
+}
 
 // Middleware
 app.use(cors());

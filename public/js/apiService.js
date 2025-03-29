@@ -1,4 +1,5 @@
 import { config } from './config.js';
+import { supabase } from './supabase.js';
 
 class ApiError extends Error {
     constructor(message, status, details = null) {

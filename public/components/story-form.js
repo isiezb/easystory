@@ -1,75 +1,153 @@
-import { LitElement, html, css } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@2/core/lit-core.min.js';
 
-@customElement('story-form')
 export class StoryForm extends LitElement {
-  @property({ type: Boolean })
-  isSubmitting = false;
+  static get properties() {
+    return {
+      isSubmitting: { type: Boolean },
+      subjects: { type: Array },
+      gradeLevels: { type: Array },
+      wordCounts: { type: Array },
+      languages: { type: Array }
+    };
+  }
 
-  @property({ type: Array })
-  subjects = [
-    { value: 'law', label: 'Law' },
-    { value: 'medicine', label: 'Medicine' },
-    { value: 'chemistry', label: 'Chemistry' },
-    { value: 'biology', label: 'Biology' },
-    { value: 'physics', label: 'Physics' },
-    { value: 'mathematics', label: 'Mathematics' },
-    { value: 'history', label: 'History' },
-    { value: 'literature', label: 'Literature' },
-    { value: 'other', label: 'Other' }
-  ];
+  constructor() {
+    super();
+    this.isSubmitting = false;
+    
+    this.subjects = [
+      { value: 'law', label: 'Law' },
+      { value: 'medicine', label: 'Medicine' },
+      { value: 'chemistry', label: 'Chemistry' },
+      { value: 'biology', label: 'Biology' },
+      { value: 'physics', label: 'Physics' },
+      { value: 'mathematics', label: 'Mathematics' },
+      { value: 'history', label: 'History' },
+      { value: 'literature', label: 'Literature' },
+      { value: 'other', label: 'Other' }
+    ];
 
-  @property({ type: Array })
-  gradeLevels = [
-    { value: 'K', label: 'Kindergarten' },
-    { value: '1', label: 'Grade 1' },
-    { value: '2', label: 'Grade 2' },
-    { value: '3', label: 'Grade 3' },
-    { value: '4', label: 'Grade 4' },
-    { value: '5', label: 'Grade 5' },
-    { value: '6', label: 'Grade 6' },
-    { value: '7', label: 'Grade 7' },
-    { value: '8', label: 'Grade 8' },
-    { value: '9', label: 'Grade 9' },
-    { value: '10', label: 'Grade 10' },
-    { value: '11', label: 'Grade 11' },
-    { value: '12', label: 'Grade 12' }
-  ];
+    this.gradeLevels = [
+      { value: 'K', label: 'Kindergarten' },
+      { value: '1', label: 'Grade 1' },
+      { value: '2', label: 'Grade 2' },
+      { value: '3', label: 'Grade 3' },
+      { value: '4', label: 'Grade 4' },
+      { value: '5', label: 'Grade 5' },
+      { value: '6', label: 'Grade 6' },
+      { value: '7', label: 'Grade 7' },
+      { value: '8', label: 'Grade 8' },
+      { value: '9', label: 'Grade 9' },
+      { value: '10', label: 'Grade 10' },
+      { value: '11', label: 'Grade 11' },
+      { value: '12', label: 'Grade 12' }
+    ];
 
-  @property({ type: Array })
-  wordCounts = [
-    { value: '300', label: '300 words' },
-    { value: '500', label: '500 words' },
-    { value: '750', label: '750 words' }
-  ];
+    this.wordCounts = [
+      { value: '300', label: '300 words' },
+      { value: '500', label: '500 words' },
+      { value: '750', label: '750 words' }
+    ];
 
-  @property({ type: Array })
-  languages = [
-    { value: 'English', label: 'English' },
-    { value: 'Spanish', label: 'Spanish' },
-    { value: 'French', label: 'French' },
-    { value: 'German', label: 'German' },
-    { value: 'Italian', label: 'Italian' }
-  ];
+    this.languages = [
+      { value: 'English', label: 'English' },
+      { value: 'Spanish', label: 'Spanish' },
+      { value: 'French', label: 'French' },
+      { value: 'German', label: 'German' },
+      { value: 'Italian', label: 'Italian' }
+    ];
 
-  @state()
-  _formData = {
-    academic_grade: '',
-    subject: '',
-    other_subject: '',
-    subject_specification: '',
-    setting: '',
-    main_character: '',
-    word_count: '300',
-    language: 'English',
-    generate_vocabulary: false,
-    generate_summary: false
-  };
+    this._formData = {
+      academic_grade: '',
+      subject: '',
+      other_subject: '',
+      subject_specification: '',
+      setting: '',
+      main_character: '',
+      word_count: '300',
+      language: 'English',
+      generate_vocabulary: false,
+      generate_summary: false
+    };
 
-  @state()
-  _showOtherSubject = false;
+    this._showOtherSubject = false;
+  }
 
-  static styles = css`
+  _handleInputChange(e) {
+    const { name, value, type, checked } = e.target;
+    
+    const newValue = type === 'checkbox' ? checked : value;
+    
+    this._formData = {
+      ...this._formData,
+      [name]: newValue
+    };
+
+    // Show/hide other subject field
+    if (name === 'subject') {
+      this._showOtherSubject = value === 'other';
+    }
+  }
+
+  _handleSubmit(e) {
+    e.preventDefault();
+    
+    // Validate form
+    if (!this._validate()) {
+      return;
+    }
+    
+    // Prepare data for submission
+    const formData = { ...this._formData };
+    
+    // Handle special case for other subject
+    if (formData.subject === 'other' && formData.other_subject) {
+      formData.subject = formData.other_subject;
+      delete formData.other_subject;
+    }
+    
+    // Convert word_count to number
+    formData.word_count = parseInt(formData.word_count, 10);
+    
+    // Dispatch form submit event
+    this.dispatchEvent(new CustomEvent('story-form-submit', {
+      detail: { formData },
+      bubbles: true,
+      composed: true
+    }));
+  }
+
+  _validate() {
+    // Basic validation
+    if (!this._formData.academic_grade) {
+      this._showError('Please select an academic grade');
+      return false;
+    }
+    
+    if (!this._formData.subject) {
+      this._showError('Please select a subject');
+      return false;
+    }
+    
+    if (this._formData.subject === 'other' && !this._formData.other_subject) {
+      this._showError('Please specify the other subject');
+      return false;
+    }
+    
+    return true;
+  }
+
+  _showError(message) {
+    // If toast system is available, use it
+    if (typeof window.showToast === 'function') {
+      window.showToast(message, 'error');
+    } else {
+      alert(message);
+    }
+  }
+
+  static get styles() {
+    return css`
     :host {
       display: block;
       font-family: var(--font-body, 'Source Serif Pro', Georgia, 'Times New Roman', serif);
@@ -317,77 +395,6 @@ export class StoryForm extends LitElement {
       }
     }
   `;
-
-  _handleInputChange(e) {
-    const { name, value, type, checked } = e.target;
-    
-    const newValue = type === 'checkbox' ? checked : value;
-    
-    this._formData = {
-      ...this._formData,
-      [name]: newValue
-    };
-
-    // Show/hide other subject field
-    if (name === 'subject') {
-      this._showOtherSubject = value === 'other';
-    }
-  }
-
-  _handleSubmit(e) {
-    e.preventDefault();
-    
-    // Validate form
-    if (!this._validate()) {
-      return;
-    }
-    
-    // Prepare data for submission
-    const formData = { ...this._formData };
-    
-    // Handle special case for other subject
-    if (formData.subject === 'other' && formData.other_subject) {
-      formData.subject = formData.other_subject;
-      delete formData.other_subject;
-    }
-    
-    // Convert word_count to number
-    formData.word_count = parseInt(formData.word_count, 10);
-    
-    // Dispatch form submit event
-    this.dispatchEvent(new CustomEvent('story-form-submit', {
-      detail: { formData },
-      bubbles: true,
-      composed: true
-    }));
-  }
-
-  _validate() {
-    // Basic validation
-    if (!this._formData.academic_grade) {
-      this._showError('Please select an academic grade');
-      return false;
-    }
-    
-    if (!this._formData.subject) {
-      this._showError('Please select a subject');
-      return false;
-    }
-    
-    if (this._formData.subject === 'other' && !this._formData.other_subject) {
-      this._showError('Please specify the other subject');
-      return false;
-    }
-    
-    return true;
-  }
-
-  _showError(message) {
-    this.dispatchEvent(new CustomEvent('error', {
-      detail: { message },
-      bubbles: true,
-      composed: true
-    }));
   }
 
   render() {
@@ -522,17 +529,10 @@ export class StoryForm extends LitElement {
               </div>
             </fieldset>
 
-            <div class="login-reminder" ?hidden=${typeof window.isAnonymousUser === 'undefined' ? true : window.isAnonymousUser === false}>
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 15c-.55 0-1-.45-1-1v-4c0-.55.45-1 1-1s1 .45 1 1v4c0 .55-.45 1-1 1zm1-8h-2V7h2v2z" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-              <span>Please <a href="#" @click=${this._handleLoginClick}>log in</a> to save stories to your account!</span>
-            </div>
-            
             <div class="form-actions">
               <button type="submit" ?disabled=${this.isSubmitting}>
                 <div class="spinner"></div>
-                <span>${this.isSubmitting ? 'Generating...' : 'Generate Story'}</span>
+                Generate Story
               </button>
             </div>
           </div>
@@ -540,12 +540,6 @@ export class StoryForm extends LitElement {
       </div>
     `;
   }
+}
 
-  _handleLoginClick(e) {
-    e.preventDefault();
-    this.dispatchEvent(new CustomEvent('login-click', {
-      bubbles: true,
-      composed: true
-    }));
-  }
-} 
+customElements.define('story-form', StoryForm); 

@@ -1,159 +1,142 @@
-import { LitElement, html, css } from 'lit';
+import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@2/core/lit-core.min.js';
 
 export class ToastNotification extends LitElement {
-  static properties = {
-    message: { type: String },
-    type: { type: String }, // 'success', 'error', 'warning', 'info'
-    duration: { type: Number },
-    visible: { type: Boolean, reflect: true }
-  };
-
-  static styles = css`
-    :host {
-      display: block;
-      position: relative;
-    }
-
-    .toast {
-      position: relative;
-      min-width: 300px;
-      max-width: 400px;
-      margin-bottom: 1rem;
-      padding: 0;
-      border-radius: 8px;
-      overflow: hidden;
-      opacity: 0;
-      transform: translateY(20px);
-      transition: all 0.3s ease;
-      background: var(--card-bg, #fff);
-      box-shadow: var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.06));
-      border: 1px solid var(--border, rgba(0, 0, 0, 0.1));
-    }
-
-    :host([visible]) .toast {
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    .toast.success {
-      border-left: 4px solid var(--success, #68d391);
-    }
-    
-    .toast.error {
-      border-left: 4px solid var(--error, #f56565);
-    }
-    
-    .toast.warning {
-      border-left: 4px solid var(--warning, #f6ad55);
-    }
-    
-    .toast.info {
-      border-left: 4px solid var(--primary, #5e7ce6);
-    }
-
-    .toast-content {
-      display: flex;
-      flex-direction: column;
-      padding: 1rem;
-    }
-
-    .toast-header {
-      display: flex;
-      align-items: center;
-      margin-bottom: 0.5rem;
-    }
-
-    .toast-title {
-      font-weight: 600;
-      font-size: 1rem;
-      margin-left: 0.5rem;
-    }
-
-    .toast-message {
-      font-size: 0.875rem;
-      color: var(--text-secondary, #6c757d);
-      line-height: 1.5;
-    }
-
-    .toast-close {
-      position: absolute;
-      top: 0.5rem;
-      right: 0.5rem;
-      background: none;
-      border: none;
-      font-size: 1.25rem;
-      line-height: 1;
-      padding: 0;
-      cursor: pointer;
-      opacity: 0.5;
-      transition: opacity 0.2s;
-    }
-
-    .toast-close:hover {
-      opacity: 1;
-    }
-  `;
+  static get properties() {
+    return {
+      message: { type: String },
+      type: { type: String },
+      duration: { type: Number }
+    };
+  }
 
   constructor() {
     super();
     this.message = '';
-    this.type = 'info';
-    this.duration = 5000;
-    this.visible = false;
+    this.type = 'info'; // info, success, error, warning
+    this.duration = 3000; // milliseconds
     this._timeoutId = null;
   }
 
   connectedCallback() {
     super.connectedCallback();
-    // Show toast when connected to DOM
-    setTimeout(() => {
-      this.visible = true;
-    }, 50);
-
-    // Auto-remove after duration
-    if (this.duration > 0) {
-      this._timeoutId = setTimeout(() => {
-        this.close();
-      }, this.duration);
-    }
+    this._startAutoHideTimer();
   }
 
   disconnectedCallback() {
     super.disconnectedCallback();
-    if (this._timeoutId) {
-      clearTimeout(this._timeoutId);
+    this._clearAutoHideTimer();
+  }
+
+  _startAutoHideTimer() {
+    if (this.duration > 0) {
+      this._timeoutId = setTimeout(() => {
+        this.remove();
+      }, this.duration);
     }
   }
 
-  close() {
-    this.visible = false;
-    // Remove from DOM after animation completes
-    setTimeout(() => {
-      this.dispatchEvent(new CustomEvent('toast-closed'));
-    }, 300);
+  _clearAutoHideTimer() {
+    if (this._timeoutId) {
+      clearTimeout(this._timeoutId);
+      this._timeoutId = null;
+    }
   }
 
-  _getIconByType(type) {
-    const icons = {
-      error: '❌',
-      success: '✅',
-      warning: '⚠️',
-      info: 'ℹ️'
-    };
-    return icons[type] || icons.info;
+  _handleClose() {
+    this._clearAutoHideTimer();
+    this.remove();
+  }
+
+  static get styles() {
+    return css`
+      :host {
+        display: block;
+        margin-bottom: 0.5rem;
+        transform: translateX(100%);
+        animation: slide-in 0.3s forwards;
+      }
+      
+      @keyframes slide-in {
+        100% { transform: translateX(0); }
+      }
+      
+      .toast {
+        display: flex;
+        align-items: center;
+        padding: 1rem;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        color: white;
+        font-family: var(--font-body, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif);
+        position: relative;
+      }
+      
+      .toast.info {
+        background-color: #3498db;
+      }
+      
+      .toast.success {
+        background-color: #2ecc71;
+      }
+      
+      .toast.warning {
+        background-color: #f39c12;
+      }
+      
+      .toast.error {
+        background-color: #e74c3c;
+      }
+      
+      .icon {
+        margin-right: 0.75rem;
+        font-size: 1.25rem;
+      }
+      
+      .message {
+        flex: 1;
+        font-size: 0.875rem;
+      }
+      
+      .close-btn {
+        background: none;
+        border: none;
+        color: white;
+        opacity: 0.7;
+        cursor: pointer;
+        font-size: 1rem;
+        padding: 0.25rem;
+        display: flex;
+        align-items: center;
+        transition: opacity 0.2s;
+      }
+      
+      .close-btn:hover {
+        opacity: 1;
+      }
+      
+      .toast.remove {
+        animation: slide-out 0.3s forwards;
+      }
+      
+      @keyframes slide-out {
+        100% { transform: translateX(100%); }
+      }
+    `;
   }
 
   render() {
+    const iconMap = {
+      info: '🔵',
+      success: '✅',
+      warning: '⚠️',
+      error: '❌'
+    };
+
     return html`
       <div class="toast ${this.type}">
-        <div class="toast-content">
-          <div class="toast-header">
-            <span class="toast-icon">${this._getIconByType(this.type)}</span>
-            <div class="toast-title">${this.type.charAt(0).toUpperCase() + this.type.slice(1)}</div>
-          </div>
-          <div class="toast-message">${this.message}</div>
-        </div>
-        <button class="toast-close" @click=${this.close} aria-label="Close">&times;</button>
+        <div class="icon">${iconMap[this.type] || iconMap.info}</div>
+        <div class="message">${this.message}</div>
+        <button @click=${this._handleClose} class="close-btn">✕</button>
       </div>
     `;
   }

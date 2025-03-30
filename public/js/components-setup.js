@@ -1,437 +1,197 @@
 /**
- * This file handles the setup and initialization of our Lit components
- * and ensures backward compatibility with the existing codebase.
+ * Component Setup Script
+ * This file handles loading all custom web components and provides compatibility
+ * checks and fallbacks for browsers without ES module support.
  */
 
-// Test for ES module support
+// Check if browser supports ES modules
 const supportsESModules = 'noModule' in HTMLScriptElement.prototype;
 
-// Bail out and show warning if browser doesn't support ES modules
+// If ES modules not supported, show warning and create fallback content
 if (!supportsESModules) {
-  console.error('Browser does not support ES modules - Web Components cannot be loaded');
+  console.warn('This browser does not support ES modules. Some features may not work correctly.');
   
-  // Add a visible warning to the page
-  document.addEventListener('DOMContentLoaded', () => {
-    const warning = document.createElement('div');
-    warning.style.background = '#f8d7da';
-    warning.style.color = '#721c24';
-    warning.style.padding = '1rem';
-    warning.style.margin = '1rem';
-    warning.style.borderRadius = '0.25rem';
-    warning.innerHTML = `
-      <h3>Browser Compatibility Issue</h3>
-      <p>Your browser does not support modern JavaScript features required by this application.</p>
-      <p>Please use a modern browser like Chrome, Firefox, Safari, or Edge.</p>
-    `;
-    document.body.prepend(warning);
-    
-    // Try to create a simple form fallback
-    createLegacyForm();
-  });
+  // Add visible warning on page
+  const warningDiv = document.createElement('div');
+  warningDiv.style.padding = '15px';
+  warningDiv.style.margin = '15px';
+  warningDiv.style.border = '3px solid #ff5555';
+  warningDiv.style.borderRadius = '5px';
+  warningDiv.style.backgroundColor = '#fff8f8';
+  warningDiv.innerHTML = `
+    <h3 style="color: #d32f2f; margin-top: 0;">Browser Compatibility Issue</h3>
+    <p>Your browser doesn't support modern JavaScript features needed for this application.</p>
+    <p>Please use a modern browser like Chrome, Firefox, Safari, or Edge.</p>
+  `;
   
-  // Create a simple fallback form
-  function createLegacyForm() {
-    const formContainer = document.querySelector('.story-form-container') || document.querySelector('.form-section');
-    if (formContainer) {
-      formContainer.innerHTML = `
-        <div class="form-section">
-          <h2>Generate a Story</h2>
-          <form id="legacyStoryForm">
-            <div class="form-group">
-              <label for="academic_grade">Academic Level</label>
-              <select id="academic_grade" name="academic_grade" required>
-                <option value="">Select your grade level...</option>
-                <option value="K">Kindergarten</option>
-                <option value="1">Grade 1</option>
-                <!-- More options here -->
-              </select>
-            </div>
-            <div class="form-group">
-              <label for="subject">Subject</label>
-              <select id="subject" name="subject" required>
-                <option value="">Select a subject...</option>
-                <option value="mathematics">Mathematics</option>
-                <option value="science">Science</option>
-                <!-- More options here -->
-              </select>
-            </div>
-            <button type="submit">Generate Story</button>
-          </form>
+  // Insert at beginning of body or before first element
+  if (document.body.firstChild) {
+    document.body.insertBefore(warningDiv, document.body.firstChild);
+  } else {
+    document.body.appendChild(warningDiv);
+  }
+  
+  // Create basic form as fallback
+  const fallbackForm = document.createElement('div');
+  fallbackForm.innerHTML = `
+    <div style="max-width: 500px; margin: 30px auto; padding: 20px; border: 1px solid #ddd; border-radius: 8px;">
+      <h2 style="color: #333;">Story Generator</h2>
+      <form id="fallback-form">
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px;">Grade Level:</label>
+          <select style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            <option>Kindergarten</option>
+            <option>Grade 1</option>
+            <option>Grade 2</option>
+            <option>Grade 3</option>
+          </select>
         </div>
-      `;
-      
-      const legacyForm = document.getElementById('legacyStoryForm');
-      if (legacyForm) {
-        legacyForm.addEventListener('submit', (e) => {
-          e.preventDefault();
-          alert('Sorry, story generation requires a modern browser with JavaScript module support.');
-        });
-      }
-    }
-  }
+        <div style="margin-bottom: 15px;">
+          <label style="display: block; margin-bottom: 5px;">Subject:</label>
+          <select style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+            <option>Science</option>
+            <option>Math</option>
+            <option>History</option>
+            <option>Literature</option>
+          </select>
+        </div>
+        <button type="submit" style="background: #5e7ce6; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer;">
+          Generate Story
+        </button>
+      </form>
+    </div>
+  `;
+  
+  // Find form container or append to body
+  const formContainer = document.getElementById('story-form-container') || document.body;
+  formContainer.appendChild(fallbackForm);
+  
+  // Add event listener to the fallback form
+  document.getElementById('fallback-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    alert('Story generation requires a modern browser. Please switch to Chrome, Firefox, Safari, or Edge.');
+  });
 }
 
-// Import our components - using consistent relative paths for better compatibility
+// Load the Lit library from CDN, even if not supported
+// This allows us to check Web Component support and define our own fallbacks
 try {
-  import('../components/toast-notification.js');
-  import('../components/toast-container.js');
-  import('../components/loading-overlay.js');
-  import('../components/story-card.js');
-  import('../components/stories-grid.js');
-  import('../components/story-display.js');
-  import('../components/quiz-component.js');
-  import('../components/story-form.js');
-  import('../components/story-continuation.js');
-  import('../components/story-content.js');
+  const litScript = document.createElement('script');
+  litScript.type = 'module';
+  litScript.src = 'https://cdn.jsdelivr.net/gh/lit/dist@2/core/lit-core.min.js';
+  document.head.appendChild(litScript);
+  
+  console.log('Lit library script added to page');
 } catch (err) {
-  console.error('Error importing components:', err);
+  console.error('Error loading Lit library:', err);
 }
 
-// Check for Web Components support
-const supportsCustomElements = 'customElements' in window;
-const supportsShadowDOM = !!HTMLElement.prototype.attachShadow;
-
-if (!supportsCustomElements || !supportsShadowDOM) {
-  console.warn('Browser does not fully support Web Components. Some features may not work properly.');
+// Load our main components index
+try {
+  const componentsScript = document.createElement('script');
+  componentsScript.type = 'module';
+  componentsScript.src = '/components/index.js';
+  document.head.appendChild(componentsScript);
   
-  // Show warning for users
-  document.addEventListener('DOMContentLoaded', () => {
-    window.showToast?.('Your browser may not support all features. Please use a modern browser for the best experience.', 'warning', 8000);
-  });
+  console.log('Components index script added to page');
+} catch (err) {
+  console.error('Error loading components index:', err);
 }
 
-// Add a fallback mechanism to ensure components are defined
-function ensureComponentsDefined() {
-  const components = [
-    { name: 'toast-notification', path: '../components/toast-notification.js' },
-    { name: 'toast-container', path: '../components/toast-container.js' },
-    { name: 'loading-overlay', path: '../components/loading-overlay.js' },
-    { name: 'story-card', path: '../components/story-card.js' },
-    { name: 'stories-grid', path: '../components/stories-grid.js' },
-    { name: 'story-display', path: '../components/story-display.js' },
-    { name: 'quiz-component', path: '../components/quiz-component.js' },
-    { name: 'story-form', path: '../components/story-form.js' },
-    { name: 'story-continuation', path: '../components/story-continuation.js' },
-    { name: 'story-content', path: '../components/story-content.js' }
-  ];
+// Check for Custom Elements and Shadow DOM support
+if (window.customElements && window.ShadowRoot) {
+  console.log('Web Components are supported');
+} else {
+  console.warn('Web Components are not fully supported in this browser');
   
-  components.forEach(component => {
-    if (!customElements.get(component.name)) {
-      console.warn(`Component ${component.name} not defined. Attempting to load from ${component.path}`);
-      
-      // Try to load the component with an alternative path
-      const script = document.createElement('script');
-      script.type = 'module';
-      script.src = component.path.replace('../', './');
-      
-      // Also try the absolute path if relative path fails
-      script.onerror = () => {
-        console.warn(`Failed to load ${component.path}. Trying absolute path.`);
-        script.src = '/components/' + component.path.split('/').pop();
-      };
-      
-      document.head.appendChild(script);
-    }
-  });
+  // Add warning for browsers without Web Components support
+  const wcWarning = document.createElement('div');
+  wcWarning.style.padding = '10px';
+  wcWarning.style.margin = '10px';
+  wcWarning.style.border = '2px solid #ff9800';
+  wcWarning.style.borderRadius = '5px';
+  wcWarning.style.backgroundColor = '#fff8e1';
+  wcWarning.innerHTML = `
+    <p><strong>Limited Functionality:</strong> Your browser doesn't fully support Web Components.</p>
+    <p>Some features might not work as intended.</p>
+  `;
+  
+  if (document.body.firstChild) {
+    document.body.insertBefore(wcWarning, document.body.firstChild);
+  } else {
+    document.body.appendChild(wcWarning);
+  }
 }
 
-// Wait for the DOM to be fully loaded
-document.addEventListener('DOMContentLoaded', () => {
-  // Ensure components are defined
-  setTimeout(ensureComponentsDefined, 500);
-  
-  // Setup Toast functionality
-  setupToastSystem();
-  
-  // Setup Loading Overlay functionality
-  setupLoadingOverlay();
-  
-  // Setup Story Display compatibility
-  setupStoryDisplayCompat();
-  
-  // Setup Story Form compatibility
-  setupStoryFormCompat();
-  
-  // Setup Quiz component compatibility
-  setupQuizCompat();
-  
-  // Setup Story Continuation compatibility
-  setupStoryContinuationCompat();
-  
-  // Setup Story Content compatibility
-  setupStoryContentCompat();
-
-  // Stories Grid setup
-  const storiesGrid = document.getElementById('storiesGrid');
-  if (storiesGrid) {
-    // Set up event handlers that will communicate with the existing codebase
-    storiesGrid.addEventListener('view-story', (e) => {
-      const { storyId } = e.detail;
-      if (typeof window.viewStory === 'function') {
-        window.viewStory(storyId);
-      }
-    });
+// Function to check if a component is defined and attempt to load it if not
+function ensureComponentLoaded(tagName, fallbackPath) {
+  // Check if component is already defined
+  if (!customElements.get(tagName)) {
+    console.warn(`Component ${tagName} not defined. Attempting to load from ${fallbackPath}`);
     
-    storiesGrid.addEventListener('delete-story', (e) => {
-      const { storyId } = e.detail;
-      if (typeof window.deleteStory === 'function') {
-        window.deleteStory(storyId);
-      }
+    // Create script to load the component
+    const script = document.createElement('script');
+    script.type = 'module';
+    script.src = fallbackPath;
+    document.head.appendChild(script);
+    
+    // Return a promise that resolves when component is defined or rejects after timeout
+    return new Promise((resolve, reject) => {
+      const checkInterval = setInterval(() => {
+        if (customElements.get(tagName)) {
+          clearInterval(checkInterval);
+          clearTimeout(timeout);
+          resolve(true);
+        }
+      }, 100);
+      
+      const timeout = setTimeout(() => {
+        clearInterval(checkInterval);
+        reject(new Error(`Timeout waiting for ${tagName} to be defined`));
+      }, 5000);
     });
   }
+  
+  // Component already defined
+  return Promise.resolve(true);
+}
 
-  console.log('Lit components initialized successfully');
+// List of components to ensure are loaded
+const requiredComponents = [
+  'toast-notification',
+  'toast-container',
+  'loading-overlay',
+  'story-card',
+  'stories-grid',
+  'story-display',
+  'quiz-component',
+  'story-form',
+  'story-continuation',
+  'story-content'
+];
+
+// Try to load all required components
+Promise.allSettled(
+  requiredComponents.map(component => 
+    ensureComponentLoaded(component, `../components/${component}.js`)
+  )
+)
+.then(results => {
+  const loadedCount = results.filter(r => r.status === 'fulfilled').length;
+  console.log(`Successfully loaded ${loadedCount}/${requiredComponents.length} components`);
+  
+  if (loadedCount === requiredComponents.length) {
+    console.log('All required components are loaded and ready');
+  } else {
+    console.warn('Some components failed to load');
+  }
+})
+.catch(err => {
+  console.error('Error ensuring components are loaded:', err);
 });
 
-function setupToastSystem() {
-  // Create and append the toast container if it doesn't exist
-  if (!document.querySelector('toast-container')) {
-    const toastContainer = document.createElement('toast-container');
-    document.body.appendChild(toastContainer);
-  }
-  
-  // Global toast notification function (for backward compatibility)
-  window.showToast = (message, type = 'info', duration = 3000) => {
-    const event = new CustomEvent('show-toast', {
-      detail: { message, type, duration },
-      bubbles: true,
-      composed: true
-    });
-    document.dispatchEvent(event);
-  };
-}
+// Let the app know components are initialized
+console.log('Lit components initialized successfully');
 
-function setupLoadingOverlay() {
-  // Create and append the loading overlay if it doesn't exist
-  if (!document.querySelector('loading-overlay')) {
-    const loadingOverlay = document.createElement('loading-overlay');
-    document.body.appendChild(loadingOverlay);
-  }
-  
-  // Global loading functions (for backward compatibility)
-  window.showLoading = (message = 'Loading...') => {
-    const event = new CustomEvent('show-loading', {
-      detail: { message },
-      bubbles: true,
-      composed: true
-    });
-    document.dispatchEvent(event);
-  };
-  
-  window.hideLoading = () => {
-    const event = new CustomEvent('hide-loading', {
-      bubbles: true,
-      composed: true
-    });
-    document.dispatchEvent(event);
-  };
-}
-
-function setupStoryDisplayCompat() {
-  // Listen for story display events and handle integration with legacy code
-  document.addEventListener('story-copied', (e) => {
-    window.showToast('Story copied to clipboard!', 'success');
-  });
-  
-  document.addEventListener('story-saved', (e) => {
-    window.showToast('Story saved successfully!', 'success');
-  });
-  
-  // Replace any existing story display divs with the component
-  const storyDisplayContainers = document.querySelectorAll('.story-display-container');
-  storyDisplayContainers.forEach(container => {
-    // Don't replace if already contains the component
-    if (container.querySelector('story-display')) return;
-    
-    // Get story data if exists
-    let storyData = null;
-    if (container.dataset.story) {
-      try {
-        storyData = JSON.parse(container.dataset.story);
-      } catch (e) {
-        console.error('Failed to parse story data', e);
-      }
-    }
-    
-    // Create component
-    const storyDisplay = document.createElement('story-display');
-    if (storyData) {
-      storyDisplay.story = storyData;
-    }
-    
-    // Show controls if specified
-    if (container.dataset.showControls === 'true') {
-      storyDisplay.showControls = true;
-    }
-    
-    // Clear and append
-    container.innerHTML = '';
-    container.appendChild(storyDisplay);
-  });
-}
-
-function setupStoryFormCompat() {
-  // Find any existing form containers
-  const formContainers = document.querySelectorAll('.story-form-container');
-  formContainers.forEach(container => {
-    // Don't replace if already contains the component
-    if (container.querySelector('story-form')) return;
-    
-    // Create the form component
-    const storyForm = document.createElement('story-form');
-    
-    // Clear and append
-    container.innerHTML = '';
-    container.appendChild(storyForm);
-    
-    // Add event listeners for form submission
-    storyForm.addEventListener('story-form-submit', (e) => {
-      const formData = e.detail.formData;
-      
-      // Set form as submitting
-      storyForm.isSubmitting = true;
-      
-      // Show loading overlay
-      window.showLoading('Creating your story...');
-      
-      // Call the existing generate story function if it exists
-      if (typeof window.generateStory === 'function') {
-        window.generateStory(formData).catch(error => {
-          console.error('Error generating story:', error);
-          window.showToast('Failed to generate story. Please try again.', 'error');
-        }).finally(() => {
-          storyForm.isSubmitting = false;
-          window.hideLoading();
-        });
-      } else {
-        // Simulate request for testing
-        console.log('Would generate story with:', formData);
-        setTimeout(() => {
-          storyForm.isSubmitting = false;
-          window.hideLoading();
-          window.showToast('Story form submitted successfully!', 'success');
-        }, 2000);
-      }
-    });
-    
-    // Handle error events
-    storyForm.addEventListener('error', (e) => {
-      window.showToast(e.detail.message, 'error');
-    });
-    
-    // Handle login click
-    storyForm.addEventListener('login-click', (e) => {
-      if (typeof window.showLoginModal === 'function') {
-        window.showLoginModal();
-      } else {
-        console.log('Login modal function not found');
-      }
-    });
-  });
-}
-
-function setupQuizCompat() {
-  // Find any quiz containers
-  const quizContainers = document.querySelectorAll('.quiz-container');
-  quizContainers.forEach(container => {
-    // Don't replace if already contains the component
-    if (container.querySelector('quiz-component')) return;
-    
-    // Get quiz data if exists
-    let quizData = null;
-    if (container.dataset.quiz) {
-      try {
-        quizData = JSON.parse(container.dataset.quiz);
-      } catch (e) {
-        console.error('Failed to parse quiz data', e);
-      }
-    }
-    
-    // Create component
-    const quizComponent = document.createElement('quiz-component');
-    if (quizData) {
-      quizComponent.quiz = quizData;
-    }
-    
-    // Clear and append
-    container.innerHTML = '';
-    container.appendChild(quizComponent);
-    
-    // Listen for quiz completion
-    quizComponent.addEventListener('quiz-completed', (e) => {
-      const { score, totalQuestions } = e.detail;
-      window.showToast(`Quiz completed! Score: ${score}/${totalQuestions}`, 'success');
-      
-      // Call any existing quiz completion handler
-      if (typeof window.handleQuizCompletion === 'function') {
-        window.handleQuizCompletion(e.detail);
-      }
-    });
-  });
-}
-
-function setupStoryContinuationCompat() {
-  // Listen for events from story-continuation components
-  document.addEventListener('story-continuation-completed', (e) => {
-    // Handle when a story is continued
-    console.log('Story continuation completed', e.detail);
-    
-    // You could call any existing legacy code here if needed
-  });
-  
-  // Find any existing continuation containers and replace with the component
-  const continuationContainers = document.querySelectorAll('.story-continuation-container');
-  continuationContainers.forEach(container => {
-    // Skip if already contains the component
-    if (container.querySelector('story-continuation')) return;
-    
-    // Get story data if exists
-    let storyData = null;
-    if (container.dataset.story) {
-      try {
-        storyData = JSON.parse(container.dataset.story);
-      } catch (e) {
-        console.error('Failed to parse story data for continuation', e);
-      }
-    }
-    
-    // Create component
-    const continuation = document.createElement('story-continuation');
-    if (storyData) {
-      continuation.originalStory = storyData;
-    }
-    
-    // Clear and append
-    container.innerHTML = '';
-    container.appendChild(continuation);
-  });
-}
-
-function setupStoryContentCompat() {
-  // Find any content containers that should be replaced with the component
-  const storyContentContainers = document.querySelectorAll('.story-content-container');
-  storyContentContainers.forEach(container => {
-    // Skip if already contains the component
-    if (container.querySelector('story-content')) return;
-    
-    // Get story data if exists
-    let storyData = null;
-    if (container.dataset.story) {
-      try {
-        storyData = JSON.parse(container.dataset.story);
-      } catch (e) {
-        console.error('Failed to parse story data for content display', e);
-      }
-    }
-    
-    // Create component
-    const storyContent = document.createElement('story-content');
-    if (storyData) {
-      storyContent.story = storyData;
-    }
-    
-    // Clear and append
-    container.innerHTML = '';
-    container.appendChild(storyContent);
-  });
-} 
+// Export for global use
+window.litComponentsReady = true; 

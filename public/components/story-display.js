@@ -1,290 +1,239 @@
-import { LitElement, html, css } from 'lit';
-import { customElement, property, state } from 'lit/decorators.js';
+import { LitElement, html, css } from 'https://cdn.jsdelivr.net/gh/lit/dist@2/core/lit-core.min.js';
 
-@customElement('story-display')
 export class StoryDisplay extends LitElement {
-  @property({ type: Object }) 
-  story = null;
-
-  @property({ type: Boolean }) 
-  showControls = true;
+  static get properties() {
+    return {
+      story: { type: Object },
+      showControls: { type: Boolean }
+    };
+  }
   
-  @state() 
-  _isCopied = false;
+  constructor() {
+    super();
+    this.story = null;
+    this.showControls = true;
+    this._isCopied = false;
+  }
 
-  static styles = css`
-    :host {
-      display: block;
-      font-family: var(--font-body, 'Source Serif Pro', Georgia, 'Times New Roman', serif);
-    }
-    
-    .story__content {
-      background: var(--card-bg, white);
-      border-radius: 24px;
-      padding: 2rem;
-      box-shadow: var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.1));
-      margin-bottom: 2rem;
-      border: 1px solid var(--border, rgba(0, 0, 0, 0.1));
-    }
-    
-    .story__header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1.5rem;
-    }
-    
-    .story__title {
-      font-family: var(--font-heading, 'Inter', sans-serif);
-      font-weight: 700;
-      font-size: 2rem;
-      margin: 0;
-      color: var(--text, #212529);
-      line-height: 1.2;
-    }
-    
-    .story__summary {
-      background: var(--gray-100, #f1f3f5);
-      padding: 1.5rem;
-      border-radius: 12px;
-      margin-bottom: 1.5rem;
-    }
-    
-    .story__summary-title {
-      font-family: var(--font-heading, 'Inter', sans-serif);
-      font-weight: 600;
-      font-size: 1.25rem;
-      margin: 0 0 0.75rem;
-      color: var(--primary, #5e7ce6);
-    }
-    
-    .story__summary-content {
-      line-height: 1.6;
-      color: var(--text-secondary, #6c757d);
-    }
-    
-    .story__meta {
-      background: rgba(94, 124, 230, 0.05);
-      border: 1px solid rgba(94, 124, 230, 0.1);
-      padding: 1.25rem;
-      border-radius: 12px;
-      margin-bottom: 1.5rem;
-    }
-    
-    .story__learning-objectives h4 {
-      font-family: var(--font-heading, 'Inter', sans-serif);
-      font-weight: 600;
-      margin: 0 0 0.75rem;
-      color: var(--text, #212529);
-    }
-    
-    .story__learning-objectives ul {
-      margin: 0;
-      padding-left: 1.5rem;
-    }
-    
-    .story__learning-objectives li {
-      margin-bottom: 0.5rem;
-      color: var(--text-secondary, #6c757d);
-    }
-    
-    .story__text {
-      line-height: 1.8;
-      margin-bottom: 1.5rem;
-      color: var(--text, #212529);
-    }
-    
-    .story__paragraph-container {
-      display: flex;
-      align-items: flex-start;
-      margin-bottom: 1.25rem;
-    }
-    
-    .story__paragraph {
-      flex: 1;
-      margin: 0;
-    }
-    
-    .story__tts-btn {
-      background: none;
-      border: none;
-      color: var(--text-secondary, #6c757d);
-      cursor: pointer;
-      opacity: 0.6;
-      transition: opacity 0.2s;
-      padding: 0.25rem;
-      margin-left: 0.5rem;
-      margin-top: 0.2rem;
-      border-radius: 50%;
-    }
-    
-    .story__tts-btn:hover {
-      opacity: 1;
-      background: var(--gray-100, #f1f3f5);
-    }
-    
-    .story__tts-btn:disabled {
-      opacity: 0.3;
-      cursor: not-allowed;
-    }
-    
-    .story__actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      margin-top: 2rem;
-    }
-    
-    .story__action-btn {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 0.75rem 1.25rem;
-      background: var(--bg, #f8f9fa);
-      border: 2px solid var(--border, rgba(0, 0, 0, 0.1));
-      border-radius: 10px;
-      font-family: var(--font-heading, 'Inter', sans-serif);
-      font-weight: 500;
-      font-size: 1rem;
-      color: var(--text, #212529);
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    
-    .story__action-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-sm, 0 2px 4px rgba(0, 0, 0, 0.05));
-      border-color: var(--primary, #5e7ce6);
-    }
-    
-    .story__action-btn--active {
-      background: var(--primary, #5e7ce6);
-      color: white;
-      border-color: var(--primary, #5e7ce6);
-    }
-    
-    @media (max-width: 768px) {
-      .story__content {
-        padding: 1.5rem;
+  static get styles() {
+    return css`
+      :host {
+        display: block;
+        font-family: var(--font-body, 'Source Serif Pro', Georgia, 'Times New Roman', serif);
       }
-      
-      .story__title {
-        font-size: 1.75rem;
+
+      .story-display {
+        position: relative;
+        background: var(--card-bg, white);
+        border-radius: 24px;
+        padding: 3rem;
+        box-shadow: var(--shadow-md, 0 4px 6px rgba(0, 0, 0, 0.1));
+        border: 1px solid var(--border, rgba(0, 0, 0, 0.1));
+        transition: var(--transition-normal, all 0.3s ease);
+        animation: fadeIn 0.5s ease-in-out;
       }
-      
-      .story__actions {
-        flex-direction: column;
+
+      .story-display:hover {
+        box-shadow: var(--shadow-lg, 0 10px 15px rgba(0, 0, 0, 0.1));
       }
-    }
-  `;
+
+      .story-content {
+        font-size: 1.125rem;
+        line-height: 1.8;
+        color: var(--text, #212529);
+      }
+
+      .story-content p {
+        margin-bottom: 1.5rem;
+      }
+
+      .story-controls {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 0.5rem;
+        margin-top: 2rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border, rgba(0, 0, 0, 0.1));
+      }
+
+      .control-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 0.75rem 1rem;
+        border: none;
+        border-radius: 8px;
+        background: var(--bg, #f8f9fa);
+        color: var(--text-secondary, #6c757d);
+        font-family: var(--font-heading, 'Inter', sans-serif);
+        font-size: 0.875rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        box-shadow: var(--shadow-sm, 0 1px 2px rgba(0, 0, 0, 0.05));
+      }
+
+      .control-button:hover {
+        background: var(--primary-50, #eef2ff);
+        color: var(--primary, #5e7ce6);
+        transform: translateY(-1px);
+      }
+
+      .control-button svg {
+        width: 1rem;
+        height: 1rem;
+      }
+
+      @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+      }
+
+      @media (max-width: 768px) {
+        .story-display {
+          padding: 2rem;
+        }
+
+        .story-controls {
+          flex-wrap: wrap;
+          justify-content: center;
+        }
+      }
+    `;
+  }
 
   _sanitizeText(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    // Basic sanitization function that preserves paragraphs
+    return text ? text.split('\n\n').map(p => p.trim()).filter(Boolean) : [];
   }
 
   async _handleCopy() {
-    try {
-      const storyText = this.renderRoot.querySelector('.story__text').textContent;
-      await navigator.clipboard.writeText(storyText);
-      this._isCopied = true;
-      
-      // Reset copy button after 2 seconds
-      setTimeout(() => {
-        this._isCopied = false;
-      }, 2000);
-    } catch (error) {
-      console.error('Failed to copy text to clipboard:', error);
-      this.dispatchEvent(new CustomEvent('error', { 
-        detail: { message: 'Failed to copy text to clipboard' } 
-      }));
+    if (this.story && this.story.content) {
+      try {
+        await navigator.clipboard.writeText(this.story.content);
+        this._isCopied = true;
+        
+        setTimeout(() => {
+          this._isCopied = false;
+          this.requestUpdate();
+        }, 2000);
+        
+        this.requestUpdate();
+      } catch (err) {
+        console.error('Failed to copy: ', err);
+      }
     }
   }
 
   _handlePrint() {
-    window.print();
+    if (this.story && this.story.content) {
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>${this.story.title || 'Story'}</title>
+            <style>
+              body { font-family: Georgia, 'Times New Roman', serif; line-height: 1.8; padding: 2rem; }
+              h1 { margin-bottom: 2rem; }
+              p { margin-bottom: 1rem; }
+            </style>
+          </head>
+          <body>
+            <h1>${this.story.title || 'Story'}</h1>
+            ${this._sanitizeText(this.story.content).map(p => `<p>${p}</p>`).join('')}
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    }
   }
 
   _handleSave() {
-    this.dispatchEvent(new CustomEvent('save-story', { 
-      detail: { story: this.story } 
-    }));
+    if (this.story && this.story.content) {
+      const blob = new Blob([this.story.content], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${this.story.title || 'story'}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
   }
 
   _handleTextToSpeech(text) {
-    this.dispatchEvent(new CustomEvent('tts', { 
-      detail: { text } 
-    }));
+    if (window.speechSynthesis && text) {
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
+      
+      // Create a new speech synthesis utterance
+      const utterance = new SpeechSynthesisUtterance(text);
+      
+      // Set properties (optional)
+      utterance.rate = 0.9; // slightly slower than default
+      utterance.pitch = 1;
+      
+      // Speak the text
+      window.speechSynthesis.speak(utterance);
+    }
   }
 
   render() {
-    if (!this.story || !this.story.title || !this.story.content) {
-      return html`<div class="story-error">No valid story data available</div>`;
-    }
+    if (!this.story) return html`<div class="story-display"></div>`;
+
+    const paragraphs = this._sanitizeText(this.story.content);
 
     return html`
-      <div class="story__content">
-        <div class="story__header">
-          <h2 class="story__title">${this.story.title}</h2>
-          <button id="tts-button" 
-                  class="story__tts-btn" 
-                  aria-label="Text to Speech" 
-                  ?disabled=${!window.speechSynthesis}
-                  @click=${() => this._handleTextToSpeech(this.story.content)}>
-            <span class="story__tts-icon">🔊</span>
-          </button>
+      <div class="story-display">
+        <div class="story-content">
+          ${paragraphs.map(p => html`<p>${p}</p>`)}
         </div>
-
-        ${this.story.summary ? html`
-          <div class="story__summary">
-            <div class="story__summary-title">Story Summary</div>
-            <div class="story__summary-content">${this.story.summary}</div>
-          </div>
-        ` : ''}
-
-        <div class="story__meta">
-          <div class="story__learning-objectives">
-            <h4>Learning Objectives:</h4>
-            <ul>
-              ${(this.story.learning_objectives || []).map(obj => html`
-                <li>${obj}</li>
-              `)}
-            </ul>
-          </div>
-        </div>
-
-        <div class="story__text">
-          ${this.story.content.split('\n').map(paragraph => html`
-            <div class="story__paragraph-container">
-              <p class="story__paragraph">${paragraph}</p>
-              <button class="story__tts-btn story__tts-btn--paragraph" 
-                      aria-label="Read paragraph" 
-                      ?disabled=${!window.speechSynthesis}
-                      @click=${() => this._handleTextToSpeech(paragraph)}>
-                <span class="story__tts-icon">🔊</span>
-              </button>
-            </div>
-          `)}
-        </div>
-
+        
         ${this.showControls ? html`
-          <div class="story__actions">
-            <button class="story__action-btn story__action-btn--copy ${this._isCopied ? 'story__action-btn--active' : ''}"
-                    @click=${this._handleCopy}>
-              <span>${this._isCopied ? 'Copied!' : 'Copy'}</span>
+          <div class="story-controls">
+            <button @click=${this._handleCopy} class="control-button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              ${this._isCopied ? 'Copied!' : 'Copy'}
             </button>
-            <button class="story__action-btn story__action-btn--save"
-                    @click=${this._handleSave}>
-              <span>Save</span>
+            
+            <button @click=${this._handlePrint} class="control-button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M6 9V2h12v7"></path>
+                <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+                <path d="M6 14h12v8H6z"></path>
+              </svg>
+              Print
             </button>
-            <button class="story__action-btn story__action-btn--print"
-                    @click=${this._handlePrint}>
-              <span>Print</span>
+            
+            <button @click=${this._handleSave} class="control-button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              Save
+            </button>
+            
+            <button @click=${() => this._handleTextToSpeech(this.story.content)} class="control-button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 5L6 9H2v6h4l5 4V5z"></path>
+                <path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                <path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path>
+              </svg>
+              Read Aloud
             </button>
           </div>
         ` : ''}
       </div>
     `;
   }
-} 
+}
+
+customElements.define('story-display', StoryDisplay); 

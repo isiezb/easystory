@@ -1,31 +1,54 @@
 /**
- * Components index file
- * 
- * This file serves as an entry point for loading all our Lit components.
- * It allows for easier importing of all components at once.
+ * Main entry point for all Lit components
+ * This file imports all components and registers them to be globally available
  */
 
-export * from './toast-notification.js';
-export * from './toast-container.js';
-export * from './loading-overlay.js';
-export * from './story-card.js';
-export * from './stories-grid.js';
-export * from './story-display.js';
-export * from './quiz-component.js';
-export * from './story-form.js';
-export * from './story-continuation.js';
-export * from './story-content.js';
+// Import from CDN instead of local module imports
+import { html, render } from 'https://cdn.jsdelivr.net/gh/lit/dist@2/core/lit-core.min.js';
 
-// Also register all components directly to ensure they're available
-import './toast-notification.js';
-import './toast-container.js';
-import './loading-overlay.js';
-import './story-card.js';
-import './stories-grid.js';
-import './story-display.js';
-import './quiz-component.js';
-import './story-form.js';
-import './story-continuation.js';
-import './story-content.js';
+// Log initialization
+console.log('Initializing Lit components from CDN...');
 
-console.log('All Lit components registered'); 
+// Import all components using dynamic imports
+// This provides fallback mechanism if direct imports fail
+const importComponent = async (componentName) => {
+  try {
+    // Try different paths
+    await import(`../${componentName}.js`)
+      .catch(() => import(`./${componentName}.js`))
+      .catch(() => import(`/components/${componentName}.js`))
+      .catch(() => import(`/public/components/${componentName}.js`))
+      .catch(err => {
+        console.warn(`Failed to load component ${componentName}:`, err.message);
+        // Last attempt with absolute path
+        return import(`https://easystory.onrender.com/components/${componentName}.js`);
+      });
+  } catch (err) {
+    console.error(`Could not load component ${componentName}:`, err);
+  }
+};
+
+// List of all components to load
+const components = [
+  'toast-notification',
+  'toast-container',
+  'loading-overlay',
+  'story-card',
+  'stories-grid',
+  'story-display',
+  'quiz-component',
+  'story-form',
+  'story-continuation',
+  'story-content'
+];
+
+// Load all components
+Promise.all(components.map(component => importComponent(component)))
+  .then(() => {
+    console.log('All components loaded');
+  })
+  .catch(err => {
+    console.error('Error loading components:', err);
+  });
+
+export { html, render }; 

@@ -17,10 +17,10 @@ export const story = {
                 quiz.init(response.quiz);
             }
 
-            // Save story to Supabase
+            // Save story to Supabase if user is logged in
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
-                const storyData = {
+                const { data, error } = await supabase.getClient().from('stories').insert({
                     user_id: session.user.id,
                     academic_grade: formData.academic_grade,
                     subject: formData.subject,
@@ -36,9 +36,7 @@ export const story = {
                     vocabulary_list: response.vocabulary || [],
                     story_summary: response.summary || '',
                     is_continuation: false
-                };
-
-                const { data, error } = await supabase.getClient().from('stories').insert(storyData).select().single();
+                }).select().single();
 
                 if (error) {
                     console.error('Error saving story to Supabase:', error);

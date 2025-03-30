@@ -5,6 +5,18 @@ const quiz = {
     score: 0,
 
     init(quizData) {
+        // Safety check for null or undefined quiz data
+        if (!quizData) {
+            console.warn('Quiz data is missing or undefined');
+            return;
+        }
+        
+        // Safety check for questions array
+        if (!quizData.questions || !Array.isArray(quizData.questions) || quizData.questions.length === 0) {
+            console.warn('Quiz data does not contain any questions or has invalid format:', quizData);
+            return;
+        }
+        
         this.currentQuiz = quizData;
         this.currentQuestionIndex = 0;
         this.score = 0;
@@ -12,8 +24,19 @@ const quiz = {
     },
 
     showQuestion() {
+        // Additional safety check
+        if (!this.currentQuiz || !this.currentQuiz.questions || this.currentQuestionIndex >= this.currentQuiz.questions.length) {
+            console.error('Cannot show question: quiz data is invalid or current question index is out of bounds');
+            return;
+        }
+        
         const question = this.currentQuiz.questions[this.currentQuestionIndex];
         const quizContainer = document.getElementById('quizContainer');
+        
+        if (!quizContainer) {
+            console.error('Quiz container element not found');
+            return;
+        }
         
         quizContainer.innerHTML = `
             <div class="quiz-question">

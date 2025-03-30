@@ -174,44 +174,51 @@ const authenticateUser = async (req, res, next) => {
 // Input sanitization function
 const sanitizeInput = (str) => str.replace(/[<>]/g, '').trim();
 
-// Input validation function
-const validateInputs = (inputs) => {
-    const requiredFields = [
-        'academic_grade',
-        'subject',
-        'subject_specification',
-        'setting',
-        'main_character',
-        'word_count',
-        'language'
-    ];
-    
-    // Check if all required fields are present
-    for (const field of requiredFields) {
-        if (!inputs[field]) {
+// Validate and sanitize input data
+function validateInputs(inputs) {
+    try {
+        // Log the validation process
+        logger.info('Validating input data:', JSON.stringify(inputs));
+        
+        // Check for required fields with detailed logging
+        const requiredFields = ['subject', 'academic_grade', 'subject_specification', 'setting', 'main_character', 'word_count', 'language'];
+        
+        // Check each required field individually for better debugging
+        const missingFields = [];
+        for (const field of requiredFields) {
+            if (!inputs[field]) {
+                missingFields.push(field);
+                logger.error(`Missing required field: ${field}`);
+            }
+        }
+        
+        if (missingFields.length > 0) {
+            logger.error(`Validation failed: Missing required fields: ${missingFields.join(', ')}`);
             return false;
         }
-    }
-    
-    // Validate word_count is a number and within reasonable range
-    if (typeof inputs.word_count !== 'number' || inputs.word_count < 100 || inputs.word_count > 5000) {
+        
+        // Validate word_count is a number within range
+        const wordCount = parseInt(inputs.word_count);
+        if (isNaN(wordCount) || wordCount < 100 || wordCount > 5000) {
+            logger.error(`Validation failed: word_count must be a number between 100 and 5000, got: ${inputs.word_count}`);
+            return false;
+        }
+        
+        // Validate language is one of the supported languages (case sensitive)
+        const supportedLanguages = ['English', 'Spanish', 'French', 'German', 'Italian'];
+        if (!supportedLanguages.includes(inputs.language)) {
+            logger.error(`Validation failed: language must be one of ${supportedLanguages.join(', ')}, got: ${inputs.language}`);
+            return false;
+        }
+        
+        // All validations passed
+        logger.info('Input data validation successful');
+        return true;
+    } catch (error) {
+        logger.error('Error during input validation:', error);
         return false;
     }
-    
-    // Validate academic_grade is a valid grade level
-    const validGrades = ['K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
-    if (!validGrades.includes(inputs.academic_grade)) {
-        return false;
-    }
-    
-    // Validate language is supported
-    const supportedLanguages = ['English', 'Spanish', 'French', 'German', 'Italian'];
-    if (!supportedLanguages.includes(inputs.language)) {
-        return false;
-    }
-    
-    return true;
-};
+}
 
 // Validate quiz structure
 const validateQuizStructure = (quiz) => {

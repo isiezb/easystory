@@ -98,11 +98,21 @@ async function handleStoryFormSubmit(e) {
         
         // First try with normal API service
         try {
+            // Ensure word_count is a number, not a string
+            data.word_count = parseInt(data.word_count, 10);
+            
             const response = await window.apiService.generateStory(data);
             console.log('Received response:', response);
             
+            if (!response) {
+                throw new Error('Empty response received from server');
+            }
+            
             // Display the story
             displayStory(response);
+            
+            // Success message
+            showToast('Story generated successfully!', 'success');
             
             // Check if Supabase is actually available before attempting save
             const isSupabaseAvailable = window.supabase && 
@@ -177,7 +187,6 @@ async function handleStoryFormSubmit(e) {
                         }
                     } else {
                         console.log('Supabase unavailable or user not logged in, skipping save');
-                        showToast('Story generated! Login feature unavailable.', 'success');
                     }
                 } catch (saveCatchError) {
                     console.error('Unexpected error during story save process:', saveCatchError);
@@ -185,7 +194,6 @@ async function handleStoryFormSubmit(e) {
                 }
             } else {
                 console.log('Supabase unavailable or user not logged in, skipping save');
-                showToast('Story generated! Login feature unavailable.', 'success');
             }
         } catch (firstError) {
             console.error('Initial request failed, trying direct form submission:', firstError);
@@ -200,6 +208,9 @@ async function handleStoryFormSubmit(e) {
                 for (const [key, value] of directFormData.entries()) {
                     directData[key] = value;
                 }
+                
+                // Make sure word_count is a number
+                directData.word_count = parseInt(directData.word_count, 10);
                 
                 console.log('Attempting direct form submission:', directData);
                 
@@ -218,26 +229,36 @@ async function handleStoryFormSubmit(e) {
                     
                     // Display the story
                     displayStory(responseData);
+                    showToast('Story generated successfully!', 'success');
                 } else {
-                    // If both methods fail, fall back to mock data
-                    console.error('Both methods failed, using mock data');
-                    const mockResponse = window.apiService.getMockStoryData(data);
-                    displayStory(mockResponse);
+                    const errorText = await directResponse.text();
+                    console.error('Direct submission failed with status:', directResponse.status, errorText);
+                    throw new Error(`Server error ${directResponse.status}: ${errorText}`);
                 }
             } catch (directError) {
                 console.error('Direct submission also failed:', directError);
-                // Use mock data as final fallback
-                const mockResponse = window.apiService.getMockStoryData(data);
-                displayStory(mockResponse);
+                showToast('Failed to generate story. Please try again.', 'error');
+                
+                // This is a last resort - do not try to display mock story if it will cause errors
+                try {
+                    if (window.apiService && typeof window.apiService.getMockStoryData === 'function') {
+                        showToast('Showing mock data for demonstration purposes', 'info');
+                        const mockResponse = window.apiService.getMockStoryData(data);
+                        displayStory(mockResponse);
+                    } else {
+                        showToast('Story generation failed completely', 'error');
+                    }
+                } catch (mockError) {
+                    console.error('Mock data display also failed:', mockError);
+                    showToast('Story generation failed completely', 'error');
+                }
             }
         }
     } catch (error) {
         console.error('Error generating story:', error);
         let errorMessage = 'Failed to generate story.';
-        if (error instanceof ApiError) {
-            errorMessage = `API Error (${error.status}): ${error.message}`;
-        } else if (error.message) {
-            errorMessage = error.message; // Display the more specific error from the multi-step fetch
+        if (error.message) {
+            errorMessage = error.message; 
         }
         showToast(errorMessage, 'error', 10000); // Show error for longer
     } finally {
@@ -256,127 +277,177 @@ function displayStory(storyData) {
     
     console.log('Displaying story data:', storyData);
     
-    // Handle the server response structure which could be in many formats
+    // Extract story content from various possible response formats
     let storyContent = null;
     
-    // Format 1: response.data.story
-    if (storyData.data && storyData.data.story) {
-        storyContent = storyData.data.story;
-    }
-    // Format 2: response.story
-    else if (storyData.story) {
-        storyContent = storyData.story;
-    }
-    // Format 3: direct story object
-    else if (storyData.content || storyData.title) {
-        storyContent = storyData;
-    }
-    // Format 4: fallback for unknown structure
-    else {
-        console.warn('Unknown story data format:', storyData);
-        storyContent = {
-            title: 'Generated Story',
-            content: typeof storyData === 'string' ? storyData : JSON.stringify(storyData, null, 2)
-        };
-    }
-    
-    // Ensure we have the expected fields, with fallbacks
-    const content = storyContent.content || '';
-    const title = storyContent.title || 'Generated Story';
-    const summary = storyContent.summary || null;
-    const vocabulary = storyContent.vocabulary || null;
-    const learningObjectives = storyContent.learning_objectives || [];
-    
-    // Build story HTML
-    let storyHTML = `
+    try {
+        // Format 1: Direct story object
+        if (storyData.title && storyData.content) {
+            storyContent = storyData;
+        }
+        // Format 2: Nested inside data.story
+        else if (storyData.data && storyData.data.story) {
+            storyContent = storyData.data.story;
+        }
+        // Format 3: Direct story object inside response
+        else if (storyData.story) {
+            storyContent = storyData.story;
+        }
+        // Format 4: Unknown structure, log error and use whatever we have
+        else {
+            console.warn('Unknown story data format:', storyData);
+            // Try to construct a minimal story object from whatever we have
+            storyContent = {
+                title: storyData.title || 'Generated Story',
+                content: storyData.content || 'Content could not be retrieved.',
+                // Add other fields if they exist
+                summary: storyData.summary,
+                vocabulary: storyData.vocabulary,
+                learning_objectives: storyData.learning_objectives
+            };
+        }
+        
+        // Default fields if missing
+        const title = storyContent.title || 'Generated Story';
+        const content = storyContent.content || 'Content could not be retrieved.';
+        const summary = storyContent.summary;
+        const vocabulary = storyContent.vocabulary;
+        const learningObjectives = storyContent.learning_objectives;
+        
+        // Build HTML for story display
+        let storyHTML = `
         <div class="story-container">
-            <h2>${title}</h2>
-            ${summary ? `
-                <div class="story-summary">
-                    <h3>Summary</h3>
-                    <p>${summary}</p>
-                </div>
-            ` : ''}
-            <div class="story-content">
-                ${typeof content === 'string' 
-                  ? content.split('\n').map(p => `<p>${p}</p>`).join('') 
-                  : '<p>No content available</p>'}
+            <h2 class="story-title">${title}</h2>
+        `;
+        
+        // Add summary if available
+        if (summary) {
+            storyHTML += `
+            <div class="story-summary">
+                <div class="story-summary-title">Summary</div>
+                <div class="story-summary-content">${summary}</div>
             </div>
-    `;
-    
-    // Add learning objectives if available
-    if (learningObjectives && learningObjectives.length > 0) {
+            `;
+        }
+        
+        // Add story content
         storyHTML += `
+        <div class="story-text">
+            ${content.split('\n').map(p => p ? `<p>${p}</p>` : '').join('')}
+        </div>
+        `;
+        
+        // Add learning objectives if available
+        if (learningObjectives && Array.isArray(learningObjectives) && learningObjectives.length > 0) {
+            storyHTML += `
             <div class="learning-objectives">
                 <h3>Learning Objectives</h3>
                 <ul>
-                    ${learningObjectives.map(objective => `<li>${objective}</li>`).join('')}
+                    ${learningObjectives.map(obj => `<li>${obj}</li>`).join('')}
                 </ul>
             </div>
-        `;
-    }
-    
-    // Add vocabulary if available
-    if (vocabulary && vocabulary.length > 0) {
-        storyHTML += `
-            <div class="vocabulary">
+            `;
+        }
+        
+        // Add vocabulary if available
+        if (vocabulary && Array.isArray(vocabulary) && vocabulary.length > 0) {
+            storyHTML += `
+            <div class="vocabulary-section">
                 <h3>Vocabulary</h3>
-                <dl>
+                <div class="vocabulary-list">
                     ${vocabulary.map(item => `
-                        <dt>${item.word}</dt>
-                        <dd>${item.definition}</dd>
+                    <div class="vocabulary-item">
+                        <div class="vocabulary-word">${item.word}</div>
+                        <div class="vocabulary-definition">${item.definition}</div>
+                    </div>
                     `).join('')}
-                </dl>
+                </div>
             </div>
-        `;
-    }
-    
-    // Close container
-    storyHTML += `
-        <div class="story-continuation">
-            <h3>Continue the Story</h3>
-            <div class="continuation-form">
-                <select id="continuationLength" class="continuation-length">
-                    <option value="200">Short (200 words)</option>
-                    <option value="300" selected>Medium (300 words)</option>
-                    <option value="500">Long (500 words)</option>
-                </select>
-                <button id="continueStoryBtn" class="continue-btn">Continue Story</button>
-            </div>
-            <div id="continuationOutput" class="continuation-output"></div>
-        </div>
-    </div>`;
-    
-    // Set HTML and scroll to story
-    storyOutput.innerHTML = storyHTML;
-    storyOutput.scrollIntoView({ behavior: 'smooth' });
-    
-    // Initialize quiz if available
-    if (storyContent.quiz) {
-        console.log('Quiz data available, initializing quiz:', storyContent.quiz);
-        
-        // Create quiz container if not exists
-        let quizContainer = document.getElementById('quizContainer');
-        if (!quizContainer) {
-            quizContainer = document.createElement('div');
-            quizContainer.id = 'quizContainer';
-            quizContainer.className = 'quiz-container';
-            storyOutput.appendChild(quizContainer);
+            `;
         }
         
-        // Check if window.quiz is available
-        if (window.quiz && typeof window.quiz.init === 'function') {
-            window.quiz.init(storyContent.quiz);
+        // Close container
+        storyHTML += `
+            <div class="story-continuation">
+                <h3>Continue the Story</h3>
+                <div class="continuation-form">
+                    <select id="continuationLength" class="continuation-length">
+                        <option value="200">Short (200 words)</option>
+                        <option value="300" selected>Medium (300 words)</option>
+                        <option value="500">Long (500 words)</option>
+                    </select>
+                    <button id="continueStoryBtn" class="continue-btn">Continue Story</button>
+                </div>
+                <div id="continuationOutput" class="continuation-output"></div>
+            </div>
+        </div>`;
+        
+        // Set HTML and scroll to story
+        storyOutput.innerHTML = storyHTML;
+        storyOutput.scrollIntoView({ behavior: 'smooth' });
+        
+        // Initialize quiz if available and valid
+        if (storyContent.quiz) {
+            console.log('Quiz data available, attempting to initialize quiz:', storyContent.quiz);
+            
+            // Basic validation of quiz data structure
+            const isValidQuiz = storyContent.quiz && 
+                             Array.isArray(storyContent.quiz) && 
+                             storyContent.quiz.length > 0;
+                             
+            if (!isValidQuiz) {
+                console.warn('Quiz data has invalid format:', storyContent.quiz);
+                return; // Skip quiz initialization if data is invalid
+            }
+            
+            // Structure quiz data properly
+            const quizData = {
+                questions: storyContent.quiz.map(q => ({
+                    question: q.question,
+                    options: q.options || [],
+                    correct_answer: q.correct_answer !== undefined ? q.correct_answer : 0
+                }))
+            };
+            
+            // Create quiz container if not exists
+            let quizContainer = document.getElementById('quizContainer');
+            if (!quizContainer) {
+                quizContainer = document.createElement('div');
+                quizContainer.id = 'quizContainer';
+                quizContainer.className = 'quiz-container';
+                storyOutput.appendChild(quizContainer);
+            }
+            
+            // Check if window.quiz is available
+            if (window.quiz && typeof window.quiz.init === 'function') {
+                try {
+                    window.quiz.init(quizData);
+                } catch (quizError) {
+                    console.error('Error initializing quiz:', quizError);
+                    quizContainer.innerHTML = '<div class="quiz-error">There was an error initializing the quiz. Please try again.</div>';
+                }
+            } else {
+                console.warn('Quiz module not available, cannot initialize quiz');
+                quizContainer.innerHTML = '<div class="quiz-error">Quiz functionality is currently unavailable.</div>';
+            }
         } else {
-            console.warn('Quiz module not available, cannot initialize quiz');
-            quizContainer.innerHTML = '<div class="quiz-error">Quiz functionality is currently unavailable.</div>';
+            console.log('No quiz data available in story response');
         }
-    }
-    
-    // Set up continue story button
-    const continueStoryBtn = document.getElementById('continueStoryBtn');
-    if (continueStoryBtn) {
-        continueStoryBtn.addEventListener('click', () => handleContinueStory(storyContent));
+        
+        // Set up continue story button
+        const continueStoryBtn = document.getElementById('continueStoryBtn');
+        if (continueStoryBtn) {
+            continueStoryBtn.addEventListener('click', () => handleContinueStory(storyContent));
+        }
+    } catch (error) {
+        console.error('Error displaying story:', error);
+        storyOutput.innerHTML = `
+        <div class="story-error">
+            <h3>Error Displaying Story</h3>
+            <p>There was an error displaying the story. Please try again.</p>
+            <p class="error-details">${error.message}</p>
+        </div>
+        `;
     }
 }
 

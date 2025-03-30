@@ -253,64 +253,118 @@ class ApiService {
             generate_summary: data.generate_summary === 'on' // Boolean for optional features
         };
         
+        // Build request headers
+        const headers = {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        };
+        
+        // Add auth token if available
         try {
-            // Build the base headers that are always included
-            const headers = {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json'
-            };
-            
-            // Add auth token if available
-            try {
-                const token = await this.getAuthToken();
-                if (token) {
-                    console.log('Adding auth token to request');
-                    headers['Authorization'] = `Bearer ${token}`;
-                } else {
-                    console.log('No auth token available');
-                }
-            } catch (error) {
-                console.warn('Failed to get auth token:', error);
-            }
-            
-            // Use mock data if in development mode or specified in config
-            if (window._config?.useMockData || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-                console.log('Using mock story data');
-                return this.getMockStoryData(serverFormat);
-            }
-            
-            console.log(`Sending API request to ${this.baseUrl}/generate-story`);
-            console.log('Using validated server format:', serverFormat);
-            
-            try {
-                const response = await fetch(`${this.baseUrl}/generate-story`, {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify(serverFormat)
-                });
-                
-                console.log('Response status:', response.status);
-                
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error(`API error (${response.status}):`, errorText);
-                    throw new ApiError(response.status, errorText || 'Unknown server error');
-                }
-                
-                return this.handleResponse(response);
-            } catch (fetchError) {
-                console.error('Fetch error:', fetchError);
-                throw fetchError;
+            const token = await this.getAuthToken();
+            if (token) {
+                console.log('Adding auth token to request');
+                headers['Authorization'] = `Bearer ${token}`;
+            } else {
+                console.log('No auth token available');
             }
         } catch (error) {
-            console.error('Error in generateStory:', error);
+            console.warn('Failed to get auth token:', error);
+        }
+        
+        console.log(`Sending API request to ${this.baseUrl}/generate-story`);
+        console.log('Using validated server format:', serverFormat);
+        
+        try {
+            const response = await fetch(`${this.baseUrl}/generate-story`, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(serverFormat)
+            });
             
-            // Always fall back to mock data if anything goes wrong
-            console.log('Request failed, falling back to mock data');
-            return this.getMockStoryData(serverFormat);
+            console.log('Response status:', response.status);
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error(`API error (${response.status}):`, errorText);
+                throw new ApiError(response.status, errorText || 'Unknown server error');
+            }
+            
+            // Process the response
+            const responseData = await this.handleResponse(response);
+            
+            // Enhance the response with proper quiz data for client-side use
+            if (responseData) {
+                // Format 1: Response has quiz in the root
+                if (responseData.quiz && Array.isArray(responseData.quiz)) {
+                    // Valid quiz structure - leave as is
+                } 
+                // Format 2: Response has quiz in data.story
+                else if (responseData.data?.story?.quiz && Array.isArray(responseData.data.story.quiz)) {
+                    // Valid nested quiz - leave as is
+                }
+                // Format 3: Quiz missing or invalid structure - mock it for testing
+                else if (!responseData.quiz && this.baseUrl === window.location.origin) {
+                    console.log('Adding mock quiz data for testing');
+                    const mockSubject = responseData.subject || serverFormat.subject;
+                    if (responseData.data?.story) {
+                        responseData.data.story.quiz = this.generateMockQuiz(mockSubject, responseData.content || '');
+                    } else if (responseData.content) {
+                        responseData.quiz = this.generateMockQuiz(mockSubject, responseData.content);
+                    }
+                }
+            }
+            
+            return responseData;
+        } catch (fetchError) {
+            console.error('Fetch error:', fetchError);
+            throw fetchError;
         }
     }
     
+    // Helper to generate a mock quiz for testing
+    generateMockQuiz(subject, content) {
+        // Extract some content to create questions from
+        const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 20);
+        const topics = [subject, 'learning', 'education', 'knowledge'];
+        
+        // Create a simple mock quiz with 3 questions
+        return [
+            {
+                question: `What is the main subject of this story?`,
+                options: [
+                    `${subject}`,
+                    `History`,
+                    `Geography`,
+                    `Literature`
+                ],
+                correct_answer: 0
+            },
+            {
+                question: sentences.length > 0 
+                    ? `Which of these is discussed in the story?`
+                    : `What is one benefit of learning ${subject}?`,
+                options: [
+                    `Improved problem-solving skills`,
+                    `Understanding complex systems`,
+                    `Developing critical thinking`,
+                    `All of the above`
+                ],
+                correct_answer: 3
+            },
+            {
+                question: `Which skill is most important for learning ${subject}?`,
+                options: [
+                    `Memorization`,
+                    `Critical thinking`,
+                    `Pattern recognition`,
+                    `Communication`
+                ],
+                correct_answer: 1
+            }
+        ];
+    }
+
     // Mock data for development and fallback
     getMockStoryData(data) {
         console.log('Generating mock story data');

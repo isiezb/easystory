@@ -1,82 +1,216 @@
+/**
+ * API Service for handling API requests and responses
+ */
+
 // API Error class
 class ApiError extends Error {
-    constructor(message, status, details = null) {
+    /**
+     * Create an API error.
+     * @param {number} status - HTTP status code
+     * @param {string} message - Error message
+     * @param {Object} errorData - Additional error data
+     */
+    constructor(status, message, errorData = null) {
         super(message);
-        this.status = status;
-        this.details = details;
         this.name = 'ApiError';
+        this.status = status;
+        this.errorData = errorData;
+        // Capture stack trace
+        if (Error.captureStackTrace) {
+            Error.captureStackTrace(this, ApiError);
+        }
+    }
+
+    /**
+     * Get a formatted string representation of the error
+     */
+    toString() {
+        return `ApiError [${this.status}]: ${this.message}`;
     }
 }
 
 // API Service class
 class ApiService {
     constructor() {
-        this.baseUrl = window._config?.serverUrl || window.location.origin;
-        console.log('API Service initialized with base URL:', this.baseUrl);
-        
-        // Fallback to a mock server if needed
-        if (!this.baseUrl || this.baseUrl === 'undefined') {
-            this.baseUrl = window.location.origin;
-            console.warn('No server URL configured, using current origin as fallback');
+        this.baseUrl = '';
+        this.initPromise = this.init();
+    }
+
+    /**
+     * Initialize the API service
+     */
+    async init() {
+        try {
+            if (window._config) {
+                console.log('Using existing config');
+                this.baseUrl = window._config.serverUrl;
+            } else if (window.configPromise) {
+                console.log('Waiting for config promise to resolve');
+                const config = await window.configPromise;
+                this.baseUrl = config.serverUrl;
+            } else {
+                throw new Error('No config available for ApiService');
+            }
+
+            // Ensure the baseUrl has no trailing slash
+            this.baseUrl = this.baseUrl.replace(/\/$/, '');
+            console.log('API Service initialized with base URL:', this.baseUrl);
+
+            // Test server connectivity
+            this.testServerConnection();
+            
+            return true;
+        } catch (error) {
+            console.error('Failed to initialize API service:', error);
+            throw error;
+        }
+    }
+
+    /**
+     * Test basic server connectivity to help diagnose issues
+     */
+    async testServerConnection() {
+        try {
+            // Send a simple GET request to the server root to verify connectivity
+            console.log(`Testing connection to server: ${this.baseUrl}`);
+            const testResponse = await fetch(`${this.baseUrl}/`, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-Test-Request': 'true'
+                }
+            });
+            
+            console.log(`Server connection test result:`, {
+                url: `${this.baseUrl}/`,
+                status: testResponse.status,
+                statusText: testResponse.statusText,
+                headers: Object.fromEntries([...testResponse.headers.entries()])
+            });
+            
+            // Try to read the response body
+            let responseText = '';
+            try {
+                responseText = await testResponse.text();
+                // Truncate if too long
+                responseText = responseText.length > 200 
+                    ? responseText.substring(0, 200) + '...' 
+                    : responseText;
+            } catch(e) {
+                responseText = '[error reading response body]';
+            }
+            
+            console.log(`Server response body (truncated):`, responseText);
+        } catch (error) {
+            console.warn(`Server connection test failed:`, error);
+            // Don't throw - this is just a diagnostic test
         }
     }
 
     async handleResponse(response) {
-        console.log('Handling response with status:', response.status);
-
+        // Log full response details for debugging
+        console.log('Full API response:', {
+            status: response.status,
+            statusText: response.statusText,
+            headers: Object.fromEntries([...response.headers.entries()])
+        });
+        
         if (!response.ok) {
-            console.warn('Response not OK', response.status, response.statusText);
-            let errorData;
-            let errorMessage = `API request failed with status ${response.status}`;
+            console.error(`API error (${response.status}): ${response.statusText}`);
             
-            // Check content type to decide how to parse the error body
-            const contentType = response.headers.get('content-type');
+            // Try to get detailed error information
+            let errorMessage = `API error (${response.status})`;
+            let errorBody = null;
             
             try {
+                // First check content type to determine parsing method
+                const contentType = response.headers.get('content-type');
+                
                 if (contentType && contentType.includes('application/json')) {
-                    errorData = await response.json();
-                    console.log('Parsed JSON error response:', errorData);
-                    // Try to find a meaningful message within the JSON error object
-                    errorMessage = errorData.error?.message || errorData.message || errorData.detail || JSON.stringify(errorData);
+                    errorBody = await response.json();
+                    console.error('Error body (JSON):', errorBody);
+                    errorMessage = errorBody.error || errorBody.message || errorMessage;
                 } else {
-                    // If not JSON, read as text
-                    const errorText = await response.text();
-                    console.log('Received non-JSON error response text:', errorText);
-                    errorData = { message: errorText }; 
-                    errorMessage = errorText.substring(0, 200); // Limit length for display
+                    // Not JSON, try as text
+                    errorBody = await response.text();
+                    console.error('Error body (text):', errorBody);
+                    
+                    // Try to extract any JSON-like content from HTML/text
+                    try {
+                        const jsonMatch = errorBody.match(/\{.*\}/s);
+                        if (jsonMatch) {
+                            const extractedJson = JSON.parse(jsonMatch[0]);
+                            console.log('Extracted JSON from error text:', extractedJson);
+                            errorMessage = extractedJson.error || extractedJson.message || errorMessage;
+                        }
+                    } catch (jsonExtractionError) {
+                        // Failed to extract JSON, use the text directly if short enough
+                        if (errorBody.length < 100) {
+                            errorMessage = errorBody;
+                        }
+                    }
                 }
-            } catch (parseError) {
-                // This catches errors during response.json() or response.text()
-                console.error('Error parsing error response body:', parseError);
-                try {
-                    // As a last resort, try reading as text if JSON parsing failed
-                    const errorText = await response.text(); 
-                    errorData = { message: `Failed to parse error response. Body: ${errorText.substring(0, 100)}...` };
-                    errorMessage = errorData.message;
-                } catch (nestedParseError) {
-                     console.error('Error reading error response body as text after JSON parse failed:', nestedParseError);
-                     errorData = { message: 'Failed to parse error response and could not read body as text.' };
-                     errorMessage = errorData.message;
-                }
+            } catch (parsingError) {
+                console.error('Error parsing error response:', parsingError);
             }
             
-            console.error(`API Error: ${response.status} - ${errorMessage}`, errorData);
-            throw new ApiError(errorMessage, response.status, errorData);
+            throw new ApiError(response.status, errorMessage, errorBody);
         }
-
-        // Handle successful responses (2xx)
+        
         try {
-            const responseData = await response.json();
-            console.log('Successful API response data:', responseData);
-            return this.parseStoryResponse(responseData); // Use the flexible parser
-        } catch (jsonError) {
-            console.error('Error parsing successful JSON response:', jsonError);
-            throw new Error('Failed to parse successful API response.');
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                console.warn('Response is not JSON, received:', contentType);
+                const text = await response.text();
+                console.log('Non-JSON response body:', text);
+                
+                // Try to find JSON embedded in the response (e.g., in an HTML error page)
+                try {
+                    const jsonMatch = text.match(/\{.*\}/s);
+                    if (jsonMatch) {
+                        const extractedJson = JSON.parse(jsonMatch[0]);
+                        console.log('Extracted JSON from response:', extractedJson);
+                        return extractedJson;
+                    }
+                } catch (e) {
+                    console.error('Failed to extract JSON from response:', e);
+                }
+                
+                // Construct a minimal valid response to prevent UI errors
+                return {
+                    title: "Response Processing Error",
+                    content: "The server responded with non-JSON data. Please try again or contact support.",
+                    error: true
+                };
+            }
+            
+            const data = await response.json();
+            console.log('API response data:', data);
+            return data;
+        } catch (error) {
+            console.error('Error processing response:', error);
+            throw new ApiError(response.status, `Error processing response: ${error.message}`);
         }
     }
 
+    /**
+     * Generate a story with the given data.
+     * @param {Object} data - The story generation parameters
+     * @returns {Promise<Object>} The generated story
+     */
     async generateStory(data) {
+        // Wait for initialization if needed
+        if (this.initPromise) {
+            try {
+                await this.initPromise;
+            } catch (error) {
+                console.error('API Service initialization failed:', error);
+                // Continue anyway, to try the request
+            }
+        }
+        
         console.log('Generating story with data:', data);
+        console.log('API baseUrl:', this.baseUrl); 
         
         // Get initial form values with proper defaults
         const subject = String(data.subject || "general").trim();
@@ -109,7 +243,41 @@ class ApiService {
         // Update for Format 1: Send grade as string, language as lowercase
         const languageLower = language.toLowerCase();
         
-        // --- Prepare Format 1 (Standard with Numbers and Omitted Nulls) --- 
+        // === NEW: Format 0 - Completely different approach with camelCase + auth fields ===
+        // Try with camelCase fields, which is sometimes preferred by APIs
+        const camelCaseFormat = {
+            // Primary data wrapper
+            payload: {
+                // Main data in camelCase
+                subject: subject,
+                academicGrade: academicGrade,
+                wordCount: parseInt(wordCountStr, 10),
+                language: languageLower,
+                // Only include non-empty optional fields
+                ...(subjectSpecOrNull !== null && { subjectSpecification: subjectSpecOrNull }),
+                ...(settingOrNull !== null && { setting: settingOrNull }),
+                ...(mainCharacterOrNull !== null && { mainCharacter: mainCharacterOrNull }),
+                // Booleans
+                generateVocabulary: generateVocabulary,
+                generateSummary: generateSummary
+            },
+            // Metadata wrapper
+            meta: {
+                clientVersion: "1.0",
+                clientId: "web-client",
+                timestamp: new Date().toISOString(),
+                requestId: `req_${Math.random().toString(36).substring(2, 15)}`
+            },
+            // Auth-related data that might be required
+            auth: {
+                apiKey: window._config?.supabaseKey || null,
+                userId: window.auth?.getUser()?.id || null,
+                anonymous: window.auth?.getUser() === null
+            }
+        };
+        // === END NEW FORMAT ===
+
+        // Format 1: Standard format with explicit numbers, booleans, and OMITTED nulls
         const format1 = {
             subject: subject,
             academic_grade: academicGrade, // Send as original STRING value (e.g., "K", "5")
@@ -130,49 +298,67 @@ class ApiService {
         }
         // --- End Format 1 --- 
 
+        // Format 2: String boolean values, null optionals
+        const format2 = {
+            subject: subject,
+            academic_grade: academicGrade, // String grade
+            subject_specification: subjectSpecOrNull, // Send null if empty
+            setting: settingOrNull, // Send null if empty
+            main_character: mainCharacterOrNull, // Send null if empty
+            word_count: wordCountStr, // String count
+            language: language,
+            // Send undefined for missing booleans to omit key
+            generate_vocabulary: generateVocabulary === false ? undefined : String(generateVocabulary),
+            generate_summary: generateSummary === false ? undefined : String(generateSummary)
+        };
+        
+        // Format 3: Using 'on' directly for checkboxes, null optionals
+        const format3 = {
+            subject: subject,
+            academic_grade: academicGrade, // String grade
+            subject_specification: subjectSpecOrNull, // Send null if empty
+            setting: settingOrNull, // Send null if empty
+            main_character: mainCharacterOrNull, // Send null if empty
+            word_count: wordCountStr, // String count
+            language: language,
+            generate_vocabulary: data.generate_vocabulary, // Send 'on' or undefined
+            generate_summary: data.generate_summary // Send 'on' or undefined
+        };
+        
+        // Format 4: Raw form data
+        const format4 = {...data};
+        
         // Create an array of request formats to try
         const requestFormats = [
+            // Format 0: Completely different approach with camelCase fields
+            camelCaseFormat,
+            
             // Format 1: Standard format with explicit numbers, booleans, and OMITTED nulls
             format1,
             
             // Format 2: String boolean values, null optionals
-            {
-                subject: subject,
-                academic_grade: academicGrade, // String grade
-                subject_specification: subjectSpecOrNull, // Send null if empty
-                setting: settingOrNull, // Send null if empty
-                main_character: mainCharacterOrNull, // Send null if empty
-                word_count: wordCountStr, // String count
-                language: language,
-                // Send undefined for missing booleans to omit key
-                generate_vocabulary: generateVocabulary === false ? undefined : String(generateVocabulary),
-                generate_summary: generateSummary === false ? undefined : String(generateSummary)
-            },
+            format2,
             
             // Format 3: Using 'on' directly for checkboxes, null optionals
-            {
-                subject: subject,
-                academic_grade: academicGrade, // String grade
-                subject_specification: subjectSpecOrNull, // Send null if empty
-                setting: settingOrNull, // Send null if empty
-                main_character: mainCharacterOrNull, // Send null if empty
-                word_count: wordCountStr, // String count
-                language: language,
-                generate_vocabulary: data.generate_vocabulary, // Send 'on' or undefined
-                generate_summary: data.generate_summary // Send 'on' or undefined
-            },
+            format3,
             
             // Format 4: Raw form data
-            {...data}
+            format4
         ];
         
         // Log all the request formats we'll try
         console.log('Request formats to try:', JSON.stringify(requestFormats, null, 2));
         
         try {
+            // Build the base headers that are always included
             const headers = {
                 'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Accept': 'application/json, text/html, */*',
+                'X-Client-Name': 'quiz-story-web',
+                'X-Client-Version': '1.0.0',
+                'X-Request-ID': `req_${Math.random().toString(36).substring(2, 15)}`,
+                'Cache-Control': 'no-cache',
+                'Pragma': 'no-cache'
             };
             
             // Only add auth token if Supabase is available
@@ -199,6 +385,16 @@ class ApiService {
             let errorMessages = [];
             let lastRequestFormat;
             
+            // Add fallback URL-encoded request format as absolute last resort
+            const urlEncodedParams = new URLSearchParams();
+            Object.entries(format1).forEach(([key, value]) => {
+                if (value !== undefined && value !== null) {
+                    urlEncodedParams.append(key, String(value));
+                }
+            });
+            
+            let hasSuccess = false;
+            
             for (let i = 0; i < requestFormats.length; i++) {
                 const format = requestFormats[i];
                 lastRequestFormat = format;
@@ -222,6 +418,7 @@ class ApiService {
                     // If success, break the loop
                     if (response.ok) {
                         console.log(`Format ${i+1} succeeded!`);
+                        hasSuccess = true;
                         break;
                     } else {
                         // Get error details for debugging
@@ -234,18 +431,78 @@ class ApiService {
                         errorMessages.push(`Format ${i+1} failed: ${JSON.stringify(error)}`);
                         console.warn(`Format ${i+1} failed with status ${response.status}:`, errorText);
                         
-                        // If we reached the last format, throw error
-                        if (i === requestFormats.length - 1) {
-                            throw new Error(`All request formats failed. ${errorMessages.join(' | ')}`);
+                        // If we reached the last format, try URL-encoded as a final last-resort
+                        if (i === requestFormats.length - 1 && !hasSuccess) {
+                            console.log('Attempting final URL-encoded format as last resort');
+                            
+                            // Try with URL-encoded form data (Content-Type: application/x-www-form-urlencoded)
+                            try {
+                                console.log('URL-encoded request:', urlEncodedParams.toString());
+                                const urlEncodedResponse = await fetch(`${this.baseUrl}/generate-story`, {
+                                    method: 'POST',
+                                    headers: {
+                                        ...headers,
+                                        'Content-Type': 'application/x-www-form-urlencoded'
+                                    },
+                                    body: urlEncodedParams
+                                });
+                                
+                                console.log('URL-encoded response:', {
+                                    status: urlEncodedResponse.status,
+                                    statusText: urlEncodedResponse.statusText
+                                });
+                                
+                                if (urlEncodedResponse.ok) {
+                                    console.log('URL-encoded format succeeded!');
+                                    response = urlEncodedResponse;
+                                    hasSuccess = true;
+                                } else {
+                                    const errorText = await urlEncodedResponse.text();
+                                    errorMessages.push(`URL-encoded format failed: ${urlEncodedResponse.status} ${errorText}`);
+                                }
+                            } catch (urlEncodedError) {
+                                console.error('URL-encoded request error:', urlEncodedError);
+                                errorMessages.push(`URL-encoded format error: ${urlEncodedError.message}`);
+                            }
                         }
                     }
                 } catch (fetchError) {
                     console.error(`Fetch error in attempt ${i+1}:`, fetchError);
                     errorMessages.push(`Format ${i+1} fetch error: ${fetchError.message}`);
                     
-                    // If we reached the last format, throw error
-                    if (i === requestFormats.length - 1) {
-                        throw new Error(`Network errors in all attempts. ${errorMessages.join(' | ')}`);
+                    // If we reached the last format, try URL-encoded as a final last-resort
+                    if (i === requestFormats.length - 1 && !hasSuccess) {
+                        console.log('Attempting final URL-encoded format as last resort');
+                        
+                        // Try with URL-encoded form data (Content-Type: application/x-www-form-urlencoded)
+                        try {
+                            console.log('URL-encoded request:', urlEncodedParams.toString());
+                            const urlEncodedResponse = await fetch(`${this.baseUrl}/generate-story`, {
+                                method: 'POST',
+                                headers: {
+                                    ...headers,
+                                    'Content-Type': 'application/x-www-form-urlencoded'
+                                },
+                                body: urlEncodedParams
+                            });
+                            
+                            console.log('URL-encoded response:', {
+                                status: urlEncodedResponse.status,
+                                statusText: urlEncodedResponse.statusText
+                            });
+                            
+                            if (urlEncodedResponse.ok) {
+                                console.log('URL-encoded format succeeded!');
+                                response = urlEncodedResponse;
+                                hasSuccess = true;
+                            } else {
+                                const errorText = await urlEncodedResponse.text();
+                                errorMessages.push(`URL-encoded format failed: ${urlEncodedResponse.status} ${errorText}`);
+                            }
+                        } catch (urlEncodedError) {
+                            console.error('URL-encoded request error:', urlEncodedError);
+                            errorMessages.push(`URL-encoded format error: ${urlEncodedError.message}`);
+                        }
                     }
                 }
             }
@@ -257,22 +514,13 @@ class ApiService {
         } catch (error) {
             console.error('Error in generateStory:', error);
             
-            // Fallback to mock data for network errors or general server errors (5xx)
-            const shouldFallback = (error.name === 'TypeError' && error.message.includes('Failed to fetch')) || 
-                                   (error.name === 'ApiError' && error.status >= 500 && error.status < 600);
-
-            if (shouldFallback) {
-                console.log('Network or server error, attempting to use mock data as fallback.');
-                try {
-                    return this.getMockStoryData(requestFormats[0]); // Use the primary format for mock data generation
-                } catch (mockError) {
-                    console.error('Error generating mock data after primary error:', mockError);
-                    // If mock data also fails, re-throw the original error
-                    throw error; 
-                }
+            // If this is a network error or server error, return mock data
+            if (error.name === 'TypeError' && error.message.includes('Failed to fetch') || 
+                (error.name === 'ApiError' && error.status >= 500)) {
+                console.log('Network or server error, using mock data');
+                return this.getMockStoryData(requestFormats[0]);
             }
             
-            // Re-throw other errors (like 4xx client errors or specific ApiErrors)
             throw error;
         }
     }

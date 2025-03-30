@@ -240,7 +240,7 @@ async function handleStoryFormSubmit(e) {
 
                     console.log('Saving story object:', JSON.stringify(storyToSave, null, 2));
                     
-                    const { error: saveError } = await window.supabaseClient
+                    const { error: saveError } = await window.supabase
                         .from('stories')
                         .insert([storyToSave]);
 
@@ -349,17 +349,27 @@ async function handleStoryFormSubmit(e) {
 
 // Show loading overlay (Simplified)
 function showLoadingOverlay() {
+    console.log("Attempting to show loading overlay...");
     if (loadingOverlay) {
+        console.log("Loading overlay element found.");
         loadingOverlay.classList.add('visible');
+        console.log("Added 'visible' class to loading overlay.");
         // Scroll to top
         window.scrollTo({ top: 0, behavior: 'auto' });
+    } else {
+        console.error("Loading overlay element NOT found in the DOM!");
     }
 }
 
 // Hide loading overlay (Simplified)
 function hideLoadingOverlay() {
+    console.log("Attempting to hide loading overlay...");
     if (loadingOverlay) {
+        console.log("Loading overlay element found.");
         loadingOverlay.classList.remove('visible');
+        console.log("Removed 'visible' class from loading overlay.");
+    } else {
+        console.error("Loading overlay element NOT found in the DOM!");
     }
 }
 
@@ -913,7 +923,7 @@ async function init() {
 // Load user stories - modified to optionally include anonymous stories
 async function loadUserStories(includeAnonymous = false) {
     // Skip if dependencies are missing
-    if (!window.auth || !window.supabaseClient) {
+    if (!window.auth || !window.supabase) {
         console.log('Auth or Supabase client not available, skipping story load');
         return;
     }

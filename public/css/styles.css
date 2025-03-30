@@ -166,7 +166,7 @@
 }
 
 .loading-overlay.visible {
-    display: flex;
+    display: flex !important; /* Force display */
     opacity: 1;
 }
 

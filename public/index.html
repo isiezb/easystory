@@ -1914,10 +1914,10 @@
     <!-- Load configuration -->
     <script src="js/config.js"></script>
 
-    <!-- Load Supabase client -->
+    <!-- Load Supabase client FIRST -->
     <script src="js/supabase.js"></script>
 
-    <!-- Load application scripts -->
+    <!-- Load application scripts AFTER Supabase is initialized -->
     <script src="js/auth.js"></script>
     <script src="js/apiService.js"></script>
     <script src="js/uiHandler.js"></script>

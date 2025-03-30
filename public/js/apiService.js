@@ -602,61 +602,49 @@ class ApiService {
         console.log('Getting auth token for API request');
         
         try {
-            // Check if Supabase is properly initialized
-            if (!window.supabase) {
-                console.error('Supabase client is not initialized - auth header will not be set');
-                return null;
-            }
-            
-            if (window.supabase._isMockClient) {
-                console.error('Using mock Supabase client - auth header will not be set');
-                return null;
-            }
-            
-            // Try different methods to get the token based on Supabase version
-            
-            // Method 1: Get from current session (newer Supabase versions)
-            try {
-                const { data } = await window.supabase.auth.getSession();
-                if (data && data.session && data.session.access_token) {
-                    console.log('Got token from session.auth.getSession()');
-                    console.log('Access token starts with: ' + data.session.access_token.substring(0, 8) + '...');
-                    console.log('User authenticated as: ' + (data.session.user?.email || 'unknown'));
-                    return data.session.access_token;
-                } else {
-                    console.warn('Session exists but no access_token found. Session data:', 
-                        data ? JSON.stringify(data).substring(0, 100) + '...' : 'null');
+            // Method 1: Check if window.supabase is available and has auth methods
+            if (window.supabase && typeof window.supabase.auth?.getSession === 'function') {
+                try {
+                    const { data } = await window.supabase.auth.getSession();
+                    if (data && data.session && data.session.access_token) {
+                        console.log('Got token from session.auth.getSession()');
+                        return data.session.access_token;
+                    }
+                } catch (error) {
+                    console.error('Error getting token from getSession():', error);
                 }
-            } catch (error) {
-                console.error('Error getting token from getSession():', error);
+            } else {
+                console.warn('window.supabase.auth.getSession not available');
             }
-            
-            // Method 2: Direct session property (older versions)
-            try {
-                if (window.supabase.auth.session && window.supabase.auth.session.access_token) {
+
+            // Method 2: Check for older session property
+            if (window.supabase && window.supabase.auth?.session?.access_token) {
+                try {
                     console.log('Got token from auth.session property');
-                    console.log('Access token starts with: ' + window.supabase.auth.session.access_token.substring(0, 8) + '...');
-                    console.log('User authenticated as: ' + (window.supabase.auth.session.user?.email || 'unknown'));
                     return window.supabase.auth.session.access_token;
+                } catch (error) {
+                    console.error('Error getting token from session property:', error);
                 }
-            } catch (error) {
-                console.error('Error getting token from session property:', error);
+            } else {
+                console.warn('window.supabase.auth.session not available');
             }
-            
-            // Method 3: Try the user method (oldest versions)
-            try {
-                const user = await window.supabase.auth.user();
-                if (user && user.token) {
-                    console.log('Got token from auth.user()');
-                    console.log('Access token starts with: ' + user.token.substring(0, 8) + '...');
-                    console.log('User authenticated as: ' + (user.email || 'unknown'));
-                    return user.token;
+
+            // Method 3: Check for legacy user() method
+            if (window.supabase && typeof window.supabase.auth?.user === 'function') {
+                try {
+                    const user = await window.supabase.auth.user();
+                    if (user && user.token) {
+                        console.log('Got token from auth.user()');
+                        return user.token;
+                    }
+                } catch (error) {
+                    console.error('Error getting token from user():', error);
                 }
-            } catch (error) {
-                console.error('Error getting token from user():', error);
+            } else {
+                console.warn('window.supabase.auth.user not available');
             }
-            
-            // If we reached here, no authentication is available
+
+            // If no token found
             console.error('No auth token found with any method - USER IS NOT AUTHENTICATED');
             console.log('To save stories to database, please sign in first');
             return null;

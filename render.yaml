@@ -7,8 +7,6 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: SERVER_URL
-        value: https://quiz-story.onrender.com
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_KEY

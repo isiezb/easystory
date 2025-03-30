@@ -10,9 +10,9 @@
     <script>
         // Initialize environment variables
         window._env_ = {
-            SERVER_URL: 'https://quiz-story.onrender.com',
-            SUPABASE_URL: 'https://your-project.supabase.co',
-            SUPABASE_KEY: 'your-anon-key'
+            SERVER_URL: window.location.origin,
+            SUPABASE_URL: process.env.SUPABASE_URL || '',
+            SUPABASE_KEY: process.env.SUPABASE_KEY || ''
         };
     </script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -2170,9 +2170,9 @@
     <!-- Environment Variables -->
     <script>
         window._env_ = {
-            SERVER_URL: 'https://quiz-story.onrender.com',
-            SUPABASE_URL: 'https://your-project.supabase.co',
-            SUPABASE_KEY: 'your-anon-key'
+            SERVER_URL: window.location.origin,
+            SUPABASE_URL: process.env.SUPABASE_URL || '',
+            SUPABASE_KEY: process.env.SUPABASE_KEY || ''
         };
     </script>
 

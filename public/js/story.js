@@ -16,6 +16,32 @@ export const story = {
             if (response.quiz) {
                 quiz.init(response.quiz);
             }
+
+            // Save story to Supabase
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                const { data, error } = await supabase.getClient().from('stories').insert({
+                    user_id: session.user.id,
+                    title: formData.subject_specification || 'Untitled Story',
+                    content: response.content,
+                    metadata: {
+                        subject: formData.subject,
+                        academic_grade: formData.academic_grade,
+                        word_count: formData.word_count,
+                        language: formData.language,
+                        quiz: response.quiz,
+                        vocabulary: response.vocabulary,
+                        summary: response.summary
+                    }
+                }).select().single();
+
+                if (error) {
+                    console.error('Error saving story to Supabase:', error);
+                    uiHandler.showError('Failed to save story');
+                } else {
+                    console.log('Story saved successfully:', data);
+                }
+            }
             
             return response;
         } catch (error) {

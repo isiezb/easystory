@@ -121,25 +121,65 @@ export const uiHandler = {
     displayStoriesGrid(stories) {
         const storiesGrid = document.getElementById('storiesGrid');
         
-        if (!stories || stories.length === 0) {
+        if (!stories || !Array.isArray(stories)) {
+            this.showError('Invalid stories data');
             storiesGrid.innerHTML = '<div class="no-stories">No stories yet. Generate your first story!</div>';
             return;
         }
 
+        if (stories.length === 0) {
+            storiesGrid.innerHTML = '<div class="no-stories">No stories yet. Generate your first story!</div>';
+            return;
+        }
+
+        const sanitizeText = (text) => {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        };
+
+        const formatDate = (dateString) => {
+            try {
+                return new Date(dateString).toLocaleDateString();
+            } catch (error) {
+                console.error('Date formatting error:', error);
+                return 'Invalid date';
+            }
+        };
+
         storiesGrid.innerHTML = stories.map(story => `
             <div class="story-card" data-story-id="${story.id}">
-                <h3>${story.story_title}</h3>
+                <h3>${sanitizeText(story.story_title)}</h3>
                 <div class="story-meta">
-                    <span class="story-subject">${story.subject}</span>
-                    <span class="story-date">${new Date(story.created_at).toLocaleDateString()}</span>
+                    <span class="story-subject">${sanitizeText(story.subject)}</span>
+                    <span class="story-date">${formatDate(story.created_at)}</span>
                 </div>
-                <div class="story-preview">${story.story_text.substring(0, 150)}...</div>
+                <div class="story-preview">${sanitizeText(story.story_text.substring(0, 150))}...</div>
                 <div class="story-actions">
-                    <button class="view-story" onclick="viewStory('${story.id}')">View Story</button>
-                    <button class="delete-story" onclick="deleteStory('${story.id}')">Delete</button>
+                    <button class="view-story" data-story-id="${story.id}">View Story</button>
+                    <button class="delete-story" data-story-id="${story.id}">Delete</button>
                 </div>
             </div>
         `).join('');
+
+        // Add event listeners after rendering
+        storiesGrid.querySelectorAll('.view-story').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const storyId = btn.dataset.storyId;
+                if (storyId) {
+                    window.viewStory(storyId);
+                }
+            });
+        });
+
+        storiesGrid.querySelectorAll('.delete-story').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const storyId = btn.dataset.storyId;
+                if (storyId) {
+                    window.deleteStory(storyId);
+                }
+            });
+        });
     },
 
     showToast(message, type = 'info', duration = 5000) {

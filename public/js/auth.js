@@ -1,9 +1,10 @@
 import { config } from './config.js';
 import { uiHandler } from './uiHandler.js';
+import { supabase } from './supabase.js';
 
 export const auth = {
     init() {
-        this.supabase = supabase.createClient(config.supabaseUrl, config.supabaseKey);
+        this.supabase = supabase;
         this.setupAuthListeners();
         this.checkInitialAuth();
     },

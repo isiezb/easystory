@@ -111,64 +111,73 @@ async function handleStoryFormSubmit(e) {
                                       !window.supabase._isMockClient;
             
             // If user is logged in AND Supabase is truly available, save the story
-            if (isSupabaseAvailable && window.auth && window.auth.getUser()) {
+            if (isSupabaseAvailable && window.auth && typeof window.auth.getUser === 'function') {
                 try {
                     console.log('User logged in and Supabase available, attempting to save story...');
                     
-                    // Ensure we have a valid response object to work with
-                    if (!response || typeof response !== 'object') {
-                        throw new Error('Invalid API response received for saving.');
-                    }
-
-                    // Construct the story object to save based *primarily* on the API response
-                    // Use fallbacks cautiously only if response fields might genuinely be missing
-                    const storyToSave = {
-                        user_id: window.auth.getUser().id,
-                        // Prefer response title, fallback to a generic one
-                        title: response.title || `Generated Story (${new Date().toLocaleDateString()})`,
-                        // Prefer response content, fallback if absolutely necessary
-                        content: response.content || 'No content generated.',
-                        metadata: {
-                            // Extract metadata primarily from response, falling back to form `data` only if necessary
-                            grade: response.academic_grade || data.academic_grade || null,
-                            subject: response.subject || data.subject || null,
-                            word_count: response.word_count || parseInt(data.word_count, 10) || null,
-                            language: response.language || data.language || null,
-                            setting: response.setting || data.setting || null,
-                            main_character: response.main_character || data.main_character || null,
-                            // Add fields present in the response, like vocabulary/summary/objectives
-                            // Use hasOwnProperty for safety if response structure is uncertain
-                            vocabulary: response.hasOwnProperty('vocabulary') ? response.vocabulary : null,
-                            summary: response.hasOwnProperty('summary') ? response.summary : null,
-                            learning_objectives: response.hasOwnProperty('learning_objectives') ? response.learning_objectives : null,
-                            // Ensure boolean flags are handled correctly, preferring response if available
-                            generate_vocabulary: response.hasOwnProperty('generate_vocabulary') ? response.generate_vocabulary : (data.generate_vocabulary === 'on'),
-                            generate_summary: response.hasOwnProperty('generate_summary') ? response.generate_summary : (data.generate_summary === 'on')
-                            // Do NOT include 'quiz' as it's removed
-                        },
-                        created_at: new Date().toISOString()
-                    };
-
-                    // Clean metadata: Remove null/undefined values before saving
-                    Object.keys(storyToSave.metadata).forEach(key => {
-                        if (storyToSave.metadata[key] === null || storyToSave.metadata[key] === undefined) {
-                            delete storyToSave.metadata[key];
-                        }
-                    });
-
-                    console.log('Saving story object:', JSON.stringify(storyToSave, null, 2));
+                    // Safely get the user, may return null
+                    const user = window.auth.getUser();
                     
-                    const { error: saveError } = await window.supabaseClient
-                        .from('stories')
-                        .insert([storyToSave]);
+                    // Only proceed if user is available
+                    if (user && user.id) {
+                        // Ensure we have a valid response object to work with
+                        if (!response || typeof response !== 'object') {
+                            throw new Error('Invalid API response received for saving.');
+                        }
 
-                    if (saveError) {
-                        console.error('Error saving story:', saveError);
-                        showToast(`Failed to save story: ${saveError.message}`, 'error');
+                        // Construct the story object to save based *primarily* on the API response
+                        // Use fallbacks cautiously only if response fields might genuinely be missing
+                        const storyToSave = {
+                            user_id: user.id,
+                            // Prefer response title, fallback to a generic one
+                            title: response.title || `Generated Story (${new Date().toLocaleDateString()})`,
+                            // Prefer response content, fallback if absolutely necessary
+                            content: response.content || 'No content generated.',
+                            metadata: {
+                                // Extract metadata primarily from response, falling back to form `data` only if necessary
+                                grade: response.academic_grade || data.academic_grade || null,
+                                subject: response.subject || data.subject || null,
+                                word_count: response.word_count || parseInt(data.word_count, 10) || null,
+                                language: response.language || data.language || null,
+                                setting: response.setting || data.setting || null,
+                                main_character: response.main_character || data.main_character || null,
+                                // Add fields present in the response, like vocabulary/summary/objectives
+                                // Use hasOwnProperty for safety if response structure is uncertain
+                                vocabulary: response.hasOwnProperty('vocabulary') ? response.vocabulary : null,
+                                summary: response.hasOwnProperty('summary') ? response.summary : null,
+                                learning_objectives: response.hasOwnProperty('learning_objectives') ? response.learning_objectives : null,
+                                // Ensure boolean flags are handled correctly, preferring response if available
+                                generate_vocabulary: response.hasOwnProperty('generate_vocabulary') ? response.generate_vocabulary : (data.generate_vocabulary === 'on'),
+                                generate_summary: response.hasOwnProperty('generate_summary') ? response.generate_summary : (data.generate_summary === 'on')
+                                // Do NOT include 'quiz' as it's removed
+                            },
+                            created_at: new Date().toISOString()
+                        };
+
+                        // Clean metadata: Remove null/undefined values before saving
+                        Object.keys(storyToSave.metadata).forEach(key => {
+                            if (storyToSave.metadata[key] === null || storyToSave.metadata[key] === undefined) {
+                                delete storyToSave.metadata[key];
+                            }
+                        });
+
+                        console.log('Saving story object:', JSON.stringify(storyToSave, null, 2));
+                        
+                        const { error: saveError } = await window.supabaseClient
+                            .from('stories')
+                            .insert([storyToSave]);
+
+                        if (saveError) {
+                            console.error('Error saving story:', saveError);
+                            showToast(`Failed to save story: ${saveError.message}`, 'error');
+                        } else {
+                            console.log('Story saved successfully');
+                            showToast('Story generated and saved!', 'success');
+                            loadUserStories(); // Refresh stories list
+                        }
                     } else {
-                        console.log('Story saved successfully');
-                        showToast('Story generated and saved!', 'success');
-                        loadUserStories(); // Refresh stories list
+                        console.log('Supabase unavailable or user not logged in, skipping save');
+                        showToast('Story generated! Login feature unavailable.', 'success');
                     }
                 } catch (saveCatchError) {
                     console.error('Unexpected error during story save process:', saveCatchError);
@@ -470,10 +479,44 @@ async function init() {
 
 // Load user stories
 async function loadUserStories() {
-    if (!window.auth || !window.supabaseClient) return; // Ensure dependencies are loaded
+    // Skip if dependencies are missing
+    if (!window.auth || !window.supabaseClient) {
+        console.log('Auth or Supabase client not available, skipping story load');
+        return;
+    }
 
-    const user = window.auth.getUser();
-    if (!user) return;
+    // Check for user
+    let user = null;
+    
+    // Try to get user from auth service
+    if (typeof window.auth.getUser === 'function') {
+        user = window.auth.getUser();
+    }
+    
+    // If no user, try async method
+    if (!user && typeof window.auth.getUserAsync === 'function') {
+        try {
+            user = await window.auth.getUserAsync();
+        } catch (e) {
+            console.warn('Error getting user async:', e);
+        }
+    }
+    
+    // If still no user, try from session directly
+    if (!user && window.supabase && window.supabase.auth) {
+        try {
+            const { data } = await window.supabase.auth.getSession();
+            user = data?.session?.user;
+        } catch (e) {
+            console.warn('Error getting session directly:', e);
+        }
+    }
+
+    // Exit if still no user
+    if (!user || !user.id) {
+        console.log('No authenticated user found, skipping story load');
+        return;
+    }
 
     console.log('Loading stories for user:', user.id);
     const storiesGrid = document.getElementById('storiesGrid');

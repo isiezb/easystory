@@ -123,6 +123,39 @@ const auth = {
         if (window.uiHandler) {
             window.uiHandler.updateUIForLoggedOutUser();
         }
+    },
+    
+    // Get the current user
+    getUser() {
+        try {
+            if (!this.supabase) return null;
+            
+            // Use the current session directly
+            const session = this.supabase.auth.session;
+            
+            // Return user from session if available
+            if (session && session.user) {
+                return session.user;
+            }
+            
+            // If no session is available, return null
+            return null;
+        } catch (error) {
+            console.error('Error getting user:', error);
+            return null;
+        }
+    },
+    
+    // Get the current user asynchronously
+    async getUserAsync() {
+        try {
+            if (!this.supabase) return null;
+            const { data } = await this.supabase.auth.getSession();
+            return data?.session?.user || null;
+        } catch (error) {
+            console.error('Error getting user async:', error);
+            return null;
+        }
     }
 };
 

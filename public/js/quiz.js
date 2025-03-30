@@ -1,0 +1,84 @@
+export const quiz = {
+    currentQuiz: null,
+    currentQuestionIndex: 0,
+    score: 0,
+
+    init(quizData) {
+        this.currentQuiz = quizData;
+        this.currentQuestionIndex = 0;
+        this.score = 0;
+        this.showQuestion();
+    },
+
+    showQuestion() {
+        const question = this.currentQuiz.questions[this.currentQuestionIndex];
+        const quizContainer = document.getElementById('quizContainer');
+        
+        quizContainer.innerHTML = `
+            <div class="quiz-question">
+                <h3>Question ${this.currentQuestionIndex + 1} of ${this.currentQuiz.questions.length}</h3>
+                <p>${question.question}</p>
+                <div class="quiz-options">
+                    ${question.options.map((option, index) => `
+                        <button class="quiz-option" data-index="${index}">
+                            ${option}
+                        </button>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+
+        // Add event listeners to options
+        quizContainer.querySelectorAll('.quiz-option').forEach(option => {
+            option.addEventListener('click', (e) => this.handleAnswer(parseInt(e.target.dataset.index)));
+        });
+    },
+
+    handleAnswer(selectedIndex) {
+        const question = this.currentQuiz.questions[this.currentQuestionIndex];
+        const isCorrect = selectedIndex === question.correct_answer;
+        
+        if (isCorrect) {
+            this.score++;
+        }
+
+        // Show feedback
+        const options = document.querySelectorAll('.quiz-option');
+        options.forEach((option, index) => {
+            option.disabled = true;
+            if (index === question.correct_answer) {
+                option.classList.add('correct');
+            } else if (index === selectedIndex) {
+                option.classList.add('incorrect');
+            }
+        });
+
+        // Wait before moving to next question
+        setTimeout(() => {
+            this.currentQuestionIndex++;
+            if (this.currentQuestionIndex < this.currentQuiz.questions.length) {
+                this.showQuestion();
+            } else {
+                this.showResults();
+            }
+        }, 1500);
+    },
+
+    showResults() {
+        const quizContainer = document.getElementById('quizContainer');
+        const percentage = (this.score / this.currentQuiz.questions.length) * 100;
+        
+        quizContainer.innerHTML = `
+            <div class="quiz-results">
+                <h3>Quiz Complete!</h3>
+                <div class="score">Your Score: ${this.score}/${this.currentQuiz.questions.length} (${percentage.toFixed(1)}%)</div>
+                <button class="retry-quiz">Try Again</button>
+            </div>
+        `;
+
+        // Add event listener to retry button
+        quizContainer.querySelector('.retry-quiz').addEventListener('click', () => {
+            this.init(this.currentQuiz);
+        });
+    }
+}; 

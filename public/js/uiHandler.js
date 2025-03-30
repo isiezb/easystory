@@ -267,6 +267,91 @@ export const uiHandler = {
     },
 
     showSuccess(message) {
-        this.showToast(message, 'success');
+        const toast = document.createElement('div');
+        toast.className = 'toast success';
+        toast.innerHTML = `
+            <div class="toast-content">
+                <div class="toast-title">Success</div>
+                <div class="toast-message">${message}</div>
+            </div>
+            <button class="toast-close">&times;</button>
+        `;
+        document.getElementById('toastContainer').appendChild(toast);
+        setTimeout(() => toast.classList.add('show'), 100);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => toast.remove(), 300);
+        }, 5000);
+    },
+
+    updateUserProfile(user) {
+        document.getElementById('userEmail').textContent = user.email;
+        document.getElementById('userAvatar').textContent = user.email[0].toUpperCase();
+    },
+
+    showAuthModal(type = 'login') {
+        const modal = document.getElementById('authModal');
+        const title = modal.querySelector('.modal-title');
+        const form = modal.querySelector('form');
+        const submitBtn = modal.querySelector('button[type="submit"]');
+        
+        if (type === 'login') {
+            title.textContent = 'Login';
+            form.dataset.type = 'login';
+            submitBtn.textContent = 'Login';
+        } else {
+            title.textContent = 'Sign Up';
+            form.dataset.type = 'signup';
+            submitBtn.textContent = 'Sign Up';
+        }
+        
+        modal.style.display = 'flex';
+    },
+
+    hideAuthModal() {
+        document.getElementById('authModal').style.display = 'none';
+    },
+
+    showStory(story) {
+        const storyOutput = document.getElementById('storyOutput');
+        storyOutput.innerHTML = `
+            <div class="story-content">
+                <div class="story-meta">
+                    <span>Grade: ${story.metadata.grade}</span>
+                    <span>Subject: ${story.metadata.subject}</span>
+                    <span>Length: ${story.metadata.word_count} words</span>
+                </div>
+                <div class="story-text">${story.content}</div>
+            </div>
+        `;
+
+        if (story.metadata.vocabulary) {
+            const vocabularySection = document.createElement('div');
+            vocabularySection.className = 'vocabulary-section';
+            vocabularySection.innerHTML = `
+                <h3>Vocabulary List</h3>
+                <div class="vocabulary-list">
+                    ${story.metadata.vocabulary.map(word => `
+                        <div class="vocabulary-item">
+                            <div class="vocabulary-word">${word.word}</div>
+                            <div class="vocabulary-definition">${word.definition}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            storyOutput.appendChild(vocabularySection);
+        }
+
+        if (story.metadata.summary) {
+            const summarySection = document.createElement('div');
+            summarySection.className = 'story-summary';
+            summarySection.innerHTML = `
+                <div class="story-summary-title">Story Summary</div>
+                <div class="story-summary-content">${story.metadata.summary}</div>
+            `;
+            storyOutput.appendChild(summarySection);
+        }
+
+        storyOutput.scrollIntoView({ behavior: 'smooth' });
     }
 }; 

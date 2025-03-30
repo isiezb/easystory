@@ -271,8 +271,8 @@ class ApiService {
             // Auth-related data that might be required
             auth: {
                 apiKey: window._config?.supabaseKey || null,
-                userId: window.auth?.getUser()?.id || null,
-                anonymous: window.auth?.getUser() === null
+                userId: window.auth && typeof window.auth.getUser === 'function' ? window.auth.getUser()?.id : null,
+                anonymous: window.auth ? !(window.auth.getUser && typeof window.auth.getUser === 'function' && window.auth.getUser()) : true
             }
         };
         // === END NEW FORMAT ===

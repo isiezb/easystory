@@ -9,8 +9,17 @@ const initSupabase = async () => {
     const { supabaseUrl, supabaseKey } = config;
     
     if (!supabaseUrl || !supabaseKey) {
-        console.error('Missing Supabase configuration:', { supabaseUrl, supabaseKey });
-        throw new Error('Missing Supabase configuration');
+        console.warn('Supabase configuration missing, some features may be limited');
+        // Return a mock client that doesn't do anything
+        return {
+            auth: {
+                getSession: async () => ({ data: { session: null } }),
+                signUp: async () => ({ data: null, error: new Error('Supabase not configured') }),
+                signInWithPassword: async () => ({ data: null, error: new Error('Supabase not configured') }),
+                signInWithOAuth: async () => ({ data: null, error: new Error('Supabase not configured') }),
+                signOut: async () => ({ error: new Error('Supabase not configured') })
+            }
+        };
     }
 
     supabaseClient = window.supabase.createClient(supabaseUrl, supabaseKey);

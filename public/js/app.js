@@ -1,5 +1,6 @@
 import { apiService } from './apiService.js';
 import { supabase } from './supabase.js';
+import { auth } from './auth.js';
 
 // DOM Elements
 const storyForm = document.getElementById('storyForm');
@@ -178,40 +179,26 @@ function updateUIForLoggedOutUser() {
 // Initialize app
 async function init() {
     try {
-        // Wait for environment variables to be loaded
-        if (!window._env_) {
-            await new Promise(resolve => {
-                const checkEnv = () => {
-                    if (window._env_) {
-                        resolve();
-                    } else {
-                        setTimeout(checkEnv, 100);
-                    }
-                };
-                checkEnv();
-            });
-        }
-
         // Initialize Supabase
-        if (!window._env_?.SUPABASE_URL || !window._env_?.SUPABASE_KEY) {
-            throw new Error('Missing Supabase configuration');
-        }
-
-        // Check if user is logged in
-        const { data: { session }, error } = await supabase.auth.getSession();
-        if (error) {
-            console.error('Error checking session:', error);
-            return;
-        }
-
-        if (session) {
-            currentUser = session.user;
-            updateUIForLoggedInUser();
-        } else {
-            updateUIForLoggedOutUser();
+        await auth.init();
+        
+        // Initialize UI
+        initializeUI();
+        
+        // Setup event listeners
+        setupEventListeners();
+        
+        // Load user stories if logged in
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user) {
+            await loadUserStories(session.user.id);
         }
     } catch (error) {
         console.error('Error initializing app:', error);
+        // Don't show error if Supabase is not configured
+        if (!error.message.includes('Supabase not configured')) {
+            uiHandler.showError('Failed to initialize application');
+        }
     }
 }
 

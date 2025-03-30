@@ -1,6 +1,7 @@
 import { apiService } from './apiService.js';
 import { uiHandler } from './uiHandler.js';
 import { quiz } from './quiz.js';
+import { supabase } from './supabase.js';
 
 export const story = {
     async generate(formData) {

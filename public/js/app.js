@@ -388,23 +388,30 @@ function displayStory(storyData) {
         storyOutput.innerHTML = storyHTML;
         storyOutput.scrollIntoView({ behavior: 'smooth' });
         
-        // Initialize quiz if available and valid
-        if (storyContent.quiz) {
-            console.log('Quiz data available, attempting to initialize quiz:', storyContent.quiz);
-            
-            // Basic validation of quiz data structure
-            const isValidQuiz = storyContent.quiz && 
-                             Array.isArray(storyContent.quiz) && 
-                             storyContent.quiz.length > 0;
-                             
-            if (!isValidQuiz) {
-                console.warn('Quiz data has invalid format:', storyContent.quiz);
-                return; // Skip quiz initialization if data is invalid
-            }
+        // Check for quiz data in all possible locations
+        let quizData = null;
+        
+        // Look in different possible locations
+        if (storyContent.quiz && Array.isArray(storyContent.quiz)) {
+            console.log('Found quiz in storyContent.quiz');
+            quizData = storyContent.quiz;
+        } else if (storyData.quiz && Array.isArray(storyData.quiz)) {
+            console.log('Found quiz in storyData.quiz');
+            quizData = storyData.quiz;
+        } else if (storyData.data?.quiz && Array.isArray(storyData.data.quiz)) {
+            console.log('Found quiz in storyData.data.quiz');
+            quizData = storyData.data.quiz;
+        } else {
+            console.log('No quiz data found in response');
+        }
+        
+        // Initialize quiz if we found valid quiz data
+        if (quizData && quizData.length > 0) {
+            console.log('Quiz data available, attempting to initialize quiz:', quizData);
             
             // Structure quiz data properly with field name normalization
-            const quizData = {
-                questions: storyContent.quiz.map(q => {
+            const normalizedQuizData = {
+                questions: quizData.map(q => {
                     // Normalize field names to handle both correctAnswer and correct_answer formats
                     let correctAnswerIndex = null;
                     
@@ -433,14 +440,35 @@ function displayStory(storyData) {
                 quizContainer = document.createElement('div');
                 quizContainer.id = 'quizContainer';
                 quizContainer.className = 'quiz-container';
+                
+                // Add a clear heading to make quiz more visible
+                const quizHeading = document.createElement('h3');
+                quizHeading.className = 'quiz-heading';
+                quizHeading.textContent = 'Quiz';
+                quizContainer.appendChild(quizHeading);
+                
+                // Add as last element in story container
                 storyOutput.appendChild(quizContainer);
+                
+                console.log('Created new quiz container:', quizContainer);
+            } else {
+                console.log('Using existing quiz container:', quizContainer);
+                // Clear existing content
+                quizContainer.innerHTML = '<h3 class="quiz-heading">Quiz</h3>';
             }
             
             // Check if window.quiz is available
             if (window.quiz && typeof window.quiz.init === 'function') {
                 try {
-                    console.log('Initializing quiz with normalized data:', quizData);
-                    window.quiz.init(quizData);
+                    console.log('Initializing quiz with normalized data:', normalizedQuizData);
+                    window.quiz.init(normalizedQuizData);
+                    console.log('Quiz initialized successfully');
+                    
+                    // Make sure quiz is visible by scrolling to it
+                    setTimeout(() => {
+                        quizContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        console.log('Scrolled to quiz container');
+                    }, 500);
                 } catch (quizError) {
                     console.error('Error initializing quiz:', quizError);
                     quizContainer.innerHTML = '<div class="quiz-error">There was an error initializing the quiz. Please try again.</div>';
@@ -450,7 +478,7 @@ function displayStory(storyData) {
                 quizContainer.innerHTML = '<div class="quiz-error">Quiz functionality is currently unavailable.</div>';
             }
         } else {
-            console.log('No quiz data available in story response');
+            console.log('No valid quiz data available');
         }
         
         // Set up continue story button

@@ -2159,16 +2159,13 @@
         <div class="stories-grid" id="storiesGrid"></div>
     </div>
 
-    <!-- Load environment variables -->
+    <!-- Environment Variables -->
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            window._env_ = {
-                SERVER_URL: window.location.origin,
-                SUPABASE_URL: 'https://your-project.supabase.co',
-                SUPABASE_KEY: 'your-anon-key',
-                OPENROUTER_KEY: 'your-openrouter-key'
-            };
-        });
+        window._env_ = {
+            SERVER_URL: 'https://quiz-story.onrender.com',
+            SUPABASE_URL: 'https://your-project.supabase.co',
+            SUPABASE_KEY: 'your-anon-key'
+        };
     </script>
 
     <!-- Load application modules -->

@@ -73,6 +73,9 @@ function getAnonymousUserId() {
     return anonymousId;
 }
 
+// Make anonymousUserId function available globally
+window.getAnonymousUserId = getAnonymousUserId;
+
 // Handle story form submission
 async function handleStoryFormSubmit(e) {
     e.preventDefault();

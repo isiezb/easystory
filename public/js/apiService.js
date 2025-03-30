@@ -252,11 +252,31 @@ class ApiService {
             generate_summary: data.generate_summary === 'on' // Boolean for optional features
         };
         
+        // Get anonymous user ID if available
+        let anonymousId = null;
+        if (window.localStorage) {
+            anonymousId = localStorage.getItem('anonymousUserId');
+            if (!anonymousId && window.getAnonymousUserId) {
+                anonymousId = window.getAnonymousUserId();
+            }
+        }
+        
+        // Add anonymous ID to the request if available
+        if (anonymousId) {
+            console.log('Including anonymous user ID in request:', anonymousId);
+            serverFormat.anonymous_id = anonymousId;
+        }
+        
         // Build request headers
         const headers = {
             'Content-Type': 'application/json',
             'Accept': 'application/json'
         };
+        
+        // Add anonymous ID to headers as well
+        if (anonymousId) {
+            headers['X-Anonymous-ID'] = anonymousId;
+        }
         
         // Add auth token if available
         try {

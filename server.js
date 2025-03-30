@@ -6,9 +6,38 @@ const axios = require('axios');
 const logger = require('./utils/logger');
 const { AppError, handleError } = require('./utils/errorHandler');
 const path = require('path');
+const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
 
 const app = express();
 const port = process.env.PORT || 3000;
+
+// Security middleware
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "*.supabase.co"],
+            styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
+            fontSrc: ["'self'", "fonts.gstatic.com"],
+            imgSrc: ["'self'", "data:", "*.supabase.co"],
+            connectSrc: ["'self'", "*.supabase.co", "openrouter.ai"]
+        }
+    }
+}));
+
+// Rate limiting
+const limiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 100 // limit each IP to 100 requests per windowMs
+});
+app.use(limiter);
+
+// API rate limiting
+const apiLimiter = rateLimit({
+    windowMs: 60 * 1000, // 1 minute
+    max: 10 // limit each IP to 10 requests per windowMs
+});
 
 // Detailed environment variable logging
 logger.info('Environment variables check:', {
@@ -182,7 +211,7 @@ const validateQuizStructure = (quiz) => {
 };
 
 // API Routes
-app.post('/generate-story', authenticateUser, async (req, res) => {
+app.post('/generate-story', apiLimiter, authenticateUser, async (req, res) => {
     try {
         const {
             academic_grade,
@@ -366,7 +395,7 @@ app.post('/generate-story', authenticateUser, async (req, res) => {
 });
 
 // Get user's stories endpoint
-app.get('/user-stories', authenticateUser, async (req, res) => {
+app.get('/user-stories', apiLimiter, authenticateUser, async (req, res) => {
     try {
         const { data: stories, error } = await supabase
             .from('stories')

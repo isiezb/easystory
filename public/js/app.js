@@ -61,6 +61,7 @@ function showToast(message, type = 'success') {
 // Story form submission
 storyForm.addEventListener('submit', async (e) => {
     e.preventDefault();
+    e.stopPropagation();
     
     const formData = new FormData(storyForm);
     const data = Object.fromEntries(formData.entries());

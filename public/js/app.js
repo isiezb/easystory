@@ -7,9 +7,6 @@ const themeToggle = document.getElementById('themeToggle');
 const otherSubjectGroup = document.getElementById('otherSubjectGroup');
 const subjectSelect = document.getElementById('subject');
 
-// Initialize global API service immediately
-window.apiService = new ApiService();
-
 // Initialize theme
 function initTheme() {
     const currentTheme = localStorage.getItem('theme') || 'light';
@@ -198,7 +195,7 @@ async function handleStoryFormSubmit(e) {
                 console.log('Attempting direct form submission:', directData);
                 
                 // Try to send directly to the server
-                const directResponse = await fetch(`${window._config.serverUrl}/generate-story`, {
+                const directResponse = await fetch(`${window._config?.serverUrl || window.location.origin}/generate-story`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -423,6 +420,11 @@ function updateUIForLoggedOutUser() {
 // Initialize app
 async function init() {
     try {
+        // Check if API service is available
+        if (!window.apiService) {
+            console.error('API service not initialized. Make sure apiService.js is loaded before app.js');
+        }
+        
         // Initialize theme
         initTheme();
         

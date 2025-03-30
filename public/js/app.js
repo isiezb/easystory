@@ -122,9 +122,8 @@ async function handleStoryFormSubmit(e) {
     // === End New Check ===
     
     // Show loading state
-    if (window.uiHandler && window.uiHandler.showLoading) {
-        window.uiHandler.showLoading('Generating Your Story');
-    } else if (loadingOverlay) {
+    if (loadingOverlay) {
+        // Ensure loading overlay is properly displayed
         loadingOverlay.style.display = 'flex';
         const loadingText = loadingOverlay.querySelector('.loading-text');
         if (loadingText) {
@@ -132,6 +131,22 @@ async function handleStoryFormSubmit(e) {
         }
         // Scroll to top to make loading overlay more visible
         window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        // Also update the submit button state
+        const submitButton = storyForm.querySelector('button[type="submit"]');
+        if (submitButton) {
+            submitButton.disabled = true;
+            const spinner = submitButton.querySelector('.spinner');
+            if (spinner) {
+                spinner.style.display = 'block';
+            }
+            const spanText = submitButton.querySelector('span');
+            if (spanText) {
+                spanText.textContent = 'Generating...';
+            }
+        }
+    } else if (window.uiHandler && window.uiHandler.showLoading) {
+        window.uiHandler.showLoading('Generating Your Story');
     }
     
     try {

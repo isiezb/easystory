@@ -96,14 +96,68 @@ app.get('/health', (req, res) => {
     res.status(200).json({ status: 'ok' });
 });
 
-// API Routes
-app.post('/generate-story', authenticateUser, async (req, res) => {
+// Serve index.html for all routes (SPA support)
+app.get('*', (req, res) => {
+    res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// CORS middleware
+app.use((req, res, next) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
+    res.header('Access-Control-Allow-Headers', '*');
+    if (req.method === 'OPTIONS') {
+        return res.sendStatus(200);
+    }
+    next();
+});
+
+// Test database connection
+const testConnection = async () => {
+    try {
+        const { data, error } = await supabase.from('stories').select('count').limit(1);
+        if (error) throw error;
+        logger.info('Database connection successful');
+    } catch (error) {
+        logger.error('Database connection failed:', error);
+        process.exit(1);
+    }
+};
+
+// Run connection test on startup
+testConnection();
+
+// OpenRouter API configuration
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const OPENROUTER_BASE_URL = process.env.OPENROUTER_BASE_URL;
+
+// Input validation function
+const validateInputs = (inputs) => {
+    const requiredFields = ['academic_grade', 'subject', 'word_count', 'language'];
+    
+    // Check if all required fields are present
+    for (const field of requiredFields) {
+        if (!inputs[field]) {
+            return false;
+        }
+    }
+    
+    // Validate word_count is a number
+    if (typeof inputs.word_count !== 'number') {
+        return false;
+    }
+    
+    return true;
+};
+
+// Routes
+app.post('/generate-story', async (req, res) => {
     try {
         const { subject, grade, topic, learning_objectives } = req.body;
         
-        // Validate inputs
-        if (!validateInputs(req.body)) {
-            throw new AppError('Invalid input data', 400);
+        // Validate required fields
+        if (!subject || !grade || !topic || !learning_objectives) {
+            throw new AppError('Missing required fields', 400);
         }
 
         // Log request details
@@ -233,7 +287,6 @@ app.get('/user-stories', authenticateUser, async (req, res) => {
 app.get('/env-config.js', (req, res) => {
     res.setHeader('Content-Type', 'application/javascript');
     res.send(`window._env_ = {
-        SERVER_URL: '${process.env.SERVER_URL || ''}',
         SUPABASE_URL: '${process.env.SUPABASE_URL}',
         SUPABASE_KEY: '${process.env.SUPABASE_KEY}'
     };`);
@@ -241,49 +294,6 @@ app.get('/env-config.js', (req, res) => {
 
 // Error handling middleware
 app.use(handleError);
-
-// Serve index.html for all other routes (SPA support)
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// Test database connection
-const testConnection = async () => {
-    try {
-        const { data, error } = await supabase.from('stories').select('count').limit(1);
-        if (error) throw error;
-        logger.info('Database connection successful');
-    } catch (error) {
-        logger.error('Database connection failed:', error);
-        process.exit(1);
-    }
-};
-
-// Run connection test on startup
-testConnection();
-
-// OpenRouter API configuration
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
-const OPENROUTER_BASE_URL = process.env.OPENROUTER_BASE_URL;
-
-// Input validation function
-const validateInputs = (inputs) => {
-    const requiredFields = ['subject', 'grade', 'topic', 'learning_objectives'];
-    
-    // Check if all required fields are present
-    for (const field of requiredFields) {
-        if (!inputs[field]) {
-            return false;
-        }
-    }
-    
-    // Validate learning_objectives is an array
-    if (!Array.isArray(inputs.learning_objectives)) {
-        return false;
-    }
-    
-    return true;
-};
 
 // Start server
 app.listen(port, () => {

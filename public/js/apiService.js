@@ -74,11 +74,6 @@ export const apiService = {
     async generateStory(formData) {
         return this.retryWithBackoff(async () => {
             try {
-                const token = await this.getAuthToken();
-                if (!token) {
-                    throw new ApiError('Please sign in to generate stories', 401);
-                }
-
                 console.log('Generating story with formData:', formData);
                 console.log('Server URL:', config.serverUrl);
                 
@@ -86,7 +81,7 @@ export const apiService = {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${await this.getAuthToken()}`
                     },
                     body: JSON.stringify(formData)
                 });

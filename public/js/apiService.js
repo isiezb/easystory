@@ -60,23 +60,36 @@ class ApiService {
         console.log('Generating story with data:', data);
         
         // Create a properly formatted request object based on server expectations
+        // Using EXACT field names from the form in index.html
         const requestData = {
-            // Required fields with fallbacks
-            academic_grade: data.academic_grade || data.grade || "5",
-            subject: data.subject || "general",
+            // Required fields with proper formatting and validation
+            academic_grade: String(data.academic_grade || "5"),
+            subject: String(data.subject || "general"),
             
-            // Optional fields with fallbacks
-            subject_specification: data.subject_specification || "",
-            setting: data.setting || "a classroom",
-            main_character: data.main_character || data.character || "a student",
-            word_count: parseInt(data.word_count || data.wordCount || 500),
-            language: data.language || "english",
+            // Optional fields with proper formatting
+            subject_specification: String(data.subject_specification || ""),
+            setting: String(data.setting || "a classroom"),
+            main_character: String(data.main_character || "a student"),
+            word_count: Number(data.word_count || 500),
+            language: String(data.language || "english"),
             
-            // Boolean flags
-            generate_vocabulary: data.generate_vocabulary === 'on' || data.vocabulary === 'on' || false,
-            generate_summary: data.generate_summary === 'on' || data.summary === 'on' || false,
-            generate_quiz: data.generate_quiz === 'on' || data.quiz === 'on' || false
+            // Boolean flags explicitly converted to Boolean values
+            generate_vocabulary: Boolean(data.generate_vocabulary === 'on'),
+            generate_summary: Boolean(data.generate_summary === 'on')
         };
+        
+        // Validate word count (ensure it's a valid positive number)
+        if (isNaN(requestData.word_count) || requestData.word_count <= 0) {
+            requestData.word_count = 500;
+        }
+        
+        // Ensure word count is within reasonable limits
+        requestData.word_count = Math.min(Math.max(requestData.word_count, 100), 2000);
+        
+        // Ensure subject is not empty
+        if (!requestData.subject.trim()) {
+            requestData.subject = "general";
+        }
         
         // Log the final formatted request
         console.log('Formatted request data for API:', requestData);
@@ -104,6 +117,8 @@ class ApiService {
             }
             
             console.log(`Sending API request to ${this.baseUrl}/generate-story`);
+            console.log('Request body:', JSON.stringify(requestData, null, 2));
+            
             const response = await fetch(`${this.baseUrl}/generate-story`, {
                 method: 'POST',
                 headers: headers,
@@ -134,41 +149,21 @@ class ApiService {
         const setting = data.setting || 'a classroom';
         
         return {
-            title: `The ${subject.charAt(0).toUpperCase() + subject.slice(1)} Adventure - Grade ${grade}`,
-            content: `Once upon a time, in ${setting}, ${character} embarked on a journey to learn about ${subject}.\n\nThrough perseverance and dedication, they discovered amazing insights about ${subject} and grew their knowledge.\n\nThe teacher was impressed by ${character}'s dedication and encouraged them to share their discoveries with the class.\n\nThis is a simulated story generated when the server is unavailable.`,
-            summary: data.generate_summary ? `A brief story about a ${character} learning about ${subject} in ${setting}.` : null,
-            vocabulary: data.generate_vocabulary ? [
-                { word: "perseverance", definition: "Persistence in doing something despite difficulty or delay in achieving success" },
-                { word: "dedication", definition: "The quality of being dedicated or committed to a task or purpose" },
-                { word: "discovery", definition: "The action or process of discovering or being discovered" }
-            ] : null,
-            learning_objectives: [
-                `Understanding key concepts in ${subject}`,
-                `Developing critical thinking about ${subject}`,
-                `Applying knowledge of ${subject} in real-world scenarios`
-            ],
-            quiz: data.generate_quiz ? [
-                {
-                    question: `What did ${character} learn about in the story?`,
-                    options: [
-                        subject,
-                        "mathematics",
-                        "history",
-                        "science"
-                    ],
-                    answer: 0
-                },
-                {
-                    question: "What quality helped the character learn?",
-                    options: [
-                        "luck",
-                        "wealth",
-                        "perseverance",
-                        "magic"
-                    ],
-                    answer: 2
-                }
-            ] : null
+            story: {
+                title: `The ${subject.charAt(0).toUpperCase() + subject.slice(1)} Adventure - Grade ${grade}`,
+                content: `Once upon a time, in ${setting}, ${character} embarked on a journey to learn about ${subject}.\n\nThrough perseverance and dedication, they discovered amazing insights about ${subject} and grew their knowledge.\n\nThe teacher was impressed by ${character}'s dedication and encouraged them to share their discoveries with the class.\n\nThis is a simulated story generated when the server is unavailable.`,
+                summary: data.generate_summary ? `A brief story about a ${character} learning about ${subject} in ${setting}.` : null,
+                vocabulary: data.generate_vocabulary ? [
+                    { word: "perseverance", definition: "Persistence in doing something despite difficulty or delay in achieving success" },
+                    { word: "dedication", definition: "The quality of being dedicated or committed to a task or purpose" },
+                    { word: "discovery", definition: "The action or process of discovering or being discovered" }
+                ] : null,
+                learning_objectives: [
+                    `Understanding key concepts in ${subject}`,
+                    `Developing critical thinking about ${subject}`,
+                    `Applying knowledge of ${subject} in real-world scenarios`
+                ]
+            }
         };
     }
 

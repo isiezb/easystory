@@ -58,29 +58,23 @@ async function handleStoryFormSubmit(e) {
         return;
     }
     
+    // Get form data and ensure all expected fields are present
     const formData = new FormData(storyForm);
     const data = Object.fromEntries(formData.entries());
     
-    // Log form data for debugging
-    console.log('Form data:', data);
+    // Log raw form data for debugging
+    console.log('Raw form data:', data);
     
     // Handle other subject
-    if (data.subject === 'other') {
+    if (data.subject === 'other' && data.other_subject) {
         data.subject = data.other_subject;
     }
     
-    // Format data for API
-    const requestData = {
-        academic_grade: data.academic_grade || data.grade,
-        subject: data.subject,
-        subject_specification: data.subject_specification || '',
-        setting: data.setting || 'a classroom',
-        main_character: data.main_character || data.character || 'a student',
-        word_count: parseInt(data.word_count || data.wordCount) || 500,
-        language: data.language || 'english',
-        generate_vocabulary: data.generate_vocabulary === 'on' || data.vocabulary === 'on',
-        generate_summary: data.generate_summary === 'on' || data.summary === 'on'
-    };
+    // Make sure we have essential fields
+    if (!data.subject) {
+        showToast('Please select a subject', 'error');
+        return;
+    }
     
     // Show loading state
     if (window.uiHandler && window.uiHandler.showLoading) {
@@ -90,8 +84,8 @@ async function handleStoryFormSubmit(e) {
     }
     
     try {
-        console.log('Sending request data:', requestData);
-        const response = await window.apiService.generateStory(requestData);
+        // Let apiService handle the formatting
+        const response = await window.apiService.generateStory(data);
         console.log('Received response:', response);
         
         // Handle empty or invalid response
@@ -119,12 +113,12 @@ async function handleStoryFormSubmit(e) {
                             .from('stories')
                             .insert({
                                 user_id: session.user.id,
-                                title: response.title || `${data.subject} Story - Grade ${requestData.academic_grade}`,
+                                title: response.title || `${data.subject} Story - Grade ${data.academic_grade || data.grade || '5'}`,
                                 content: response.content,
                                 metadata: {
-                                    grade: requestData.academic_grade,
+                                    grade: data.academic_grade || data.grade || '5',
                                     subject: data.subject,
-                                    word_count: requestData.word_count,
+                                    word_count: Number(data.word_count || data.wordCount || 500),
                                     vocabulary: response.vocabulary,
                                     summary: response.summary,
                                     learning_objectives: response.learning_objectives,

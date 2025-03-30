@@ -233,6 +233,7 @@ app.get('/user-stories', authenticateUser, async (req, res) => {
 app.get('/env-config.js', (req, res) => {
     res.setHeader('Content-Type', 'application/javascript');
     res.send(`window._env_ = {
+        SERVER_URL: '${process.env.SERVER_URL || ''}',
         SUPABASE_URL: '${process.env.SUPABASE_URL}',
         SUPABASE_KEY: '${process.env.SUPABASE_KEY}'
     };`);

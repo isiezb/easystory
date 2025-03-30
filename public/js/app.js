@@ -62,6 +62,17 @@ function setupEventListeners() {
     }
 }
 
+// Get or create anonymous user ID
+function getAnonymousUserId() {
+    let anonymousId = localStorage.getItem('anonymousUserId');
+    if (!anonymousId) {
+        // Generate a UUID-like identifier
+        anonymousId = 'anon-' + Date.now() + '-' + Math.random().toString(36).substring(2, 15);
+        localStorage.setItem('anonymousUserId', anonymousId);
+    }
+    return anonymousId;
+}
+
 // Handle story form submission
 async function handleStoryFormSubmit(e) {
     e.preventDefault();
@@ -140,80 +151,92 @@ async function handleStoryFormSubmit(e) {
                                       typeof window.supabase.auth.getSession === 'function' &&
                                       !window.supabase._isMockClient;
             
-            // If user is logged in AND Supabase is truly available, save the story
-            if (isSupabaseAvailable && window.auth && typeof window.auth.getUser === 'function') {
+            // Save the story regardless of user authentication status
+            if (isSupabaseAvailable) {
                 try {
-                    console.log('User logged in and Supabase available, attempting to save story...');
+                    // Try to get authenticated user first
+                    let userId = null;
+                    let isAnonymous = true;
                     
-                    // Safely get the user, may return null
-                    const user = window.auth.getUser();
+                    if (window.auth && typeof window.auth.getUser === 'function') {
+                        const user = window.auth.getUser();
+                        if (user && user.id) {
+                            userId = user.id;
+                            isAnonymous = false;
+                            console.log('Saving story for authenticated user:', userId);
+                        }
+                    }
                     
-                    // Only proceed if user is available
-                    if (user && user.id) {
-                        // Ensure we have a valid response object to work with
-                        if (!response || typeof response !== 'object') {
-                            throw new Error('Invalid API response received for saving.');
+                    // If no authenticated user, use anonymous ID
+                    if (!userId) {
+                        userId = getAnonymousUserId();
+                        console.log('Saving story for anonymous user:', userId);
+                    }
+                    
+                    // Ensure we have a valid response object to work with
+                    if (!response || typeof response !== 'object') {
+                        throw new Error('Invalid API response received for saving.');
+                    }
+
+                    // Construct the story object to save
+                    const storyToSave = {
+                        user_id: userId,
+                        is_anonymous: isAnonymous,
+                        // Prefer response title, fallback to a generic one
+                        title: response.title || `Generated Story (${new Date().toLocaleDateString()})`,
+                        // Prefer response content, fallback if absolutely necessary
+                        content: response.content || 'No content generated.',
+                        metadata: {
+                            // Extract metadata primarily from response, falling back to form `data` only if necessary
+                            grade: response.academic_grade || data.academic_grade || null,
+                            subject: response.subject || data.subject || null,
+                            word_count: response.word_count || parseInt(data.word_count, 10) || null,
+                            language: response.language || data.language || null,
+                            setting: response.setting || data.setting || null,
+                            main_character: response.main_character || data.main_character || null,
+                            // Add fields present in the response, like vocabulary/summary/objectives
+                            // Use hasOwnProperty for safety if response structure is uncertain
+                            vocabulary: response.hasOwnProperty('vocabulary') ? response.vocabulary : null,
+                            summary: response.hasOwnProperty('summary') ? response.summary : null,
+                            learning_objectives: response.hasOwnProperty('learning_objectives') ? response.learning_objectives : null,
+                            // Ensure boolean flags are handled correctly, preferring response if available
+                            generate_vocabulary: response.hasOwnProperty('generate_vocabulary') ? response.generate_vocabulary : (data.generate_vocabulary === 'on'),
+                            generate_summary: response.hasOwnProperty('generate_summary') ? response.generate_summary : (data.generate_summary === 'on')
+                            // Do NOT include 'quiz' as it's removed
+                        },
+                        created_at: new Date().toISOString()
+                    };
+
+                    // Clean metadata: Remove null/undefined values before saving
+                    Object.keys(storyToSave.metadata).forEach(key => {
+                        if (storyToSave.metadata[key] === null || storyToSave.metadata[key] === undefined) {
+                            delete storyToSave.metadata[key];
                         }
+                    });
 
-                        // Construct the story object to save based *primarily* on the API response
-                        // Use fallbacks cautiously only if response fields might genuinely be missing
-                        const storyToSave = {
-                            user_id: user.id,
-                            // Prefer response title, fallback to a generic one
-                            title: response.title || `Generated Story (${new Date().toLocaleDateString()})`,
-                            // Prefer response content, fallback if absolutely necessary
-                            content: response.content || 'No content generated.',
-                            metadata: {
-                                // Extract metadata primarily from response, falling back to form `data` only if necessary
-                                grade: response.academic_grade || data.academic_grade || null,
-                                subject: response.subject || data.subject || null,
-                                word_count: response.word_count || parseInt(data.word_count, 10) || null,
-                                language: response.language || data.language || null,
-                                setting: response.setting || data.setting || null,
-                                main_character: response.main_character || data.main_character || null,
-                                // Add fields present in the response, like vocabulary/summary/objectives
-                                // Use hasOwnProperty for safety if response structure is uncertain
-                                vocabulary: response.hasOwnProperty('vocabulary') ? response.vocabulary : null,
-                                summary: response.hasOwnProperty('summary') ? response.summary : null,
-                                learning_objectives: response.hasOwnProperty('learning_objectives') ? response.learning_objectives : null,
-                                // Ensure boolean flags are handled correctly, preferring response if available
-                                generate_vocabulary: response.hasOwnProperty('generate_vocabulary') ? response.generate_vocabulary : (data.generate_vocabulary === 'on'),
-                                generate_summary: response.hasOwnProperty('generate_summary') ? response.generate_summary : (data.generate_summary === 'on')
-                                // Do NOT include 'quiz' as it's removed
-                            },
-                            created_at: new Date().toISOString()
-                        };
+                    console.log('Saving story object:', JSON.stringify(storyToSave, null, 2));
+                    
+                    const { error: saveError } = await window.supabaseClient
+                        .from('stories')
+                        .insert([storyToSave]);
 
-                        // Clean metadata: Remove null/undefined values before saving
-                        Object.keys(storyToSave.metadata).forEach(key => {
-                            if (storyToSave.metadata[key] === null || storyToSave.metadata[key] === undefined) {
-                                delete storyToSave.metadata[key];
-                            }
-                        });
-
-                        console.log('Saving story object:', JSON.stringify(storyToSave, null, 2));
-                        
-                        const { error: saveError } = await window.supabaseClient
-                            .from('stories')
-                            .insert([storyToSave]);
-
-                        if (saveError) {
-                            console.error('Error saving story:', saveError);
-                            showToast(`Failed to save story: ${saveError.message}`, 'error');
-                        } else {
-                            console.log('Story saved successfully');
-                            showToast('Story generated and saved!', 'success');
-                            loadUserStories(); // Refresh stories list
-                        }
+                    if (saveError) {
+                        console.error('Error saving story:', saveError);
+                        showToast(`Failed to save story: ${saveError.message}`, 'error');
                     } else {
-                        console.log('Supabase unavailable or user not logged in, skipping save');
+                        console.log('Story saved successfully');
+                        showToast('Story generated and saved!', 'success');
+                        // Only refresh stories list for logged-in users
+                        if (!isAnonymous) {
+                            loadUserStories();
+                        }
                     }
                 } catch (saveCatchError) {
                     console.error('Unexpected error during story save process:', saveCatchError);
                     showToast(`Error saving story: ${saveCatchError.message || 'Unknown error'}`, 'error');
                 }
             } else {
-                console.log('Supabase unavailable or user not logged in, skipping save');
+                console.log('Supabase unavailable, skipping database save');
             }
         } catch (firstError) {
             console.error('Initial request failed, trying direct form submission:', firstError);
@@ -822,8 +845,8 @@ async function init() {
     }
 }
 
-// Load user stories
-async function loadUserStories() {
+// Load user stories - modified to optionally include anonymous stories
+async function loadUserStories(includeAnonymous = false) {
     // Skip if dependencies are missing
     if (!window.auth || !window.supabaseClient) {
         console.log('Auth or Supabase client not available, skipping story load');
@@ -832,6 +855,7 @@ async function loadUserStories() {
 
     // Check for user
     let user = null;
+    let anonymousId = null;
     
     // Try to get user from auth service
     if (typeof window.auth.getUser === 'function') {
@@ -856,14 +880,19 @@ async function loadUserStories() {
             console.warn('Error getting session directly:', e);
         }
     }
+    
+    // For anonymous stories
+    if (includeAnonymous) {
+        anonymousId = getAnonymousUserId();
+    }
 
-    // Exit if still no user
-    if (!user || !user.id) {
-        console.log('No authenticated user found, skipping story load');
+    // Exit if no user identifiers available
+    if ((!user || !user.id) && !anonymousId) {
+        console.log('No user identification found, skipping story load');
         return;
     }
 
-    console.log('Loading stories for user:', user.id);
+    console.log('Loading stories for user:', user?.id || anonymousId);
     const storiesGrid = document.getElementById('storiesGrid');
     const myStoriesSection = document.getElementById('myStoriesSection');
     if (!storiesGrid || !myStoriesSection) return;
@@ -872,7 +901,25 @@ async function loadUserStories() {
     myStoriesSection.style.display = 'block';
 
     try {
-        const stories = await window.apiService.fetchUserStories();
+        // If we have both authenticated and anonymous IDs, fetch both
+        let stories = [];
+        if (user && user.id) {
+            const authStories = await window.apiService.fetchUserStories(user.id);
+            if (Array.isArray(authStories)) {
+                stories = stories.concat(authStories);
+            }
+        }
+        
+        if (includeAnonymous && anonymousId) {
+            const anonStories = await window.apiService.fetchUserStories(anonymousId);
+            if (Array.isArray(anonStories)) {
+                stories = stories.concat(anonStories);
+            }
+        }
+        
+        // Sort by creation date (newest first)
+        stories.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        
         storiesGrid.innerHTML = ''; // Clear loading state
         if (stories && stories.length > 0) {
             stories.forEach(story => {

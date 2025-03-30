@@ -405,8 +405,11 @@ app.post('/generate-story', apiLimiter, async (req, res) => {
         const response = await generateStoryWithOpenRouter(inputs);
         logger.info('Story generated successfully');
         
-        // If user is logged in, save to Supabase
+        // Check for authenticated user first
         const authHeader = req.headers.authorization;
+        let userId = null;
+        let isAnonymous = true;
+        
         if (authHeader) {
             try {
                 const token = authHeader.split(' ')[1];
@@ -417,43 +420,70 @@ app.post('/generate-story', apiLimiter, async (req, res) => {
                 if (userError) {
                     logger.error('Error identifying user:', userError);
                 } else if (user) {
-                    logger.info(`User identified: ${user.id}, saving story to database`);
-                    
-                    const { data, error } = await supabase
-                        .from('stories')
-                        .insert({
-                            user_id: user.id,
-                            academic_grade: inputs.academic_grade,
-                            subject: inputs.subject,
-                            subject_specification: inputs.subject_specification,
-                            setting: inputs.setting,
-                            main_character: inputs.main_character,
-                            word_count: inputs.word_count,
-                            language: inputs.language,
-                            story_text: response.content,
-                            story_title: inputs.subject_specification || 'Untitled Story',
-                            learning_objectives: response.learning_objectives || [],
-                            quiz_questions: response.quiz || [],
-                            vocabulary_list: response.vocabulary || [],
-                            story_summary: response.summary || '',
-                            is_continuation: false
-                        })
-                        .select()
-                        .single();
-
-                    if (error) {
-                        logger.error('Error saving story to Supabase:', error);
-                    } else {
-                        logger.info('Story saved to Supabase successfully:', { storyId: data.id });
-                    }
+                    userId = user.id;
+                    isAnonymous = false;
+                    logger.info(`Authenticated user identified: ${userId}`);
                 } else {
                     logger.warn('No user found with provided token');
+                }
+            } catch (error) {
+                logger.error('Error handling user authentication:', error);
+            }
+        }
+        
+        // Check for anonymous user ID in headers or body if no authenticated user
+        if (!userId) {
+            userId = req.headers['x-anonymous-id'] || inputs.anonymous_id;
+            
+            if (userId) {
+                logger.info(`Anonymous user ID provided: ${userId}`);
+            } else {
+                logger.info('No user identification available, skipping database save');
+                return res.json(response);
+            }
+        }
+        
+        // Save the story if we have a user ID (authenticated or anonymous)
+        if (userId) {
+            logger.info(`Saving story for ${isAnonymous ? 'anonymous' : 'authenticated'} user: ${userId}`);
+            
+            try {
+                const { data, error } = await supabase
+                    .from('stories')
+                    .insert({
+                        user_id: userId,
+                        is_anonymous: isAnonymous,
+                        academic_grade: inputs.academic_grade,
+                        subject: inputs.subject,
+                        subject_specification: inputs.subject_specification,
+                        setting: inputs.setting,
+                        main_character: inputs.main_character,
+                        word_count: inputs.word_count,
+                        language: inputs.language,
+                        story_text: response.content,
+                        story_title: inputs.subject_specification || 'Untitled Story',
+                        learning_objectives: response.learning_objectives || [],
+                        quiz_questions: response.quiz || [],
+                        vocabulary_list: response.vocabulary || [],
+                        story_summary: response.summary || '',
+                        is_continuation: false
+                    })
+                    .select()
+                    .single();
+
+                if (error) {
+                    logger.error('Error saving story to Supabase:', error);
+                } else {
+                    logger.info('Story saved to Supabase successfully:', { storyId: data.id });
+                    // Add saved flag to response
+                    response.saved = true;
+                    response.story_id = data.id;
                 }
             } catch (error) {
                 logger.error('Error handling Supabase save:', error);
             }
         } else {
-            logger.info('No authorization header, skipping database save');
+            logger.info('No user identification, skipping database save');
         }
 
         res.json(response);
@@ -471,14 +501,52 @@ app.post('/generate-story', apiLimiter, async (req, res) => {
     }
 });
 
-// Get user's stories endpoint
-app.get('/user-stories', apiLimiter, authenticateUser, async (req, res) => {
+// Get user's stories endpoint - modified to support anonymous users
+app.get('/user-stories/:userId', apiLimiter, async (req, res) => {
     try {
-        const { data: stories, error } = await supabase
+        const { userId } = req.params;
+        
+        if (!userId) {
+            return res.status(400).json({ error: 'User ID is required' });
+        }
+        
+        // Check if this is an anonymous user ID
+        const isAnonymous = userId.startsWith('anon-');
+        
+        // If it's an authenticated user ID, verify token unless in development
+        if (!isAnonymous && process.env.NODE_ENV !== 'development') {
+            const authHeader = req.headers.authorization;
+            if (!authHeader) {
+                return res.status(401).json({ error: 'Authentication required for user stories' });
+            }
+            
+            const token = authHeader.split(' ')[1];
+            const { data: { user }, error } = await supabase.auth.getUser(token);
+            
+            if (error || !user) {
+                return res.status(401).json({ error: 'Invalid authentication' });
+            }
+            
+            // Verify the user is requesting their own stories
+            if (user.id !== userId) {
+                return res.status(403).json({ error: 'Unauthorized access to other user stories' });
+            }
+        }
+        
+        logger.info(`Fetching stories for ${isAnonymous ? 'anonymous' : 'authenticated'} user: ${userId}`);
+        
+        // Query stories based on user_id
+        let query = supabase
             .from('stories')
             .select('*')
-            .eq('user_id', req.user.id)
-            .order('created_at', { ascending: false });
+            .eq('user_id', userId);
+            
+        // If anonymous, add additional filter
+        if (isAnonymous) {
+            query = query.eq('is_anonymous', true);
+        }
+        
+        const { data: stories, error } = await query.order('created_at', { ascending: false });
 
         if (error) {
             logger.error('Supabase query error:', error);

@@ -16,10 +16,6 @@ if (!supabaseKey) {
 }
 
 // Initialize Supabase client
-export const supabase = window.supabase.createClient(supabaseUrl, supabaseKey, {
-    auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true
-    }
-}); 
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+
+export { supabase }; 

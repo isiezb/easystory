@@ -46,6 +46,20 @@ function setupEventListeners() {
     if (storyForm) {
         storyForm.addEventListener('submit', handleStoryFormSubmit);
     }
+
+    // Setup login reminder link
+    const loginReminderLink = document.getElementById('loginReminderLink');
+    if (loginReminderLink) {
+        loginReminderLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            const authModal = document.getElementById('authModal');
+            if (authModal) {
+                authModal.classList.add('show');
+                document.getElementById('authTitle').textContent = 'Login';
+                document.getElementById('authSubmit').textContent = 'Login';
+            }
+        });
+    }
 }
 
 // Handle story form submission
@@ -709,11 +723,13 @@ function updateUIForLoggedInUser(user) {
         const userAvatar = document.getElementById('userAvatar');
         const userEmail = document.getElementById('userEmail');
         const myStoriesSection = document.getElementById('myStoriesSection');
+        const loginReminder = document.getElementById('loginReminder');
         
         if (loginBtn) loginBtn.style.display = 'none';
         if (signupBtn) signupBtn.style.display = 'none';
         if (logoutBtn) logoutBtn.style.display = 'block';
         if (userProfile) userProfile.style.display = 'flex';
+        if (loginReminder) loginReminder.style.display = 'none';
         
         if (userAvatar && user.user_metadata && user.user_metadata.email) {
             userAvatar.textContent = user.user_metadata.email[0].toUpperCase();
@@ -741,6 +757,7 @@ function updateUIForLoggedOutUser() {
         const userProfile = document.getElementById('userProfile');
         const myStoriesSection = document.getElementById('myStoriesSection');
         const storiesGrid = document.getElementById('storiesGrid');
+        const loginReminder = document.getElementById('loginReminder');
         
         if (loginBtn) loginBtn.style.display = 'block';
         if (signupBtn) signupBtn.style.display = 'block';
@@ -748,6 +765,7 @@ function updateUIForLoggedOutUser() {
         if (userProfile) userProfile.style.display = 'none';
         if (myStoriesSection) myStoriesSection.style.display = 'none';
         if (storiesGrid) storiesGrid.innerHTML = '';
+        if (loginReminder) loginReminder.style.display = 'flex';
     } catch (error) {
         console.error('Error updating UI for logged out user:', error);
     }

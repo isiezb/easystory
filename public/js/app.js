@@ -74,12 +74,6 @@ async function handleStoryFormSubmit(e) {
         data.subject = data.other_subject;
     }
     
-    // Make sure we have essential fields
-    if (!data.subject) {
-        showToast('Please select a subject', 'error');
-        return;
-    }
-    
     // === New Check: Prevent API call if "Other" is selected but not specified ===
     if (data.subject === 'other' && !data.other_subject) {
         showToast('Please specify the subject when selecting "Other"', 'error');
@@ -100,26 +94,23 @@ async function handleStoryFormSubmit(e) {
     }
     
     try {
-        // Let apiService handle the formatting
+        console.log('Sending request to generate story...');
         const response = await window.apiService.generateStory(data);
         console.log('Received response:', response);
         
-        // Handle empty or invalid response
-        if (!response) {
-            throw new Error('Empty response from server');
-        }
+        // Display the story
+        displayStory(response);
         
-        // Display story
-        if (window.uiHandler && window.uiHandler.displayStory) {
-            window.uiHandler.displayStory(response);
-        } else if (storyOutput) {
-            displayStory(response);
-        }
+        // Check if Supabase is actually available before attempting save
+        const isSupabaseAvailable = window.supabase && 
+                                  window.supabase.auth && 
+                                  typeof window.supabase.auth.getSession === 'function' &&
+                                  !window.supabase._isMockClient;
         
-        // If user is logged in, save the story
-        if (window.auth && window.auth.getUser()) {
+        // If user is logged in AND Supabase is truly available, save the story
+        if (isSupabaseAvailable && window.auth && window.auth.getUser()) {
             try {
-                console.log('User logged in, attempting to save story...');
+                console.log('User logged in and Supabase available, attempting to save story...');
                 
                 // Ensure we have a valid response object to work with
                 if (!response || typeof response !== 'object') {
@@ -181,7 +172,8 @@ async function handleStoryFormSubmit(e) {
                 showToast(`Error saving story: ${saveCatchError.message || 'Unknown error'}`, 'error');
             }
         } else {
-            showToast('Story generated! Log in to save it.', 'success');
+            console.log('Supabase unavailable or user not logged in, skipping save');
+            showToast('Story generated! Login feature unavailable.', 'success');
         }
     } catch (error) {
         console.error('Error generating story:', error);

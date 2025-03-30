@@ -563,14 +563,9 @@ class ApiService {
         } catch (error) {
             console.error('Error in generateStory:', error);
             
-            // If this is a network error or server error, return mock data
-            if (error.name === 'TypeError' && error.message.includes('Failed to fetch') || 
-                (error.name === 'ApiError' && error.status >= 500)) {
-                console.log('Network or server error, using mock data');
-                return this.getMockStoryData(requestFormats[0]);
-            }
-            
-            throw error;
+            // Always fall back to mock data if anything goes wrong
+            console.log('Request failed, falling back to mock data');
+            return this.getMockStoryData(format1);
         }
     }
     

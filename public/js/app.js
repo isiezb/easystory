@@ -332,7 +332,20 @@ function displayStory(storyData) {
     }
     
     // Close container
-    storyHTML += `</div>`;
+    storyHTML += `
+        <div class="story-continuation">
+            <h3>Continue the Story</h3>
+            <div class="continuation-form">
+                <select id="continuationLength" class="continuation-length">
+                    <option value="200">Short (200 words)</option>
+                    <option value="300" selected>Medium (300 words)</option>
+                    <option value="500">Long (500 words)</option>
+                </select>
+                <button id="continueStoryBtn" class="continue-btn">Continue Story</button>
+            </div>
+            <div id="continuationOutput" class="continuation-output"></div>
+        </div>
+    </div>`;
     
     // Set HTML and scroll to story
     storyOutput.innerHTML = storyHTML;
@@ -357,6 +370,91 @@ function displayStory(storyData) {
         } else {
             console.warn('Quiz module not available, cannot initialize quiz');
             quizContainer.innerHTML = '<div class="quiz-error">Quiz functionality is currently unavailable.</div>';
+        }
+    }
+    
+    // Set up continue story button
+    const continueStoryBtn = document.getElementById('continueStoryBtn');
+    if (continueStoryBtn) {
+        continueStoryBtn.addEventListener('click', () => handleContinueStory(storyContent));
+    }
+}
+
+// Handle story continuation
+async function handleContinueStory(originalStory) {
+    if (!originalStory || !originalStory.content) {
+        showToast('Cannot continue story: original content missing', 'error');
+        return;
+    }
+    
+    // Show loading state
+    const continueStoryBtn = document.getElementById('continueStoryBtn');
+    const continuationOutput = document.getElementById('continuationOutput');
+    const continuationLength = document.getElementById('continuationLength');
+    
+    if (continueStoryBtn) {
+        continueStoryBtn.disabled = true;
+        continueStoryBtn.innerHTML = '<div class="spinner small"></div> Continuing...';
+    }
+    
+    try {
+        // Prepare continuation data
+        const continuationData = {
+            original_story: originalStory.content,
+            word_count: continuationLength ? continuationLength.value : 300,
+            subject: originalStory.subject,
+            academic_grade: originalStory.academic_grade,
+            language: originalStory.language
+        };
+        
+        // Call API to continue story
+        const response = await window.apiService.continueStory(continuationData);
+        console.log('Story continuation response:', response);
+        
+        // Extract continuation content
+        let continuationContent = '';
+        if (response.data && response.data.continuation) {
+            continuationContent = response.data.continuation.content;
+        } else if (response.continuation) {
+            continuationContent = response.continuation.content;
+        } else if (typeof response === 'string') {
+            continuationContent = response;
+        } else {
+            continuationContent = 'Failed to generate continuation.';
+        }
+        
+        // Display continuation
+        if (continuationOutput) {
+            continuationOutput.innerHTML = `
+                <div class="continuation-content">
+                    ${continuationContent.split('\n').map(p => `<p>${p}</p>`).join('')}
+                </div>
+            `;
+            continuationOutput.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Success message
+        showToast('Story continued successfully!', 'success');
+        
+    } catch (error) {
+        console.error('Error continuing story:', error);
+        
+        // Error message
+        showToast('Failed to continue story: ' + (error.message || 'Unknown error'), 'error');
+        
+        // Clear continuation output or show error in it
+        if (continuationOutput) {
+            continuationOutput.innerHTML = `
+                <div class="continuation-error">
+                    <p>Sorry, we couldn't continue the story. Please try again later.</p>
+                </div>
+            `;
+        }
+    } finally {
+        // Reset button
+        if (continueStoryBtn) {
+            continueStoryBtn.disabled = false;
+            continueStoryBtn.innerHTML = 'Continue Story';
         }
     }
 }

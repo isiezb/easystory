@@ -1,7 +1,22 @@
+// Get environment variables from window._env_
+const env = window._env_ || {};
+
+// Validate and format URLs
+const serverUrl = env.SERVER_URL?.trim() || window.location.origin;
+const supabaseUrl = env.SUPABASE_URL?.trim() || '';
+const supabaseKey = env.SUPABASE_KEY?.trim() || '';
+
+// Log configuration (without sensitive data)
+console.log('Configuration:', {
+    hasServerUrl: !!serverUrl,
+    hasSupabaseUrl: !!supabaseUrl,
+    hasSupabaseKey: !!supabaseKey
+});
+
 export const config = {
-    serverUrl: window._env_?.SERVER_URL || '',
-    supabaseUrl: window._env_?.SUPABASE_URL || '',
-    supabaseKey: window._env_?.SUPABASE_KEY || ''
+    serverUrl,
+    supabaseUrl,
+    supabaseKey
 };
 
 // Validate required environment variables

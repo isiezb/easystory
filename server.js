@@ -86,11 +86,24 @@ app.get('/health', (req, res) => {
 // Serve environment variables
 app.get('/env-config.js', (req, res) => {
     res.setHeader('Content-Type', 'application/javascript');
+    
+    // Ensure URLs are properly formatted
+    const serverUrl = process.env.SERVER_URL || 'http://localhost:3000';
+    const supabaseUrl = process.env.SUPABASE_URL?.trim() || '';
+    const supabaseKey = process.env.SUPABASE_KEY?.trim() || '';
+    
+    // Log environment variables (without sensitive data)
+    logger.info('Serving environment variables:', {
+        hasServerUrl: !!serverUrl,
+        hasSupabaseUrl: !!supabaseUrl,
+        hasSupabaseKey: !!supabaseKey
+    });
+    
     res.send(`
         window._env_ = {
-            SERVER_URL: '${process.env.SERVER_URL || ''}',
-            SUPABASE_URL: '${process.env.SUPABASE_URL || ''}',
-            SUPABASE_KEY: '${process.env.SUPABASE_KEY || ''}'
+            SERVER_URL: '${serverUrl}',
+            SUPABASE_URL: '${supabaseUrl}',
+            SUPABASE_KEY: '${supabaseKey}'
         };
     `);
 });

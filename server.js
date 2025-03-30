@@ -55,6 +55,7 @@ app.use(cors({
     methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'],
     allowedHeaders: '*'
 }));
+app.use(express.json());
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -223,10 +224,9 @@ app.post('/generate-story', authenticateUser, async (req, res) => {
         const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
             model: "google/gemini-pro",
             messages: [
-                { role: "system", content: "You are an expert educational storyteller and quiz creator." },
+                { role: "system", content: "You are an expert educational storyteller and quiz creator. Always respond with valid JSON." },
                 { role: "user", content: prompt }
-            ],
-            response_format: { type: "json_object" }
+            ]
         }, {
             headers: {
                 'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
@@ -252,12 +252,16 @@ app.post('/generate-story', authenticateUser, async (req, res) => {
                 response: response.data 
             });
             
-            if (error.response?.status === 429) {
-                throw new AppError('Rate limit exceeded. Please try again later.', 429);
-            } else if (error.response?.status === 401) {
-                throw new AppError('Invalid API key. Please check your OpenRouter API key.', 500);
-            } else if (error.response?.status === 403) {
-                throw new AppError('Access denied. Please check your OpenRouter API key permissions.', 500);
+            if (error.response?.data?.error) {
+                const apiError = error.response.data.error;
+                if (apiError.includes('rate limit')) {
+                    throw new AppError('Rate limit exceeded. Please try again later.', 429);
+                } else if (apiError.includes('invalid api key')) {
+                    throw new AppError('Invalid API key. Please check your OpenRouter API key.', 500);
+                } else if (apiError.includes('permission')) {
+                    throw new AppError('Access denied. Please check your OpenRouter API key permissions.', 500);
+                }
+                throw new AppError(apiError, error.response.status);
             }
             
             throw new AppError('Invalid response format from AI', 500);

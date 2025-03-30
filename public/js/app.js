@@ -145,6 +145,11 @@ async function handleStoryFormSubmit(e) {
             // Success message
             showToast('Story generated successfully!', 'success');
             
+            // Scroll to the story output immediately
+            if (storyOutput) {
+                storyOutput.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            
             // Check if Supabase is actually available before attempting save
             const isSupabaseAvailable = window.supabase && 
                                       window.supabase.auth && 
@@ -341,32 +346,24 @@ function displayStory(storyData) {
             // Format 4: Unknown structure - try to extract what we can
             console.warn('Format 4: Unknown structure, attempting to extract data');
             storyContent = { 
-                title: storyData.title || storyData.subject || 'Generated Story',
+                title: storyData.title || storyData.subject || '',
                 content: storyData.content || JSON.stringify(storyData)
             };
         }
         
         // Default fields if missing
-        const title = storyContent.title || 'Generated Story';
+        const title = storyContent.title || '';
         const content = storyContent.content || 'Content could not be retrieved.';
         const summary = storyContent.summary;
         const vocabulary = storyContent.vocabulary;
         const learningObjectives = storyContent.learning_objectives;
         
         // Build HTML for story display
-        let storyHTML = `
-        <div class="story-container">
-            <h2 class="story-title">${title}</h2>
-        `;
+        let storyHTML = `<div class="story-container">`;
         
-        // Add summary if available
-        if (summary) {
-            storyHTML += `
-            <div class="story-summary">
-                <div class="story-summary-title">Summary</div>
-                <div class="story-summary-content">${summary}</div>
-            </div>
-            `;
+        // Add title only if it's not 'Generated Story' and not empty
+        if (title && title !== 'Generated Story') {
+            storyHTML += `<h2 class="story-title">${title}</h2>`;
         }
         
         // Add story content
@@ -405,12 +402,21 @@ function displayStory(storyData) {
             `;
         }
         
-        // Close story content div but don't close container yet
+        // Add summary at the end if available
+        if (summary) {
+            storyHTML += `
+            <div class="story-summary">
+                <div class="story-summary-title">Summary</div>
+                <div class="story-summary-content">${summary}</div>
+            </div>
+            `;
+        }
+        
+        // Close story content div
         storyHTML += '</div>';
         
-        // Set HTML and scroll to story
+        // Set HTML
         storyOutput.innerHTML = storyHTML;
-        storyOutput.scrollIntoView({ behavior: 'smooth' });
         
         // Check for quiz data in all possible locations
         let quizData = null;

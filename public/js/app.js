@@ -175,12 +175,38 @@ async function handleStoryFormSubmit(e) {
 function displayStory(storyData) {
     if (!storyOutput) return;
     
-    // Ensure storyData has the expected structure
-    const content = storyData.content || storyData.story?.content || storyData.story || '';
-    const title = storyData.title || storyData.story?.title || 'Generated Story';
-    const summary = storyData.summary || storyData.story?.summary || null;
-    const vocabulary = storyData.vocabulary || storyData.story?.vocabulary || null;
-    const learningObjectives = storyData.learning_objectives || storyData.story?.learning_objectives || [];
+    console.log('Displaying story data:', storyData);
+    
+    // Handle the server response structure which could be in many formats
+    let storyContent = null;
+    
+    // Format 1: response.data.story
+    if (storyData.data && storyData.data.story) {
+        storyContent = storyData.data.story;
+    }
+    // Format 2: response.story
+    else if (storyData.story) {
+        storyContent = storyData.story;
+    }
+    // Format 3: direct story object
+    else if (storyData.content || storyData.title) {
+        storyContent = storyData;
+    }
+    // Format 4: fallback for unknown structure
+    else {
+        console.warn('Unknown story data format:', storyData);
+        storyContent = {
+            title: 'Generated Story',
+            content: typeof storyData === 'string' ? storyData : JSON.stringify(storyData, null, 2)
+        };
+    }
+    
+    // Ensure we have the expected fields, with fallbacks
+    const content = storyContent.content || '';
+    const title = storyContent.title || 'Generated Story';
+    const summary = storyContent.summary || null;
+    const vocabulary = storyContent.vocabulary || null;
+    const learningObjectives = storyContent.learning_objectives || [];
     
     // Build story HTML
     let storyHTML = `

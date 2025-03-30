@@ -59,44 +59,52 @@ class ApiService {
     async generateStory(data) {
         console.log('Generating story with data:', data);
         
+        // Get initial form values with proper defaults
+        const subject = String(data.subject || "general").trim();
+        const academicGrade = String(data.academic_grade || "5").trim();
+        const subjectSpec = String(data.subject_specification || "").trim();
+        const setting = String(data.setting || "a classroom").trim();
+        const mainCharacter = String(data.main_character || "a student").trim();
+        const wordCount = data.word_count ? String(data.word_count) : "500";
+        const language = data.language ? String(data.language) : "English"; // Capitalized
+        
+        // Format booleans as strings, which is often expected by APIs
+        const generateVocabulary = data.generate_vocabulary === 'on' ? "true" : "false";
+        const generateSummary = data.generate_summary === 'on' ? "true" : "false";
+        
         // Create a properly formatted request object based on server expectations
-        // Using EXACT field names from the form in index.html
         const requestData = {
-            // Required fields with proper formatting and validation
-            academic_grade: String(data.academic_grade || "5"),
-            subject: String(data.subject || "general"),
+            // Core request fields
+            subject: subject,
+            academic_grade: academicGrade,
+            subject_specification: subjectSpec,
+            setting: setting,
+            main_character: mainCharacter,
+            word_count: wordCount,
+            language: language,
             
-            // Optional fields with proper formatting
-            subject_specification: String(data.subject_specification || ""),
-            setting: String(data.setting || "a classroom"),
-            main_character: String(data.main_character || "a student"),
-            word_count: Number(data.word_count || 500),
-            language: String(data.language || "english"),
-            
-            // Boolean flags explicitly converted to Boolean values
-            generate_vocabulary: Boolean(data.generate_vocabulary === 'on'),
-            generate_summary: Boolean(data.generate_summary === 'on')
+            // Boolean flags as strings
+            generate_vocabulary: generateVocabulary,
+            generate_summary: generateSummary
         };
         
-        // Validate word count (ensure it's a valid positive number)
-        if (isNaN(requestData.word_count) || requestData.word_count <= 0) {
-            requestData.word_count = 500;
-        }
-        
-        // Ensure word count is within reasonable limits
-        requestData.word_count = Math.min(Math.max(requestData.word_count, 100), 2000);
-        
-        // Ensure subject is not empty
-        if (!requestData.subject.trim()) {
-            requestData.subject = "general";
-        }
+        // Send the entire form data in a request wrapper
+        // Some APIs expect a specific wrapper structure
+        const apiRequest = {
+            story_request: requestData,
+            meta: {
+                client_version: "1.0.0",
+                timestamp: new Date().toISOString()
+            }
+        };
         
         // Log the final formatted request
-        console.log('Formatted request data for API:', requestData);
+        console.log('Formatted request data for API:', apiRequest);
         
         try {
             const headers = {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
             };
             
             // Only add auth token if Supabase is available
@@ -117,13 +125,36 @@ class ApiService {
             }
             
             console.log(`Sending API request to ${this.baseUrl}/generate-story`);
-            console.log('Request body:', JSON.stringify(requestData, null, 2));
+            console.log('Request body:', JSON.stringify(apiRequest, null, 2));
             
-            const response = await fetch(`${this.baseUrl}/generate-story`, {
-                method: 'POST',
-                headers: headers,
-                body: JSON.stringify(requestData)
-            });
+            // Try both formats - with and without wrapper
+            let response;
+            try {
+                // Try with wrapper first
+                response = await fetch(`${this.baseUrl}/generate-story`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(apiRequest)
+                });
+                
+                // If we get a 400 status, try without the wrapper
+                if (response.status === 400) {
+                    console.log('Retrying without request wrapper');
+                    response = await fetch(`${this.baseUrl}/generate-story`, {
+                        method: 'POST',
+                        headers: headers,
+                        body: JSON.stringify(requestData)
+                    });
+                }
+            } catch (fetchError) {
+                console.error('Fetch error:', fetchError);
+                // Try one more time with just the core data
+                response = await fetch(`${this.baseUrl}/generate-story`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(requestData)
+                });
+            }
             
             console.log('Received response status:', response.status);
             return this.handleResponse(response);
@@ -143,26 +174,35 @@ class ApiService {
     
     // Mock data for development and fallback
     getMockStoryData(data) {
+        // Use the values from the requestData for consistency
         const subject = data.subject || 'general knowledge';
         const grade = data.academic_grade || '5';
         const character = data.main_character || 'a curious student';
         const setting = data.setting || 'a classroom';
         
+        // Create a realistic server response
         return {
-            story: {
-                title: `The ${subject.charAt(0).toUpperCase() + subject.slice(1)} Adventure - Grade ${grade}`,
-                content: `Once upon a time, in ${setting}, ${character} embarked on a journey to learn about ${subject}.\n\nThrough perseverance and dedication, they discovered amazing insights about ${subject} and grew their knowledge.\n\nThe teacher was impressed by ${character}'s dedication and encouraged them to share their discoveries with the class.\n\nThis is a simulated story generated when the server is unavailable.`,
-                summary: data.generate_summary ? `A brief story about a ${character} learning about ${subject} in ${setting}.` : null,
-                vocabulary: data.generate_vocabulary ? [
-                    { word: "perseverance", definition: "Persistence in doing something despite difficulty or delay in achieving success" },
-                    { word: "dedication", definition: "The quality of being dedicated or committed to a task or purpose" },
-                    { word: "discovery", definition: "The action or process of discovering or being discovered" }
-                ] : null,
-                learning_objectives: [
-                    `Understanding key concepts in ${subject}`,
-                    `Developing critical thinking about ${subject}`,
-                    `Applying knowledge of ${subject} in real-world scenarios`
-                ]
+            success: true,
+            data: {
+                story: {
+                    title: `The ${subject.charAt(0).toUpperCase() + subject.slice(1)} Adventure - Grade ${grade}`,
+                    content: `Once upon a time, in ${setting}, ${character} embarked on a journey to learn about ${subject}.\n\nThrough perseverance and dedication, they discovered amazing insights about ${subject} and grew their knowledge.\n\nThe teacher was impressed by ${character}'s dedication and encouraged them to share their discoveries with the class.\n\nThis is a simulated story generated when the server is unavailable.`,
+                    summary: data.generate_summary === "true" ? `A brief story about a ${character} learning about ${subject} in ${setting}.` : null,
+                    vocabulary: data.generate_vocabulary === "true" ? [
+                        { word: "perseverance", definition: "Persistence in doing something despite difficulty or delay in achieving success" },
+                        { word: "dedication", definition: "The quality of being dedicated or committed to a task or purpose" },
+                        { word: "discovery", definition: "The action or process of discovering or being discovered" }
+                    ] : null,
+                    learning_objectives: [
+                        `Understanding key concepts in ${subject}`,
+                        `Developing critical thinking about ${subject}`,
+                        `Applying knowledge of ${subject} in real-world scenarios`
+                    ]
+                }
+            },
+            meta: {
+                processing_time: "0.8s",
+                generated_at: new Date().toISOString()
             }
         };
     }

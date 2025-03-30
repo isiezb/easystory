@@ -11,21 +11,13 @@ const config = {
     defaultWordCount: 500,
     maxWordCount: 2000,
     
-    // Development mode settings
-    isDevelopment: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1',
+    // Always use real data in production
     useMockData: false
 };
-
-// Enable mock data in development mode
-if (config.isDevelopment) {
-    config.useMockData = true;
-    console.log('Development mode enabled, using mock data');
-}
 
 // Log config without sensitive data
 console.log('Config initialized:', {
     serverUrl: config.serverUrl,
-    isDevelopment: config.isDevelopment,
     useMockData: config.useMockData,
     maxRetries: config.maxRetries,
     retryDelay: config.retryDelay,

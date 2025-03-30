@@ -1,4 +1,4 @@
-import { config } from './config.js';
+import { configPromise } from './config.js';
 import { supabase } from './supabase.js';
 
 class ApiError extends Error {
@@ -12,7 +12,14 @@ class ApiError extends Error {
 
 class ApiService {
     constructor() {
-        this.baseUrl = config.serverUrl;
+        this.config = null;
+    }
+
+    async init() {
+        if (!this.config) {
+            this.config = await configPromise;
+        }
+        return this.config;
     }
 
     async handleResponse(response) {
@@ -75,58 +82,37 @@ class ApiService {
         throw lastError;
     }
 
-    async generateStory(data) {
-        try {
-            const response = await fetch(`${this.baseUrl}/generate-story`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    ...data,
-                    word_count: parseInt(data.word_count),
-                    generate_vocabulary: data.generate_vocabulary === 'on',
-                    generate_summary: data.generate_summary === 'on'
-                })
-            });
-
-            return this.handleResponse(response);
-        } catch (error) {
-            console.error('Error generating story:', error);
-            throw new ApiError(error.message || 'Failed to generate story', error.status || 500);
-        }
+    async generateStory(formData) {
+        await this.init();
+        const response = await fetch(`${this.config.serverUrl}/generate-story`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${this.config.openRouterKey}`
+            },
+            body: JSON.stringify(formData)
+        });
+        return this.handleResponse(response);
     }
 
     async fetchUserStories(userId) {
-        try {
-            const response = await fetch(`${this.baseUrl}/user-stories/${userId}`);
-            return this.handleResponse(response);
-        } catch (error) {
-            console.error('Error fetching user stories:', error);
-            throw new ApiError(error.message || 'Failed to fetch stories', error.status || 500);
-        }
+        await this.init();
+        const response = await fetch(`${this.config.serverUrl}/user-stories/${userId}`);
+        return this.handleResponse(response);
     }
 
     async deleteStory(storyId) {
-        try {
-            const response = await fetch(`${this.baseUrl}/stories/${storyId}`, {
-                method: 'DELETE'
-            });
-            return this.handleResponse(response);
-        } catch (error) {
-            console.error('Error deleting story:', error);
-            throw new ApiError(error.message || 'Failed to delete story', error.status || 500);
-        }
+        await this.init();
+        const response = await fetch(`${this.config.serverUrl}/stories/${storyId}`, {
+            method: 'DELETE'
+        });
+        return this.handleResponse(response);
     }
 
     async getStoryById(storyId) {
-        try {
-            const response = await fetch(`${this.baseUrl}/stories/${storyId}`);
-            return this.handleResponse(response);
-        } catch (error) {
-            console.error('Error fetching story:', error);
-            throw new ApiError(error.message || 'Failed to fetch story', error.status || 500);
-        }
+        await this.init();
+        const response = await fetch(`${this.config.serverUrl}/stories/${storyId}`);
+        return this.handleResponse(response);
     }
 
     async getAuthToken() {

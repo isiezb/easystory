@@ -1,7 +1,18 @@
-import { config } from './config.js';
+import { configPromise } from './config.js';
 
-if (!window.supabase) {
-    throw new Error('Supabase client library not loaded');
-}
+let supabaseClient = null;
 
-export const supabase = window.supabase.createClient(config.supabaseUrl, config.supabaseKey); 
+// Initialize Supabase client
+const initSupabase = async () => {
+    if (!supabaseClient) {
+        const config = await configPromise;
+        supabaseClient = window.supabase.createClient(config.supabaseUrl, config.supabaseKey);
+    }
+    return supabaseClient;
+};
+
+export const supabase = {
+    async getClient() {
+        return await initSupabase();
+    }
+}; 

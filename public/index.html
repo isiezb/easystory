@@ -2161,12 +2161,14 @@
 
     <!-- Load environment variables -->
     <script>
-        window._env_ = {
-            SERVER_URL: window.location.origin,
-            SUPABASE_URL: 'https://your-project.supabase.co',
-            SUPABASE_KEY: 'your-anon-key',
-            OPENROUTER_KEY: 'your-openrouter-key'
-        };
+        document.addEventListener('DOMContentLoaded', () => {
+            window._env_ = {
+                SERVER_URL: window.location.origin,
+                SUPABASE_URL: 'https://your-project.supabase.co',
+                SUPABASE_KEY: 'your-anon-key',
+                OPENROUTER_KEY: 'your-openrouter-key'
+            };
+        });
     </script>
 
     <!-- Load application modules -->

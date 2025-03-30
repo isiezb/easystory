@@ -138,37 +138,107 @@ def generate_story():
         main_character = data.get('main_character')
         word_count = data.get('word_count', 300)
         language = data.get('language', 'English')
-        response_format = data.get('response_format', 'story_only')
 
         # Validate required fields
         if not all([academic_grade, subject]):
             return jsonify({"error": "Missing required fields"}), 400
 
         # Generate story
-        story = generate_story_content(
+        story_content = generate_story_content(
             academic_grade, subject, subject_specification,
             setting, main_character, word_count, language
         )
 
-        # If only story is requested
-        if response_format == 'story_only':
-            return jsonify({"story": story})
+        # Generate quiz
+        quiz_questions = generate_quiz(story_content, language)
 
-        # If quiz is requested
-        if response_format == 'quiz_only':
-            quiz = generate_quiz(story, language)
-            return jsonify({"quiz": quiz})
+        # Generate learning objectives
+        learning_objectives = generate_learning_objectives(story_content, language)
 
-        # If both are requested
-        quiz = generate_quiz(story, language)
+        # Generate vocabulary list
+        vocabulary = generate_vocabulary(story_content, language)
+
+        # Generate summary
+        summary = generate_summary(story_content, language)
+
         return jsonify({
-            "story": story,
-            "quiz": quiz
+            "content": story_content,
+            "quiz": quiz_questions,
+            "learning_objectives": learning_objectives,
+            "vocabulary": vocabulary,
+            "summary": summary
         })
 
     except Exception as e:
         print(f"Error in generate_story: {e}")
         return jsonify({"error": str(e)}), 500
+
+def generate_learning_objectives(story, language):
+    """Generate learning objectives based on the story."""
+    system_prompt = f"""You are an educational content analyzer. Create 3-5 learning objectives in {language} based on the following story.
+Each objective should:
+1. Be specific and measurable
+2. Focus on key concepts or skills
+3. Be appropriate for the story's content
+4. Start with action verbs
+
+Format each objective as a clear, concise statement."""
+
+    response = get_llm_response(system_prompt, story)
+    return [obj.strip() for obj in response.split('\n') if obj.strip()]
+
+def generate_vocabulary(story, language):
+    """Generate vocabulary list with definitions."""
+    system_prompt = f"""You are a vocabulary expert. Create a list of 5-7 important vocabulary words from the story in {language}.
+For each word:
+1. Provide a clear, concise definition
+2. Use the word in a sentence from the story
+3. Include the part of speech
+
+Format each entry as:
+Word: [word]
+Definition: [definition]
+Example: [sentence]
+Part of Speech: [part of speech]"""
+
+    response = get_llm_response(system_prompt, story)
+    vocabulary = []
+    current_word = {}
+    
+    for line in response.split('\n'):
+        line = line.strip()
+        if not line:
+            if current_word:
+                vocabulary.append(current_word)
+                current_word = {}
+            continue
+            
+        if line.startswith('Word:'):
+            if current_word:
+                vocabulary.append(current_word)
+            current_word = {'word': line[5:].strip()}
+        elif line.startswith('Definition:'):
+            current_word['definition'] = line[11:].strip()
+        elif line.startswith('Example:'):
+            current_word['example'] = line[8:].strip()
+        elif line.startswith('Part of Speech:'):
+            current_word['part_of_speech'] = line[14:].strip()
+    
+    if current_word:
+        vocabulary.append(current_word)
+    
+    return vocabulary
+
+def generate_summary(story, language):
+    """Generate a concise summary of the story."""
+    system_prompt = f"""You are a story summarizer. Create a concise summary in {language} of the following story.
+The summary should:
+1. Be 2-3 sentences long
+2. Capture the main theme and key events
+3. Be appropriate for the target audience
+4. Not include spoilers or unnecessary details"""
+
+    return get_llm_response(system_prompt, story)
 
 @app.errorhandler(404)
 def not_found_error(error):

@@ -50,19 +50,11 @@ try {
 }
 
 // Middleware
-app.use(cors());
-app.use(express.json());
-
-// CORS middleware
-app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, DELETE');
-    res.header('Access-Control-Allow-Headers', '*');
-    if (req.method === 'OPTIONS') {
-        return res.sendStatus(200);
-    }
-    next();
-});
+app.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'OPTIONS', 'PUT', 'DELETE'],
+    allowedHeaders: '*'
+}));
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -132,7 +124,7 @@ const authenticateUser = async (req, res, next) => {
         req.user = user;
         next();
     } catch (error) {
-        console.error('Auth error:', error);
+        logger.error('Auth error:', error);
         res.status(401).json({ error: 'Authentication failed' });
     }
 };

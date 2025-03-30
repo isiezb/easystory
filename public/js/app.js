@@ -122,7 +122,7 @@ async function handleStoryFormSubmit(e) {
     // === End New Check ===
     
     // Show loading state
-    showLoadingOverlay('Generating Your Story');
+    showLoadingOverlay();
     
     // Update the submit button state
     const submitButton = storyForm.querySelector('button[type="submit"]');
@@ -347,39 +347,19 @@ async function handleStoryFormSubmit(e) {
     }
 }
 
-// Show loading overlay
-function showLoadingOverlay(message = 'Loading...') {
+// Show loading overlay (Simplified)
+function showLoadingOverlay() {
     if (loadingOverlay) {
-        // Set the message
-        const loadingText = loadingOverlay.querySelector('.loading-text');
-        if (loadingText) {
-            loadingText.textContent = message;
-        }
-        
-        // Make sure it's visible and add the visible class for the transition
-        loadingOverlay.style.display = 'flex';
-        
-        // Force a reflow to ensure the transition works
-        void loadingOverlay.offsetWidth;
-        
-        // Add visible class to trigger opacity transition
         loadingOverlay.classList.add('visible');
-        
         // Scroll to top
         window.scrollTo({ top: 0, behavior: 'auto' });
     }
 }
 
-// Hide loading overlay
+// Hide loading overlay (Simplified)
 function hideLoadingOverlay() {
     if (loadingOverlay) {
-        // Remove visible class first to trigger opacity transition
         loadingOverlay.classList.remove('visible');
-        
-        // After the transition, hide the overlay completely
-        setTimeout(() => {
-            loadingOverlay.style.display = 'none';
-        }, 300); // Match the transition duration from CSS
     }
 }
 

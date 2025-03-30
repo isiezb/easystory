@@ -149,117 +149,38 @@
     background-color: var(--bg-secondary);
 }
 
-/* Loading Overlay Styles */
+/* Basic Loading Overlay Styles */
 .loading-overlay {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.8);
-    display: none;
+    background-color: rgba(0, 0, 0, 0.75);
+    display: none; /* Hidden by default */
     justify-content: center;
     align-items: center;
     z-index: 10000;
-    backdrop-filter: blur(8px);
+    transition: opacity 0.2s ease;
     opacity: 0;
-    transition: opacity 0.3s ease-in-out;
 }
 
 .loading-overlay.visible {
+    display: flex;
     opacity: 1;
-    display: flex !important;
-}
-
-.loading-container {
-    background-color: var(--card-bg, #fff);
-    padding: 2.5rem;
-    border-radius: 16px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
-    text-align: center;
-    max-width: 90%;
-    width: 450px;
-    animation: pulseAnimation 2s infinite;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-}
-
-@keyframes pulseAnimation {
-    0% { transform: scale(1); }
-    50% { transform: scale(1.05); }
-    100% { transform: scale(1); }
 }
 
 .loading-spinner {
-    display: inline-block;
-    width: 60px;
-    height: 60px;
-    border: 5px solid rgba(94, 124, 230, 0.3);
+    width: 50px;
+    height: 50px;
+    border: 4px solid rgba(255, 255, 255, 0.3);
     border-radius: 50%;
-    border-top-color: var(--primary, #5e7ce6);
+    border-top-color: #fff;
     animation: spin 1s linear infinite;
-    margin-bottom: 1.5rem;
-}
-
-.loading-text {
-    font-size: 1.5rem;
-    font-weight: 700;
-    margin-bottom: 0.75rem;
-    color: var(--primary, #5e7ce6);
-    font-family: var(--font-heading, sans-serif);
-}
-
-.loading-subtext {
-    font-size: 1rem;
-    color: var(--text-secondary, #6c757d);
-    margin-bottom: 0.5rem;
-}
-
-.loading-progress {
-    width: 100%;
-    height: 6px;
-    background-color: rgba(94, 124, 230, 0.2);
-    border-radius: 3px;
-    margin-top: 1rem;
-    overflow: hidden;
-    position: relative;
-}
-
-.loading-progress-bar {
-    position: absolute;
-    top: 0;
-    left: 0;
-    height: 100%;
-    width: 30%;
-    background: linear-gradient(135deg, var(--primary, #5e7ce6) 0%, var(--secondary, #62bf9d) 100%);
-    border-radius: 3px;
-    animation: progressAnimation 2s infinite;
-}
-
-@keyframes progressAnimation {
-    0% { left: -30%; width: 30%; }
-    100% { left: 100%; width: 30%; }
 }
 
 @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-}
-
-/* Make loading overlay visible on all devices */
-@media (max-width: 768px) {
-    .loading-container {
-        padding: 1.5rem;
-        width: 300px;
-    }
-    
-    .loading-spinner {
-        width: 40px;
-        height: 40px;
-    }
-    
-    .loading-text {
-        font-size: 1.25rem;
-    }
+    to { transform: rotate(360deg); }
 }
 
 /* Further reduce auth container size */

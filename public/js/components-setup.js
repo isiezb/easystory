@@ -3,17 +3,89 @@
  * and ensures backward compatibility with the existing codebase.
  */
 
+// Test for ES module support
+const supportsESModules = 'noModule' in HTMLScriptElement.prototype;
+
+// Bail out and show warning if browser doesn't support ES modules
+if (!supportsESModules) {
+  console.error('Browser does not support ES modules - Web Components cannot be loaded');
+  
+  // Add a visible warning to the page
+  document.addEventListener('DOMContentLoaded', () => {
+    const warning = document.createElement('div');
+    warning.style.background = '#f8d7da';
+    warning.style.color = '#721c24';
+    warning.style.padding = '1rem';
+    warning.style.margin = '1rem';
+    warning.style.borderRadius = '0.25rem';
+    warning.innerHTML = `
+      <h3>Browser Compatibility Issue</h3>
+      <p>Your browser does not support modern JavaScript features required by this application.</p>
+      <p>Please use a modern browser like Chrome, Firefox, Safari, or Edge.</p>
+    `;
+    document.body.prepend(warning);
+    
+    // Try to create a simple form fallback
+    createLegacyForm();
+  });
+  
+  // Create a simple fallback form
+  function createLegacyForm() {
+    const formContainer = document.querySelector('.story-form-container') || document.querySelector('.form-section');
+    if (formContainer) {
+      formContainer.innerHTML = `
+        <div class="form-section">
+          <h2>Generate a Story</h2>
+          <form id="legacyStoryForm">
+            <div class="form-group">
+              <label for="academic_grade">Academic Level</label>
+              <select id="academic_grade" name="academic_grade" required>
+                <option value="">Select your grade level...</option>
+                <option value="K">Kindergarten</option>
+                <option value="1">Grade 1</option>
+                <!-- More options here -->
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="subject">Subject</label>
+              <select id="subject" name="subject" required>
+                <option value="">Select a subject...</option>
+                <option value="mathematics">Mathematics</option>
+                <option value="science">Science</option>
+                <!-- More options here -->
+              </select>
+            </div>
+            <button type="submit">Generate Story</button>
+          </form>
+        </div>
+      `;
+      
+      const legacyForm = document.getElementById('legacyStoryForm');
+      if (legacyForm) {
+        legacyForm.addEventListener('submit', (e) => {
+          e.preventDefault();
+          alert('Sorry, story generation requires a modern browser with JavaScript module support.');
+        });
+      }
+    }
+  }
+}
+
 // Import our components - using consistent relative paths for better compatibility
-import '../components/toast-notification.js';
-import '../components/toast-container.js';
-import '../components/loading-overlay.js';
-import '../components/story-card.js';
-import '../components/stories-grid.js';
-import '../components/story-display.js';
-import '../components/quiz-component.js';
-import '../components/story-form.js';
-import '../components/story-continuation.js';
-import '../components/story-content.js';
+try {
+  import('../components/toast-notification.js');
+  import('../components/toast-container.js');
+  import('../components/loading-overlay.js');
+  import('../components/story-card.js');
+  import('../components/stories-grid.js');
+  import('../components/story-display.js');
+  import('../components/quiz-component.js');
+  import('../components/story-form.js');
+  import('../components/story-continuation.js');
+  import('../components/story-content.js');
+} catch (err) {
+  console.error('Error importing components:', err);
+}
 
 // Check for Web Components support
 const supportsCustomElements = 'customElements' in window;

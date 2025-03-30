@@ -1774,7 +1774,7 @@
         
         <section class="form-section">
             <!-- Use our new Lit component for the story form -->
-            <div class="story-form-container"></div>
+            <story-form></story-form>
         </section>
 
         <section class="output-section">
@@ -1805,9 +1805,27 @@
 
     <!-- Load Supabase client FIRST -->
     <script src="js/supabase.js"></script>
+    
+    <!-- Direct component import to ensure story form is available -->
+    <script type="module">
+      import './components/story-form.js';
+      // Register a simple check function to detect when the component is ready
+      window.checkComponentsLoaded = function() {
+        const isStoryFormDefined = customElements.get('story-form');
+        if (!isStoryFormDefined) {
+          console.warn('Story form component not defined, trying fallback load');
+          const script = document.createElement('script');
+          script.type = 'module';
+          script.src = '/components/story-form.js';
+          document.head.appendChild(script);
+        }
+      };
+      // Check after a short delay
+      setTimeout(window.checkComponentsLoaded, 1000);
+    </script>
 
     <!-- Add our components setup script -->
-    <script type="module" src="./js/components-setup.js"></script>
+    <script type="module" src="js/components-setup.js"></script>
 
     <!-- Load application scripts AFTER Supabase is initialized -->
     <script src="js/auth.js"></script>

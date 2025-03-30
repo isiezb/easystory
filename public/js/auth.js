@@ -1,10 +1,11 @@
-import { config } from './config.js';
+import { configPromise } from './config.js';
 import { uiHandler } from './uiHandler.js';
-import { supabase } from './supabase.js';
+import { supabasePromise } from './supabase.js';
 
 export const auth = {
-    init() {
-        this.supabase = supabase.createClient(config.supabaseUrl, config.supabaseKey);
+    async init() {
+        const config = await configPromise;
+        this.supabase = await supabasePromise;
         this.setupAuthListeners();
         this.checkInitialAuth();
     },
@@ -28,7 +29,7 @@ export const auth = {
 
     async signUp(email, password) {
         try {
-            const { data, error } = await supabase.auth.signUp({
+            const { data, error } = await this.supabase.auth.signUp({
                 email,
                 password
             });
@@ -43,7 +44,7 @@ export const auth = {
 
     async signIn(email, password) {
         try {
-            const { data, error } = await supabase.auth.signInWithPassword({
+            const { data, error } = await this.supabase.auth.signInWithPassword({
                 email,
                 password
             });
@@ -61,15 +62,18 @@ export const auth = {
             const { data, error } = await this.supabase.auth.signInWithOAuth({
                 provider
             });
+            
             if (error) throw error;
+            return data;
         } catch (error) {
-            uiHandler.showError(error.message);
+            console.error('Error signing in with provider:', error);
+            throw error;
         }
     },
 
     async signOut() {
         try {
-            const { error } = await supabase.auth.signOut();
+            const { error } = await this.supabase.auth.signOut();
             if (error) throw error;
         } catch (error) {
             console.error('Error signing out:', error);
@@ -79,8 +83,9 @@ export const auth = {
 
     async resetPassword(email) {
         try {
-            const { error } = await supabase.auth.resetPasswordForEmail(email);
+            const { data, error } = await this.supabase.auth.resetPasswordForEmail(email);
             if (error) throw error;
+            return data;
         } catch (error) {
             console.error('Error resetting password:', error);
             throw error;
@@ -89,10 +94,11 @@ export const auth = {
 
     async updatePassword(newPassword) {
         try {
-            const { error } = await supabase.auth.updateUser({
+            const { data, error } = await this.supabase.auth.updateUser({
                 password: newPassword
             });
             if (error) throw error;
+            return data;
         } catch (error) {
             console.error('Error updating password:', error);
             throw error;
@@ -100,23 +106,10 @@ export const auth = {
     },
 
     handleAuthSuccess(user) {
-        document.getElementById('loginBtn').style.display = 'none';
-        document.getElementById('signupBtn').style.display = 'none';
-        document.getElementById('logoutBtn').style.display = 'flex';
-        document.getElementById('userProfile').style.display = 'flex';
-        document.getElementById('userEmail').textContent = user.email;
-        document.getElementById('userAvatar').textContent = user.email[0].toUpperCase();
-        document.getElementById('myStoriesSection').style.display = 'block';
-        uiHandler.showSuccess('Successfully authenticated!');
+        uiHandler.updateUIForLoggedInUser(user);
     },
 
     handleAuthSignOut() {
-        document.getElementById('loginBtn').style.display = 'flex';
-        document.getElementById('signupBtn').style.display = 'flex';
-        document.getElementById('logoutBtn').style.display = 'none';
-        document.getElementById('userProfile').style.display = 'none';
-        document.getElementById('myStoriesSection').style.display = 'none';
-        document.getElementById('storiesGrid').innerHTML = '';
-        uiHandler.showSuccess('Successfully logged out!');
+        uiHandler.updateUIForLoggedOutUser();
     }
 }; 

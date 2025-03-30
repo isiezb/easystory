@@ -88,9 +88,15 @@ async function handleStoryFormSubmit(e) {
     
     // Show loading state
     if (window.uiHandler && window.uiHandler.showLoading) {
-        window.uiHandler.showLoading();
+        window.uiHandler.showLoading('Generating Your Story');
     } else if (loadingOverlay) {
         loadingOverlay.style.display = 'flex';
+        const loadingText = loadingOverlay.querySelector('.loading-text');
+        if (loadingText) {
+            loadingText.textContent = 'Generating Your Story';
+        }
+        // Scroll to top to make loading overlay more visible
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
     
     try {
@@ -277,33 +283,29 @@ function displayStory(storyData) {
     
     console.log('Displaying story data:', storyData);
     
-    // Extract story content from various possible response formats
-    let storyContent = null;
-    
     try {
-        // Format 1: Direct story object
-        if (storyData.title && storyData.content) {
-            storyContent = storyData;
-        }
-        // Format 2: Nested inside data.story
-        else if (storyData.data && storyData.data.story) {
-            storyContent = storyData.data.story;
-        }
-        // Format 3: Direct story object inside response
-        else if (storyData.story) {
-            storyContent = storyData.story;
-        }
-        // Format 4: Unknown structure, log error and use whatever we have
-        else {
-            console.warn('Unknown story data format:', storyData);
-            // Try to construct a minimal story object from whatever we have
-            storyContent = {
-                title: storyData.title || 'Generated Story',
-                content: storyData.content || 'Content could not be retrieved.',
-                // Add other fields if they exist
-                summary: storyData.summary,
-                vocabulary: storyData.vocabulary,
-                learning_objectives: storyData.learning_objectives
+        // Extract the actual story content from potentially nested structures
+        let storyContent = {};
+        
+        // Handle different response formats
+        if (storyData.data && storyData.data.story) {
+            // Format 1: Wrapped in data.story (standard API response)
+            console.log('Format 1: Using data.story structure');
+            storyContent = { ...storyData.data.story };
+        } else if (storyData.story) {
+            // Format 2: Wrapped in story
+            console.log('Format 2: Using story structure');
+            storyContent = { ...storyData.story };
+        } else if (storyData.content || storyData.title) {
+            // Format 3: Direct story object
+            console.log('Format 3: Using direct story object');
+            storyContent = { ...storyData };
+        } else {
+            // Format 4: Unknown structure - try to extract what we can
+            console.warn('Format 4: Unknown structure, attempting to extract data');
+            storyContent = { 
+                title: storyData.title || storyData.subject || 'Generated Story',
+                content: storyData.content || JSON.stringify(storyData)
             };
         }
         
@@ -400,13 +402,29 @@ function displayStory(storyData) {
                 return; // Skip quiz initialization if data is invalid
             }
             
-            // Structure quiz data properly
+            // Structure quiz data properly with field name normalization
             const quizData = {
-                questions: storyContent.quiz.map(q => ({
-                    question: q.question,
-                    options: q.options || [],
-                    correct_answer: q.correct_answer !== undefined ? q.correct_answer : 0
-                }))
+                questions: storyContent.quiz.map(q => {
+                    // Normalize field names to handle both correctAnswer and correct_answer formats
+                    let correctAnswerIndex = null;
+                    
+                    // Check for the different formats
+                    if (q.correct_answer !== undefined) {
+                        correctAnswerIndex = q.correct_answer;
+                    } else if (q.correctAnswer !== undefined) {
+                        correctAnswerIndex = q.correctAnswer;
+                    } else {
+                        // Default to first option if neither is available
+                        correctAnswerIndex = 0;
+                        console.warn('Quiz question missing correct answer field, defaulting to first option:', q);
+                    }
+                    
+                    return {
+                        question: q.question,
+                        options: q.options || [],
+                        correct_answer: correctAnswerIndex
+                    };
+                })
             };
             
             // Create quiz container if not exists
@@ -421,6 +439,7 @@ function displayStory(storyData) {
             // Check if window.quiz is available
             if (window.quiz && typeof window.quiz.init === 'function') {
                 try {
+                    console.log('Initializing quiz with normalized data:', quizData);
                     window.quiz.init(quizData);
                 } catch (quizError) {
                     console.error('Error initializing quiz:', quizError);

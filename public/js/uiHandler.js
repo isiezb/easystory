@@ -1,11 +1,26 @@
 // UI Handler
 const uiHandler = {
-    showLoading() {
-        document.querySelector('.loading-overlay').style.display = 'flex';
+    showLoading(message = 'Loading...') {
+        const loadingOverlay = document.querySelector('.loading-overlay');
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'flex';
+            
+            // Set custom message if provided
+            const loadingText = loadingOverlay.querySelector('.loading-text');
+            if (loadingText) {
+                loadingText.textContent = message;
+            }
+            
+            // Ensure overlay is visible by scrolling to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
     },
 
     hideLoading() {
-        document.querySelector('.loading-overlay').style.display = 'none';
+        const loadingOverlay = document.querySelector('.loading-overlay');
+        if (loadingOverlay) {
+            loadingOverlay.style.display = 'none';
+        }
     },
 
     updateSubmitButton(submitButton, isLoading) {

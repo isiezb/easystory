@@ -338,7 +338,8 @@ class ApiService {
                     `Geography`,
                     `Literature`
                 ],
-                correct_answer: 0
+                correctAnswer: 0,  // Use server-side format (camelCase)
+                correct_answer: 0  // Also include client-side format (snake_case) for compatibility
             },
             {
                 question: sentences.length > 0 
@@ -350,6 +351,7 @@ class ApiService {
                     `Developing critical thinking`,
                     `All of the above`
                 ],
+                correctAnswer: 3,
                 correct_answer: 3
             },
             {
@@ -360,6 +362,7 @@ class ApiService {
                     `Pattern recognition`,
                     `Communication`
                 ],
+                correctAnswer: 1,
                 correct_answer: 1
             }
         ];

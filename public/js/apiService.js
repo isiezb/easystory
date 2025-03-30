@@ -16,6 +16,8 @@ class ApiService {
         if (!this.serverUrl) {
             throw new Error('Missing SERVER_URL configuration');
         }
+        // Ensure the URL doesn't end with a slash
+        this.serverUrl = this.serverUrl.replace(/\/$/, '');
     }
 
     async handleResponse(response) {
@@ -23,6 +25,7 @@ class ApiService {
         try {
             data = await response.json();
         } catch (error) {
+            console.error('Response parsing error:', error);
             throw new ApiError(
                 'Invalid response format',
                 response.status,

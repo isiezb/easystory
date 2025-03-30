@@ -176,29 +176,29 @@ ALTER TABLE stories ENABLE ROW LEVEL SECURITY;
 -- RLS Policies to control access to stories
 CREATE POLICY "Users can view their own stories" 
     ON stories FOR SELECT 
-    USING (user_id = auth.uid() OR (is_anonymous = true AND user_id = current_setting('request.headers')::json->>'x-anonymous-id'));
+    USING (user_id = auth.uid()::TEXT OR (is_anonymous = true AND user_id = current_setting('request.headers')::json->>'x-anonymous-id'));
 
 CREATE POLICY "Users can insert their own stories" 
     ON stories FOR INSERT 
-    WITH CHECK (user_id = auth.uid() OR (is_anonymous = true AND user_id = current_setting('request.headers')::json->>'x-anonymous-id'));
+    WITH CHECK (user_id = auth.uid()::TEXT OR (is_anonymous = true AND user_id = current_setting('request.headers')::json->>'x-anonymous-id'));
 
 CREATE POLICY "Users can update their own stories" 
     ON stories FOR UPDATE 
-    USING (user_id = auth.uid());
+    USING (user_id = auth.uid()::TEXT);
 
 CREATE POLICY "Users can delete their own stories" 
     ON stories FOR DELETE 
-    USING (user_id = auth.uid() OR (is_anonymous = true AND user_id = current_setting('request.headers')::json->>'x-anonymous-id'));
+    USING (user_id = auth.uid()::TEXT OR (is_anonymous = true AND user_id = current_setting('request.headers')::json->>'x-anonymous-id'));
 
 -- Drop existing trigger and function if they exist
 DROP TRIGGER IF EXISTS on_user_deletion ON auth.users;
 DROP FUNCTION IF EXISTS handle_user_deletion() CASCADE;
 
--- Create function to handle user deletion
+-- Create function to handle user deletion with proper type casting
 CREATE OR REPLACE FUNCTION handle_user_deletion()
 RETURNS TRIGGER AS $$
 BEGIN
-    DELETE FROM stories WHERE user_id = OLD.id;
+    DELETE FROM stories WHERE user_id = OLD.id::TEXT;
     RETURN OLD;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

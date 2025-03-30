@@ -151,19 +151,37 @@ storyForm.addEventListener('submit', async (e) => {
 // Initialize app
 async function init() {
     try {
-        const { data: { session } } = await supabase.auth.getSession();
+        // Wait for environment variables to be loaded
+        if (!window._env_) {
+            await new Promise(resolve => {
+                const checkEnv = () => {
+                    if (window._env_) {
+                        resolve();
+                    } else {
+                        setTimeout(checkEnv, 100);
+                    }
+                };
+                checkEnv();
+            });
+        }
+
+        // Initialize Supabase
+        if (!window._env_?.SUPABASE_URL || !window._env_?.SUPABASE_KEY) {
+            throw new Error('Missing Supabase configuration');
+        }
+
+        // Check if user is logged in
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error) {
+            console.error('Error checking session:', error);
+            return;
+        }
+
         if (session) {
-            // Update UI for logged-in user
-            document.getElementById('loginBtn').style.display = 'none';
-            document.getElementById('signupBtn').style.display = 'none';
-            document.getElementById('logoutBtn').style.display = 'block';
-            document.getElementById('userProfile').style.display = 'flex';
-            document.getElementById('userAvatar').textContent = session.user.email[0].toUpperCase();
-            document.getElementById('userEmail').textContent = session.user.email;
-            
-            // Show My Stories section
-            document.getElementById('myStoriesSection').style.display = 'block';
-            await loadUserStories(session.user.id);
+            currentUser = session.user;
+            updateUIForLoggedInUser();
+        } else {
+            updateUIForLoggedOutUser();
         }
     } catch (error) {
         console.error('Error initializing app:', error);
@@ -203,5 +221,5 @@ async function loadUserStories(userId) {
     }
 }
 
-// Initialize the app
-init(); 
+// Initialize app when DOM is loaded
+document.addEventListener('DOMContentLoaded', init); 

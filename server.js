@@ -17,7 +17,7 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "*.supabase.co"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "*.supabase.co", "cdn.jsdelivr.net"],
             styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
             fontSrc: ["'self'", "fonts.gstatic.com"],
             imgSrc: ["'self'", "data:", "*.supabase.co"],
@@ -370,11 +370,13 @@ app.post('/generate-story', apiLimiter, async (req, res) => {
 
         // Validate inputs
         if (!validateInputs(inputs)) {
+            logger.error('Invalid input data:', inputs);
             throw new AppError('Invalid input data', 400);
         }
 
         // Generate story using OpenRouter
         const response = await generateStoryWithOpenRouter(inputs);
+        logger.info('Story generated successfully');
         
         // If user is logged in, save to Supabase
         const authHeader = req.headers.authorization;
@@ -419,7 +421,16 @@ app.post('/generate-story', apiLimiter, async (req, res) => {
 
         res.json(response);
     } catch (error) {
-        handleError(error, res);
+        logger.error('Error in generate-story endpoint:', error);
+        if (error.response?.data?.error?.message) {
+            res.status(error.response.status || 500).json({
+                error: error.response.data.error.message
+            });
+        } else {
+            res.status(500).json({
+                error: error.message || 'Failed to generate story'
+            });
+        }
     }
 });
 

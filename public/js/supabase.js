@@ -1,18 +1,9 @@
-import { configPromise } from './config.js';
-
-let supabaseClient = null;
-
 // Initialize Supabase client
-const initSupabase = async () => {
-    if (!supabaseClient) {
-        const config = await configPromise;
-        supabaseClient = window.supabase.createClient(config.supabaseUrl, config.supabaseKey);
-    }
-    return supabaseClient;
-};
+const supabaseUrl = window._env_?.SUPABASE_URL;
+const supabaseKey = window._env_?.SUPABASE_KEY;
 
-export const supabase = {
-    async getClient() {
-        return await initSupabase();
-    }
-}; 
+if (!supabaseUrl || !supabaseKey) {
+    console.error('Missing Supabase configuration');
+}
+
+export const supabase = window.supabase.createClient(supabaseUrl, supabaseKey); 

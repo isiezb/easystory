@@ -216,18 +216,19 @@ class ApiService {
         const subject = String(data.subject || "general").trim();
         const academicGrade = String(data.academic_grade || "5").trim();
         
-        // Handle potentially empty optional fields
-        const subjectSpecRaw = String(data.subject_specification || "").trim();
-        const settingRaw = String(data.setting || "").trim(); // Default to empty string if not provided
-        const mainCharacterRaw = String(data.main_character || "").trim(); // Default to empty string if not provided
+        // CRITICAL: Server requires these fields, even if empty
+        // Cannot be null or undefined - must be non-empty strings
+        const subjectSpecRaw = String(data.subject_specification || "Basic concepts").trim();
+        const settingRaw = String(data.setting || "a classroom").trim();
+        const mainCharacterRaw = String(data.main_character || "a student").trim();
         
-        // Convert empty strings for optional fields to null for potential use later
-        const subjectSpecOrNull = subjectSpecRaw === "" ? null : subjectSpecRaw;
-        const settingOrNull = settingRaw === "" ? null : settingRaw;
-        const mainCharacterOrNull = mainCharacterRaw === "" ? null : mainCharacterRaw;
+        // CRITICAL: Server requires word_count as NUMBER (not string)
+        // Must be between 100-5000
+        const wordCount = parseInt(data.word_count || "500", 10);
         
-        const wordCountStr = data.word_count ? String(data.word_count) : "500";
-        const language = data.language ? String(data.language) : "English"; // Capitalized
+        // CRITICAL: Server requires exact capitalization match
+        // Must be one of: 'English', 'Spanish', 'French', 'German', 'Italian'
+        const language = data.language || "English"; // Keep original capitalization
         
         // IMPORTANT: Checkbox values are undefined when not checked, 'on' when checked
         // Debug the actual checkbox values
@@ -236,185 +237,24 @@ class ApiService {
             generate_summary: data.generate_summary
         });
         
-        // Format booleans based on checkbox values - use FALSE for undefined/unchecked
-        const generateVocabulary = data.generate_vocabulary === 'on'; // true if 'on', false otherwise (including undefined)
-        const generateSummary = data.generate_summary === 'on'; // true if 'on', false otherwise (including undefined)
-        
-        // Update for Format 1: Send grade as string, language as lowercase
-        const languageLower = language.toLowerCase();
-        
-        // === NEW: Format 0 - Completely different approach with camelCase + auth fields ===
-        // Try with camelCase fields, which is sometimes preferred by APIs
-        const camelCaseFormat = {
-            // Primary data wrapper
-            payload: {
-                // Main data in camelCase
-                subject: subject,
-                academicGrade: academicGrade,
-                wordCount: parseInt(wordCountStr, 10),
-                language: languageLower,
-                // Only include non-empty optional fields
-                ...(subjectSpecOrNull !== null && { subjectSpecification: subjectSpecOrNull }),
-                ...(settingOrNull !== null && { setting: settingOrNull }),
-                ...(mainCharacterOrNull !== null && { mainCharacter: mainCharacterOrNull }),
-                // Booleans
-                generateVocabulary: generateVocabulary,
-                generateSummary: generateSummary
-            },
-            // Metadata wrapper
-            meta: {
-                clientVersion: "1.0",
-                clientId: "web-client",
-                timestamp: new Date().toISOString(),
-                requestId: `req_${Math.random().toString(36).substring(2, 15)}`
-            },
-            // Auth-related data that might be required
-            auth: {
-                apiKey: window._config?.supabaseKey || null,
-                userId: window.auth && typeof window.auth.getUser === 'function' ? window.auth.getUser()?.id : null,
-                anonymous: window.auth ? !(window.auth.getUser && typeof window.auth.getUser === 'function' && window.auth.getUser()) : true
-            }
-        };
-        // === END NEW FORMAT ===
-
-        // Format 1: Standard format with explicit numbers, booleans, and OMITTED nulls
-        const format1 = {
+        // Create a VALID SERVER FORMAT matching the validateInputs function in server.js
+        const serverFormat = {
             subject: subject,
-            academic_grade: academicGrade, // Send as original STRING value (e.g., "K", "5")
-            word_count: parseInt(wordCountStr, 10), // Send as number
-            language: languageLower, // Send as lowercase string
-            generate_vocabulary: generateVocabulary, // Send as boolean
-            generate_summary: generateSummary      // Send as boolean
+            academic_grade: academicGrade,
+            subject_specification: subjectSpecRaw, // Must be non-empty string
+            setting: settingRaw, // Must be non-empty string
+            main_character: mainCharacterRaw, // Must be non-empty string
+            word_count: wordCount, // Must be a number between 100-5000
+            language: language, // Must match exact capitalization
+            generate_vocabulary: data.generate_vocabulary === 'on', // Boolean for optional features
+            generate_summary: data.generate_summary === 'on' // Boolean for optional features
         };
-        // Conditionally add optional fields ONLY if they have a non-null value
-        if (subjectSpecOrNull !== null) {
-            format1.subject_specification = subjectSpecOrNull;
-        }
-        if (settingOrNull !== null) {
-            format1.setting = settingOrNull;
-        }
-        if (mainCharacterOrNull !== null) {
-            format1.main_character = mainCharacterOrNull;
-        }
-        // --- End Format 1 --- 
-
-        // Format 2: String boolean values, null optionals
-        const format2 = {
-            subject: subject,
-            academic_grade: academicGrade, // String grade
-            subject_specification: subjectSpecOrNull, // Send null if empty
-            setting: settingOrNull, // Send null if empty
-            main_character: mainCharacterOrNull, // Send null if empty
-            word_count: wordCountStr, // String count
-            language: language,
-            // Send undefined for missing booleans to omit key
-            generate_vocabulary: generateVocabulary === false ? undefined : String(generateVocabulary),
-            generate_summary: generateSummary === false ? undefined : String(generateSummary)
-        };
-        
-        // Format 3: Using 'on' directly for checkboxes, null optionals
-        const format3 = {
-            subject: subject,
-            academic_grade: academicGrade, // String grade
-            subject_specification: subjectSpecOrNull, // Send null if empty
-            setting: settingOrNull, // Send null if empty
-            main_character: mainCharacterOrNull, // Send null if empty
-            word_count: wordCountStr, // String count
-            language: language,
-            generate_vocabulary: data.generate_vocabulary, // Send 'on' or undefined
-            generate_summary: data.generate_summary // Send 'on' or undefined
-        };
-        
-        // Format 4: Raw form data
-        const format4 = {...data};
-        
-        // Format 5: Super minimal (absolute essentials only)
-        const format5 = {
-            subject: subject,
-            academic_grade: academicGrade
-        };
-        
-        // NEW FORMAT: Server-Exact Format - Attempts to match what the server might be precisely expecting
-        const exactFormat = {
-            // Core fields in server format
-            subject_area: subject, // Try different field name for subject
-            grade_level: academicGrade, // Try different field name for grade
-            word_limit: parseInt(wordCountStr, 10), // Try different field name for word_count
-            target_language: languageLower, // Try different field name for language
-            
-            // Include special options the server might require 
-            options: {
-                include_vocabulary: generateVocabulary,
-                include_summary: generateSummary,
-                type: "educational", // Server might expect a story type
-                format: "long_form", // Server might expect a format specification
-                difficulty: academicGrade === "K" ? "kindergarten" : 
-                           parseInt(academicGrade, 10) <= 3 ? "elementary" :
-                           parseInt(academicGrade, 10) <= 8 ? "middle_school" : "high_school"
-            },
-            
-            // Add content parameters
-            content_params: {
-                subject: subject,
-                topic: subjectSpecOrNull || `${subject} basics`, // Provide a default topic based on subject
-                setting: settingOrNull || "classroom",
-                characters: mainCharacterOrNull ? [mainCharacterOrNull] : ["student"],
-                themes: ["education", "learning", "discovery"]
-            },
-            
-            // Context information
-            context: {
-                client_id: "web_app",
-                request_id: `req_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
-                timestamp: new Date().toISOString()
-            }
-        };
-        
-        // Strings-Only Format - Convert everything to strings, exactly matching form field names
-        const stringsFormat = {};
-        
-        // Copy all original form data
-        Object.entries(data).forEach(([key, value]) => {
-            // Ensure value is a string
-            stringsFormat[key] = value === undefined ? "" : String(value);
-        });
-        
-        // Add these back in case they were undefined in the form
-        stringsFormat.subject = subject;
-        stringsFormat.academic_grade = academicGrade;
-        stringsFormat.word_count = wordCountStr;
-        stringsFormat.language = language; // Use original capitalization
-        
-        // Create an array of request formats to try
-        const requestFormats = [
-            // Try the strings format first as it's safe for type validation
-            stringsFormat,
-            
-            // Then try the exact format as it might match server schema 
-            exactFormat,
-            
-            // Other formats as fallbacks
-            camelCaseFormat,
-            format1,
-            format2,
-            format3,
-            format4,
-            format5
-        ];
-        
-        // Log all the request formats we'll try
-        console.log('Request formats to try:', JSON.stringify(requestFormats, null, 2));
         
         try {
             // Build the base headers that are always included
             const headers = {
                 'Content-Type': 'application/json',
-                'Accept': 'application/json, text/html, */*',
-                'X-Client-Name': 'quiz-story-web',
-                'X-Client-Version': '1.0.0',
-                'X-Request-ID': `req_${Math.random().toString(36).substring(2, 15)}`,
-                'Cache-Control': 'no-cache',
-                'Pragma': 'no-cache'
+                'Accept': 'application/json, text/html, */*'
             };
             
             // Only add auth token if Supabase is available
@@ -431,188 +271,38 @@ class ApiService {
             // Use mock data if in development mode or specified in config
             if (window._config?.useMockData || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
                 console.log('Using mock story data');
-                return this.getMockStoryData(requestFormats[0]);
+                return this.getMockStoryData(serverFormat);
             }
             
             console.log(`Sending API request to ${this.baseUrl}/generate-story`);
+            console.log('Using validated server format:', serverFormat);
             
-            // Try multiple formats in sequence
-            let response;
-            let errorMessages = [];
-            let lastRequestFormat;
-            
-            // Add fallback URL-encoded request format as absolute last resort
-            const urlEncodedParams = new URLSearchParams();
-            Object.entries(format1).forEach(([key, value]) => {
-                if (value !== undefined && value !== null) {
-                    urlEncodedParams.append(key, String(value));
-                }
-            });
-            
-            let hasSuccess = false;
-            
-            for (let i = 0; i < requestFormats.length; i++) {
-                const format = requestFormats[i];
-                lastRequestFormat = format;
+            try {
+                const response = await fetch(`${this.baseUrl}/generate-story`, {
+                    method: 'POST',
+                    headers: headers,
+                    body: JSON.stringify(serverFormat)
+                });
                 
-                try {
-                    console.log(`Attempt ${i+1}: Using format:`, JSON.stringify(format, null, 2));
-                    
-                    // Try different endpoint paths if we're on the last attempts
-                    let endpointPath = '/generate-story';
-                    if (i === requestFormats.length - 1) {
-                        // Try the alternate endpoint paths on the last format
-                        endpointPath = '/api/generate-story';
-                        console.log(`Trying alternate endpoint path: ${endpointPath}`);
-                    }
-                    
-                    response = await fetch(`${this.baseUrl}${endpointPath}`, {
-                        method: 'POST',
-                        headers: headers,
-                        body: JSON.stringify(format)
-                    });
-                    
-                    // Log full details about the response
-                    console.log(`Response for attempt ${i+1}:`, {
-                        status: response.status,
-                        statusText: response.statusText,
-                        headers: Object.fromEntries([...response.headers.entries()])
-                    });
-                    
-                    // If success, break the loop
-                    if (response.ok) {
-                        console.log(`Format ${i+1} succeeded!`);
-                        hasSuccess = true;
-                        break;
-                    } else {
-                        // Get error details for debugging
-                        const errorText = await response.text();
-                        const error = {
-                            status: response.status,
-                            statusText: response.statusText,
-                            body: errorText
-                        };
-                        errorMessages.push(`Format ${i+1} failed: ${JSON.stringify(error)}`);
-                        console.warn(`Format ${i+1} failed with status ${response.status}:`, errorText);
-                        
-                        // If this was the first failure, add a small delay before trying the next format
-                        // This can help with potential rate limiting or server processing issues
-                        if (!response.ok && i < requestFormats.length - 1) {
-                            const delayMs = 500; // 500ms delay between attempts
-                            console.log(`Adding ${delayMs}ms delay before next attempt...`);
-                            await new Promise(resolve => setTimeout(resolve, delayMs));
-                        }
-                        
-                        // If we reached the last format, try URL-encoded as a final last-resort
-                        if (i === requestFormats.length - 1 && !hasSuccess) {
-                            console.log('Attempting final URL-encoded format as last resort');
-                            
-                            // Try both endpoint paths with URL encoding
-                            const endpointPaths = ['/generate-story', '/api/generate-story'];
-                            
-                            for (const path of endpointPaths) {
-                                try {
-                                    console.log(`URL-encoded request to ${path}:`, urlEncodedParams.toString());
-                                    const urlEncodedResponse = await fetch(`${this.baseUrl}${path}`, {
-                                        method: 'POST',
-                                        headers: {
-                                            ...headers,
-                                            'Content-Type': 'application/x-www-form-urlencoded'
-                                        },
-                                        body: urlEncodedParams
-                                    });
-                                    
-                                    console.log(`URL-encoded response from ${path}:`, {
-                                        status: urlEncodedResponse.status,
-                                        statusText: urlEncodedResponse.statusText
-                                    });
-                                    
-                                    if (urlEncodedResponse.ok) {
-                                        console.log(`URL-encoded format to ${path} succeeded!`);
-                                        response = urlEncodedResponse;
-                                        hasSuccess = true;
-                                        break; // Exit the loop if we succeed
-                                    } else {
-                                        const errorText = await urlEncodedResponse.text();
-                                        errorMessages.push(`URL-encoded format to ${path} failed: ${urlEncodedResponse.status} ${errorText}`);
-                                    }
-                                } catch (urlEncodedError) {
-                                    console.error(`URL-encoded request error to ${path}:`, urlEncodedError);
-                                    errorMessages.push(`URL-encoded format error to ${path}: ${urlEncodedError.message}`);
-                                }
-                                
-                                // Add delay between endpoint attempts
-                                await new Promise(resolve => setTimeout(resolve, 300));
-                            }
-                        }
-                    }
-                } catch (fetchError) {
-                    console.error(`Fetch error in attempt ${i+1}:`, fetchError);
-                    errorMessages.push(`Format ${i+1} fetch error: ${fetchError.message}`);
-                    
-                    // If this was the first failure, add a small delay before trying the next format
-                    // This can help with potential rate limiting or server processing issues
-                    if (!response.ok && i < requestFormats.length - 1) {
-                        const delayMs = 500; // 500ms delay between attempts
-                        console.log(`Adding ${delayMs}ms delay before next attempt...`);
-                        await new Promise(resolve => setTimeout(resolve, delayMs));
-                    }
-                    
-                    // If we reached the last format, try URL-encoded as a final last-resort
-                    if (i === requestFormats.length - 1 && !hasSuccess) {
-                        console.log('Attempting final URL-encoded format as last resort (after fetch error)');
-                        
-                        // Try both endpoint paths with URL encoding
-                        const endpointPaths = ['/generate-story', '/api/generate-story'];
-                        
-                        for (const path of endpointPaths) {
-                            try {
-                                console.log(`URL-encoded request to ${path}:`, urlEncodedParams.toString());
-                                const urlEncodedResponse = await fetch(`${this.baseUrl}${path}`, {
-                                    method: 'POST',
-                                    headers: {
-                                        ...headers,
-                                        'Content-Type': 'application/x-www-form-urlencoded'
-                                    },
-                                    body: urlEncodedParams
-                                });
-                                
-                                console.log(`URL-encoded response from ${path}:`, {
-                                    status: urlEncodedResponse.status,
-                                    statusText: urlEncodedResponse.statusText
-                                });
-                                
-                                if (urlEncodedResponse.ok) {
-                                    console.log(`URL-encoded format to ${path} succeeded!`);
-                                    response = urlEncodedResponse;
-                                    hasSuccess = true;
-                                    break; // Exit the loop if we succeed
-                                } else {
-                                    const errorText = await urlEncodedResponse.text();
-                                    errorMessages.push(`URL-encoded format to ${path} failed: ${urlEncodedResponse.status} ${errorText}`);
-                                }
-                            } catch (urlEncodedError) {
-                                console.error(`URL-encoded request error to ${path}:`, urlEncodedError);
-                                errorMessages.push(`URL-encoded format error to ${path}: ${urlEncodedError.message}`);
-                            }
-                            
-                            // Add delay between endpoint attempts
-                            await new Promise(resolve => setTimeout(resolve, 300));
-                        }
-                    }
+                console.log('Response status:', response.status);
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.error(`API error (${response.status}):`, errorText);
+                    throw new ApiError(response.status, errorText || 'Unknown server error');
                 }
+                
+                return this.handleResponse(response);
+            } catch (fetchError) {
+                console.error('Fetch error:', fetchError);
+                throw fetchError;
             }
-            
-            console.log('Successful response with status:', response.status);
-            console.log('Using request format:', JSON.stringify(lastRequestFormat, null, 2));
-            
-            return this.handleResponse(response);
         } catch (error) {
             console.error('Error in generateStory:', error);
             
             // Always fall back to mock data if anything goes wrong
             console.log('Request failed, falling back to mock data');
-            return this.getMockStoryData(format1);
+            return this.getMockStoryData(serverFormat);
         }
     }
     

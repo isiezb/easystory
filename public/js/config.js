@@ -60,4 +60,14 @@ const initConfig = async () => {
 };
 
 // Export a promise that resolves to the config
-export const configPromise = initConfig(); 
+export const configPromise = initConfig();
+
+export const config = {
+    server: {
+        url: window._env_?.SERVER_URL || 'https://quiz-story.onrender.com'
+    },
+    supabase: {
+        url: window._env_?.SUPABASE_URL,
+        key: window._env_?.SUPABASE_KEY
+    }
+}; 

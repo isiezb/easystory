@@ -1,4 +1,5 @@
 import { supabase } from './supabase.js';
+import { config } from './config.js';
 
 class ApiError extends Error {
     constructor(message, status, details = null) {
@@ -11,7 +12,7 @@ class ApiError extends Error {
 
 class ApiService {
     constructor() {
-        this.serverUrl = window._env_?.SERVER_URL;
+        this.serverUrl = config.server.url;
         if (!this.serverUrl) {
             throw new Error('Missing SERVER_URL configuration');
         }

@@ -36,6 +36,14 @@ if (!process.env.OPENROUTER_API_KEY) {
     process.exit(1);
 }
 
+// Validate Supabase URL format
+try {
+    new URL(process.env.SUPABASE_URL);
+} catch (error) {
+    logger.error('Invalid SUPABASE_URL format');
+    process.exit(1);
+}
+
 // Initialize Supabase client
 let supabase;
 try {
@@ -157,6 +165,22 @@ const validateInputs = (inputs) => {
     return true;
 };
 
+// Validate quiz structure
+const validateQuizStructure = (quiz) => {
+    if (!quiz || !Array.isArray(quiz.questions)) {
+        return false;
+    }
+    
+    return quiz.questions.every(q => {
+        return q.question && 
+               Array.isArray(q.options) && 
+               q.options.length === 4 && 
+               typeof q.correctAnswer === 'number' &&
+               q.correctAnswer >= 0 && 
+               q.correctAnswer < 4;
+    });
+};
+
 // API Routes
 app.post('/generate-story', authenticateUser, async (req, res) => {
     try {
@@ -239,12 +263,28 @@ app.post('/generate-story', authenticateUser, async (req, res) => {
 
         let storyData;
         try {
+            if (!response.data?.choices?.[0]?.message?.content) {
+                throw new Error('Invalid response structure from OpenRouter');
+            }
+
             const content = response.data.choices[0].message.content;
             storyData = typeof content === 'string' ? JSON.parse(content) : content;
             
             // Validate story data structure
             if (!storyData.story || !storyData.quiz) {
                 throw new Error('Invalid story data structure');
+            }
+
+            // Validate quiz structure
+            if (!validateQuizStructure(storyData.quiz)) {
+                throw new Error('Invalid quiz structure');
+            }
+
+            // Validate story structure
+            if (!storyData.story.title || 
+                !storyData.story.content || 
+                !Array.isArray(storyData.story.learning_objectives)) {
+                throw new Error('Invalid story structure');
             }
         } catch (error) {
             logger.error('Failed to parse OpenRouter response', { 

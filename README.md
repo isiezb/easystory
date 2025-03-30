@@ -1,76 +1,142 @@
-# EASY STORY EASY LIFE
+# Quiz Story Generator
 
-An interactive web application that generates educational stories tailored to your grade level and subject matter. The app includes comprehension quizzes and allows for story continuation with adjustable difficulty levels.
+An educational story generation application that creates engaging stories with quizzes based on user inputs.
 
-## Features
+## Setup Instructions
 
-- Generate educational stories based on:
-  - Academic grade level
-  - Subject matter
-  - Word count
-  - Language preference
-  - Custom settings and characters
-- Interactive comprehension quizzes
-- Story continuation with difficulty adjustment
-- Dark/Light mode support
-- Mobile-responsive design
-- Copy, Save, and Print functionality
+### Prerequisites
+- Node.js (v14 or higher)
+- npm or yarn
+- Supabase account
+- OpenRouter API key
 
-## Technologies Used
-
-- Frontend:
-  - HTML5
-  - CSS3 (with modern features like CSS Variables, Flexbox, Grid)
-  - Vanilla JavaScript
-  - Responsive Design
-- Backend:
-  - Node.js
-  - Express.js
-  - Google Gemini 2.0 Flash (via OpenRouter)
-  - Supabase for data storage
-- Local Storage for story saving
-
-## Getting Started
-
-1. Clone the repository:
-```bash
-git clone https://github.com/isiezb/quizlearner.git
+### Environment Variables
+Create a `.env` file in the root directory with the following variables:
+```env
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_KEY=your_supabase_anon_key
+OPENROUTER_API_KEY=your_openrouter_api_key
+PORT=3000
 ```
 
+### Installation
+1. Clone the repository
 2. Install dependencies:
 ```bash
 npm install
 ```
 
-3. Set up environment variables:
-Create a `.env` file with:
-```
-OPENROUTER_API_KEY=your_openrouter_api_key
-SUPABASE_URL=your_supabase_url
-SUPABASE_KEY=your_supabase_key
+### Development
+1. Start the development server:
+```bash
+npm run dev
 ```
 
-4. Start the server:
+### Production
+1. Build the application:
+```bash
+npm run build
+```
+2. Start the production server:
 ```bash
 npm start
 ```
 
-5. Open `http://localhost:3000` in your browser
+## Best Practices
 
-## Usage
+### Authentication
+1. Always use environment variables for sensitive data
+2. Initialize Supabase client once and share the instance
+3. Check authentication state before making protected API calls
+4. Handle auth errors gracefully with user-friendly messages
 
-1. Select your academic grade level
-2. Choose a subject
-3. (Optional) Add subject specifications, setting, or main character
-4. Select desired word count and language
-5. Click "Generate Story"
-6. Read the story and take the comprehension quiz
-7. Continue the story with different difficulty levels if desired
+### Frontend
+1. Load scripts in the correct order:
+   ```html
+   <!-- Environment config first -->
+   <script src="env-config.js"></script>
+   <!-- Third-party libraries -->
+   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.3/dist/umd/supabase.min.js"></script>
+   <!-- Application modules -->
+   <script type="module" src="js/config.js"></script>
+   <script type="module" src="js/supabase.js"></script>
+   <script type="module" src="js/apiService.js"></script>
+   <script type="module" src="js/uiHandler.js"></script>
+   <script type="module" src="js/quizHandler.js"></script>
+   <script type="module" src="js/auth.js"></script>
+   <script type="module" src="js/main.js"></script>
+   ```
+
+2. Use ES modules for better code organization
+3. Implement proper error handling and user feedback
+4. Use TypeScript for better type safety (recommended)
+
+### Backend
+1. Validate all inputs before processing
+2. Use proper error handling middleware
+3. Implement rate limiting for API endpoints
+4. Log important events and errors
+5. Use environment variables for configuration
+
+### Database
+1. Use migrations for schema changes
+2. Implement proper indexing
+3. Use transactions for related operations
+4. Implement proper error handling for database operations
+
+### Security
+1. Never expose sensitive data in client-side code
+2. Use HTTPS in production
+3. Implement proper CORS policies
+4. Use secure session management
+5. Implement rate limiting
+
+### Performance
+1. Implement caching where appropriate
+2. Use proper indexing for database queries
+3. Optimize API responses
+4. Implement proper error handling and retries
+5. Use compression for static assets
+
+### Testing
+1. Write unit tests for critical functionality
+2. Implement integration tests
+3. Use test environment variables
+4. Mock external services in tests
+
+### Deployment
+1. Use proper environment variables
+2. Implement proper logging
+3. Use proper error handling
+4. Implement proper monitoring
+5. Use proper backup strategies
+
+## Common Issues and Solutions
+
+### Authentication Issues
+1. Check if Supabase client is properly initialized
+2. Verify environment variables are set correctly
+3. Check if auth token is being sent with requests
+4. Verify CORS settings in Supabase
+
+### API Issues
+1. Check if server is running
+2. Verify API endpoints are correct
+3. Check if all required fields are sent
+4. Verify request format is correct
+
+### Database Issues
+1. Check database connection
+2. Verify table structure
+3. Check if proper permissions are set
+4. Verify data format
 
 ## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
 
 ## License
-
-This project is licensed under the MIT License - see the LICENSE file for details. 
+MIT 

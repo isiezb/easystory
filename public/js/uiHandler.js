@@ -1,4 +1,5 @@
-export const uiHandler = {
+// UI Handler
+const uiHandler = {
     showLoading() {
         document.querySelector('.loading-overlay').style.display = 'flex';
     },
@@ -350,4 +351,7 @@ export const uiHandler = {
 
         storyOutput.scrollIntoView({ behavior: 'smooth' });
     }
-}; 
+};
+
+// Make uiHandler globally available
+window.uiHandler = uiHandler; 

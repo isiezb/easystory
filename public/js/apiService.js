@@ -1,6 +1,5 @@
-import { config } from './config.js';
-
-export class ApiError extends Error {
+// API Error class
+class ApiError extends Error {
     constructor(message, status) {
         super(message);
         this.status = status;
@@ -8,9 +7,10 @@ export class ApiError extends Error {
     }
 }
 
-export class ApiService {
+// API Service class
+class ApiService {
     constructor() {
-        this.baseUrl = config.serverUrl;
+        this.baseUrl = window._config.serverUrl;
         if (!this.baseUrl) {
             throw new Error('API base URL is not configured');
         }
@@ -91,4 +91,5 @@ export class ApiService {
     }
 }
 
-export const apiService = new ApiService(); 
+// Create and export API service instance
+window.apiService = new ApiService(); 

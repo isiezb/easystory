@@ -1,9 +1,8 @@
-import { env } from './env.js';
-
+// Configuration
 const config = {
-    serverUrl: env.SERVER_URL,
-    supabaseUrl: env.SUPABASE_URL,
-    supabaseKey: env.SUPABASE_KEY,
+    serverUrl: window._env_?.SERVER_URL || window.location.origin,
+    supabaseUrl: window._env_?.SUPABASE_URL || '',
+    supabaseKey: window._env_?.SUPABASE_KEY || '',
     maxRetries: 3,
     retryDelay: 1000,
     defaultWordCount: 500,
@@ -21,10 +20,8 @@ console.log('Config initialized:', {
 
 // Validate required environment variables
 if (!config.serverUrl) {
-    throw new Error('SERVER_URL is not configured');
+    console.error('SERVER_URL is not configured');
 }
 
 // Make config globally available
-window._config = config;
-
-export { config }; 
+window._config = config; 

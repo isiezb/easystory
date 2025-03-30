@@ -1,8 +1,3 @@
-import { apiService } from './apiService.js';
-import { supabase } from './supabase.js';
-import { auth } from './auth.js';
-import { uiHandler } from './uiHandler.js';
-
 // DOM Elements
 const storyForm = document.getElementById('storyForm');
 const storyOutput = document.getElementById('storyOutput');
@@ -62,18 +57,18 @@ function setupEventListeners() {
         };
         
         try {
-            uiHandler.showLoading();
-            const response = await apiService.generateStory(requestData);
+            window.uiHandler.showLoading();
+            const response = await window.apiService.generateStory(requestData);
             
             // Display story using uiHandler
-            uiHandler.displayStory(response);
-            uiHandler.showToast('Story generated successfully!', 'success');
+            window.uiHandler.displayStory(response);
+            window.uiHandler.showToast('Story generated successfully!', 'success');
             
             // Save story to Supabase if user is logged in
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session } } = await window.supabase.auth.getSession();
             if (session) {
                 try {
-                    const { error } = await supabase
+                    const { error } = await window.supabase
                         .from('stories')
                         .insert({
                             user_id: session.user.id,
@@ -93,14 +88,14 @@ function setupEventListeners() {
                     if (error) throw error;
                 } catch (error) {
                     console.error('Error saving story:', error);
-                    uiHandler.showToast('Failed to save story', 'error');
+                    window.uiHandler.showToast('Failed to save story', 'error');
                 }
             }
         } catch (error) {
             console.error('Error generating story:', error);
-            uiHandler.showError(error.message || 'Failed to generate story');
+            window.uiHandler.showError(error.message || 'Failed to generate story');
         } finally {
-            uiHandler.hideLoading();
+            window.uiHandler.hideLoading();
         }
     });
 }
@@ -158,24 +153,29 @@ function updateUIForLoggedOutUser() {
 async function init() {
     try {
         // Initialize Supabase
-        await auth.init();
+        await window.auth.init();
         
         // Setup event listeners
         setupEventListeners();
         
         // Load user stories if logged in
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.user) {
-            updateUIForLoggedInUser(session.user);
-            await loadUserStories(session.user.id);
+        if (window.supabase) {
+            const { data: { session } } = await window.supabase.auth.getSession();
+            if (session?.user) {
+                updateUIForLoggedInUser(session.user);
+                await loadUserStories(session.user.id);
+            } else {
+                updateUIForLoggedOutUser();
+            }
         } else {
+            console.warn('Supabase not initialized, skipping user session check');
             updateUIForLoggedOutUser();
         }
     } catch (error) {
         console.error('Error initializing app:', error);
         // Don't show error if Supabase is not configured
         if (!error.message.includes('Supabase not configured')) {
-            uiHandler.showError('Failed to initialize application');
+            window.uiHandler.showError('Failed to initialize application');
         }
     }
 }
@@ -186,7 +186,7 @@ async function loadUserStories(userId) {
     storiesGrid.innerHTML = '<div class="loading-stories">Loading stories...</div>';
     
     try {
-        const stories = await apiService.fetchUserStories(userId);
+        const stories = await window.apiService.fetchUserStories(userId);
         
         if (stories.length === 0) {
             storiesGrid.innerHTML = '<div class="no-stories">No stories yet. Generate your first story!</div>';
@@ -214,4 +214,13 @@ async function loadUserStories(userId) {
 }
 
 // Initialize app when DOM is loaded
-document.addEventListener('DOMContentLoaded', init); 
+document.addEventListener('DOMContentLoaded', init);
+
+// Export for global use
+window.app = {
+    init,
+    loadUserStories,
+    updateUIForLoggedInUser,
+    updateUIForLoggedOutUser,
+    showToast
+}; 

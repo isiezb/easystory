@@ -1,65 +1,63 @@
-import { apiService } from './apiService.js';
-import { uiHandler } from './uiHandler.js';
-import { quiz } from './quiz.js';
-import { supabase } from './supabase.js';
-
-export const story = {
+// Story functionality
+const story = {
     async generate(formData) {
         try {
-            uiHandler.showLoading();
-            const response = await apiService.generateStory(formData);
+            window.uiHandler.showLoading();
+            const response = await window.apiService.generateStory(formData);
             
             // Display story
-            uiHandler.showStory(response);
+            window.uiHandler.showStory(response);
             
             // Initialize quiz if available
-            if (response.quiz) {
-                quiz.init(response.quiz);
+            if (response.quiz && window.quiz) {
+                window.quiz.init(response.quiz);
             }
 
             // Save story to Supabase if user is logged in
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                const { data, error } = await supabase.getClient().from('stories').insert({
-                    user_id: session.user.id,
-                    academic_grade: formData.academic_grade,
-                    subject: formData.subject,
-                    subject_specification: formData.subject_specification,
-                    setting: formData.setting,
-                    main_character: formData.main_character,
-                    word_count: parseInt(formData.word_count),
-                    language: formData.language,
-                    story_text: response.content,
-                    story_title: formData.subject_specification || 'Untitled Story',
-                    learning_objectives: response.learning_objectives || [],
-                    quiz_questions: response.quiz || [],
-                    vocabulary_list: response.vocabulary || [],
-                    story_summary: response.summary || '',
-                    is_continuation: false
-                }).select().single();
+            if (window.supabase) {
+                const { data: { session } } = await window.supabase.auth.getSession();
+                if (session) {
+                    const { data, error } = await window.supabase.from('stories').insert({
+                        user_id: session.user.id,
+                        academic_grade: formData.academic_grade,
+                        subject: formData.subject,
+                        subject_specification: formData.subject_specification,
+                        setting: formData.setting,
+                        main_character: formData.main_character,
+                        word_count: parseInt(formData.word_count),
+                        language: formData.language,
+                        story_text: response.content,
+                        story_title: formData.subject_specification || 'Untitled Story',
+                        learning_objectives: response.learning_objectives || [],
+                        quiz_questions: response.quiz || [],
+                        vocabulary_list: response.vocabulary || [],
+                        story_summary: response.summary || '',
+                        is_continuation: false
+                    }).select().single();
 
-                if (error) {
-                    console.error('Error saving story to Supabase:', error);
-                    uiHandler.showError('Failed to save story');
-                } else {
-                    console.log('Story saved successfully:', data);
+                    if (error) {
+                        console.error('Error saving story to Supabase:', error);
+                        window.uiHandler.showError('Failed to save story');
+                    } else {
+                        console.log('Story saved successfully:', data);
+                    }
                 }
             }
             
             return response;
         } catch (error) {
             console.error('Error generating story:', error);
-            uiHandler.showError(error.message || 'Failed to generate story');
+            window.uiHandler.showError(error.message || 'Failed to generate story');
             throw error;
         } finally {
-            uiHandler.hideLoading();
+            window.uiHandler.hideLoading();
         }
     },
 
     async loadUserStories(userId) {
         try {
-            uiHandler.showLoading();
-            const stories = await apiService.fetchUserStories(userId);
+            window.uiHandler.showLoading();
+            const stories = await window.apiService.fetchUserStories(userId);
             
             // Display stories in grid
             const storiesGrid = document.getElementById('storiesGrid');
@@ -86,31 +84,31 @@ export const story = {
             return stories;
         } catch (error) {
             console.error('Error loading stories:', error);
-            uiHandler.showError(error.message || 'Failed to load stories');
+            window.uiHandler.showError(error.message || 'Failed to load stories');
             throw error;
         } finally {
-            uiHandler.hideLoading();
+            window.uiHandler.hideLoading();
         }
     },
 
     async view(storyId) {
         try {
-            uiHandler.showLoading();
-            const story = await apiService.getStoryById(storyId);
-            uiHandler.showStory(story);
+            window.uiHandler.showLoading();
+            const story = await window.apiService.getStoryById(storyId);
+            window.uiHandler.showStory(story);
             
             // Initialize quiz if available
-            if (story.metadata.quiz) {
-                quiz.init(story.metadata.quiz);
+            if (story.metadata.quiz && window.quiz) {
+                window.quiz.init(story.metadata.quiz);
             }
             
             return story;
         } catch (error) {
             console.error('Error viewing story:', error);
-            uiHandler.showError(error.message || 'Failed to load story');
+            window.uiHandler.showError(error.message || 'Failed to load story');
             throw error;
         } finally {
-            uiHandler.hideLoading();
+            window.uiHandler.hideLoading();
         }
     },
 
@@ -118,21 +116,26 @@ export const story = {
         if (!confirm('Are you sure you want to delete this story?')) return;
         
         try {
-            uiHandler.showLoading();
-            await apiService.deleteStory(storyId);
-            uiHandler.showSuccess('Story deleted successfully');
+            window.uiHandler.showLoading();
+            await window.apiService.deleteStory(storyId);
+            window.uiHandler.showSuccess('Story deleted successfully');
             
             // Refresh stories grid
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                await this.loadUserStories(session.user.id);
+            if (window.supabase) {
+                const { data: { session } } = await window.supabase.auth.getSession();
+                if (session) {
+                    await this.loadUserStories(session.user.id);
+                }
             }
         } catch (error) {
             console.error('Error deleting story:', error);
-            uiHandler.showError(error.message || 'Failed to delete story');
+            window.uiHandler.showError(error.message || 'Failed to delete story');
             throw error;
         } finally {
-            uiHandler.hideLoading();
+            window.uiHandler.hideLoading();
         }
     }
-}; 
+};
+
+// Make story globally available
+window.story = story; 

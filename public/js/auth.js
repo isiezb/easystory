@@ -1,16 +1,17 @@
-import { configPromise } from './config.js';
-import { uiHandler } from './uiHandler.js';
-import { supabasePromise } from './supabase.js';
-
-export const auth = {
+// Auth service
+const auth = {
     async init() {
-        const config = await configPromise;
-        this.supabase = await supabasePromise;
+        this.supabase = window.supabase;
+        if (!this.supabase) {
+            console.warn('Supabase not initialized. Auth services will not be available.');
+            return;
+        }
         this.setupAuthListeners();
         this.checkInitialAuth();
     },
 
     setupAuthListeners() {
+        if (!this.supabase) return;
         this.supabase.auth.onAuthStateChange((event, session) => {
             if (event === 'SIGNED_IN') {
                 this.handleAuthSuccess(session.user);
@@ -21,6 +22,7 @@ export const auth = {
     },
 
     async checkInitialAuth() {
+        if (!this.supabase) return;
         const { data: { session } } = await this.supabase.auth.getSession();
         if (session) {
             this.handleAuthSuccess(session.user);
@@ -28,6 +30,7 @@ export const auth = {
     },
 
     async signUp(email, password) {
+        if (!this.supabase) throw new Error('Supabase not initialized');
         try {
             const { data, error } = await this.supabase.auth.signUp({
                 email,
@@ -43,6 +46,7 @@ export const auth = {
     },
 
     async signIn(email, password) {
+        if (!this.supabase) throw new Error('Supabase not initialized');
         try {
             const { data, error } = await this.supabase.auth.signInWithPassword({
                 email,
@@ -58,6 +62,7 @@ export const auth = {
     },
 
     async signInWithProvider(provider) {
+        if (!this.supabase) throw new Error('Supabase not initialized');
         try {
             const { data, error } = await this.supabase.auth.signInWithOAuth({
                 provider
@@ -72,6 +77,7 @@ export const auth = {
     },
 
     async signOut() {
+        if (!this.supabase) throw new Error('Supabase not initialized');
         try {
             const { error } = await this.supabase.auth.signOut();
             if (error) throw error;
@@ -82,6 +88,7 @@ export const auth = {
     },
 
     async resetPassword(email) {
+        if (!this.supabase) throw new Error('Supabase not initialized');
         try {
             const { data, error } = await this.supabase.auth.resetPasswordForEmail(email);
             if (error) throw error;
@@ -93,6 +100,7 @@ export const auth = {
     },
 
     async updatePassword(newPassword) {
+        if (!this.supabase) throw new Error('Supabase not initialized');
         try {
             const { data, error } = await this.supabase.auth.updateUser({
                 password: newPassword
@@ -106,10 +114,17 @@ export const auth = {
     },
 
     handleAuthSuccess(user) {
-        uiHandler.updateUIForLoggedInUser(user);
+        if (window.uiHandler) {
+            window.uiHandler.updateUIForLoggedInUser(user);
+        }
     },
 
     handleAuthSignOut() {
-        uiHandler.updateUIForLoggedOutUser();
+        if (window.uiHandler) {
+            window.uiHandler.updateUIForLoggedOutUser();
+        }
     }
-}; 
+};
+
+// Make auth globally available
+window.auth = auth; 

@@ -81,9 +81,17 @@ class ApiService {
         // Get initial form values with proper defaults
         const subject = String(data.subject || "general").trim();
         const academicGrade = String(data.academic_grade || "5").trim();
-        const subjectSpec = String(data.subject_specification || "").trim();
-        const setting = String(data.setting || "a classroom").trim();
-        const mainCharacter = String(data.main_character || "a student").trim();
+        
+        // Handle potentially empty optional fields
+        const subjectSpecRaw = String(data.subject_specification || "").trim();
+        const settingRaw = String(data.setting || "").trim(); // Default to empty string if not provided
+        const mainCharacterRaw = String(data.main_character || "").trim(); // Default to empty string if not provided
+        
+        // Convert empty strings for optional fields to null for the API request
+        const subjectSpec = subjectSpecRaw === "" ? null : subjectSpecRaw;
+        const setting = settingRaw === "" ? null : settingRaw;
+        const mainCharacter = mainCharacterRaw === "" ? null : mainCharacterRaw;
+        
         const wordCount = data.word_count ? String(data.word_count) : "500";
         const language = data.language ? String(data.language) : "English"; // Capitalized
         
@@ -94,9 +102,9 @@ class ApiService {
             generate_summary: data.generate_summary
         });
         
-        // Format booleans based on checkbox values - null when undefined, true when 'on'
-        const generateVocabulary = data.generate_vocabulary === undefined ? null : (data.generate_vocabulary === 'on');
-        const generateSummary = data.generate_summary === undefined ? null : (data.generate_summary === 'on');
+        // Format booleans based on checkbox values - use FALSE for undefined/unchecked
+        const generateVocabulary = data.generate_vocabulary === 'on'; // true if 'on', false otherwise (including undefined)
+        const generateSummary = data.generate_summary === 'on'; // true if 'on', false otherwise (including undefined)
         
         // Create an array of request formats to try
         const requestFormats = [
@@ -122,8 +130,8 @@ class ApiService {
                 main_character: mainCharacter,
                 word_count: wordCount,
                 language: language,
-                generate_vocabulary: generateVocabulary === null ? undefined : String(generateVocabulary),
-                generate_summary: generateSummary === null ? undefined : String(generateSummary)
+                generate_vocabulary: generateVocabulary === false ? undefined : String(generateVocabulary),
+                generate_summary: generateSummary === false ? undefined : String(generateSummary)
             },
             
             // Format 3: Using 'on' directly for checkboxes

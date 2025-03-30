@@ -106,19 +106,15 @@ class ApiService {
         const generateVocabulary = data.generate_vocabulary === 'on'; // true if 'on', false otherwise (including undefined)
         const generateSummary = data.generate_summary === 'on'; // true if 'on', false otherwise (including undefined)
         
+        // Update for Format 1: Send grade as string, language as lowercase
+        const languageLower = language.toLowerCase();
+        
         // --- Prepare Format 1 (Standard with Numbers and Omitted Nulls) --- 
-        let academicGradeNum = null; 
-        if (academicGrade === 'K') { 
-            academicGradeNum = 0; // Or handle as string if server expects 'K'
-        } else if (academicGrade && !isNaN(parseInt(academicGrade, 10))) {
-            academicGradeNum = parseInt(academicGrade, 10);
-        }
-
         const format1 = {
             subject: subject,
-            academic_grade: academicGradeNum, // Send as number (or specific handling for K)
+            academic_grade: academicGrade, // Send as original STRING value (e.g., "K", "5")
             word_count: parseInt(wordCountStr, 10), // Send as number
-            language: language,
+            language: languageLower, // Send as lowercase string
             generate_vocabulary: generateVocabulary, // Send as boolean
             generate_summary: generateSummary      // Send as boolean
         };

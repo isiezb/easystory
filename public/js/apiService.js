@@ -1,5 +1,5 @@
 import { supabase } from './supabase.js';
-import { config } from './config.js';
+import { configPromise } from './config.js';
 
 class ApiError extends Error {
     constructor(message, status, details = null) {
@@ -12,12 +12,25 @@ class ApiError extends Error {
 
 class ApiService {
     constructor() {
-        this.serverUrl = config.server.url;
+        this.initialized = false;
+        this.initPromise = this.initialize();
+    }
+
+    async initialize() {
+        if (this.initialized) return;
+        
+        const config = await configPromise;
+        this.serverUrl = config.serverUrl;
         if (!this.serverUrl) {
             throw new Error('Missing SERVER_URL configuration');
         }
         // Ensure the URL doesn't end with a slash
         this.serverUrl = this.serverUrl.replace(/\/$/, '');
+        this.initialized = true;
+    }
+
+    async ensureInitialized() {
+        await this.initPromise;
     }
 
     async handleResponse(response) {
@@ -61,6 +74,8 @@ class ApiService {
 
     async generateStory(formData) {
         try {
+            await this.ensureInitialized();
+            
             const data = {
                 academic_grade: formData.academic_grade,
                 subject: formData.subject,
@@ -95,11 +110,13 @@ class ApiService {
     }
 
     async fetchUserStories(userId) {
+        await this.ensureInitialized();
         const response = await fetch(`${this.serverUrl}/user-stories/${userId}`);
         return this.handleResponse(response);
     }
 
     async deleteStory(storyId) {
+        await this.ensureInitialized();
         const response = await fetch(`${this.serverUrl}/stories/${storyId}`, {
             method: 'DELETE'
         });
@@ -107,6 +124,7 @@ class ApiService {
     }
 
     async getStoryById(storyId) {
+        await this.ensureInitialized();
         const response = await fetch(`${this.serverUrl}/stories/${storyId}`);
         return this.handleResponse(response);
     }

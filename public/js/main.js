@@ -37,6 +37,9 @@ form.addEventListener('submit', async (e) => {
     
     try {
         console.log('Form submitted');
+        console.log('Server URL:', config.serverUrl);
+        console.log('Auth token:', await apiService.getAuthToken());
+        
         const formData = {
             subject: document.getElementById('subject').value,
             grade: document.getElementById('academicGrade').value,

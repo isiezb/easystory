@@ -571,37 +571,148 @@ class ApiService {
     
     // Mock data for development and fallback
     getMockStoryData(data) {
-        // Use the values from the requestData for consistency
-        const subject = data.subject || 'general knowledge';
-        const grade = data.academic_grade || '5';
-        const character = data.main_character || 'a curious student';
-        const setting = data.setting || 'a classroom';
+        console.log('Generating mock story data');
         
-        // Create a realistic server response
-        return {
-            success: true,
-            data: {
-                story: {
-                    title: `The ${subject.charAt(0).toUpperCase() + subject.slice(1)} Adventure - Grade ${grade}`,
-                    content: `Once upon a time, in ${setting}, ${character} embarked on a journey to learn about ${subject}.\n\nThrough perseverance and dedication, they discovered amazing insights about ${subject} and grew their knowledge.\n\nThe teacher was impressed by ${character}'s dedication and encouraged them to share their discoveries with the class.\n\nThis is a simulated story generated when the server is unavailable.`,
-                    summary: data.generate_summary === "true" ? `A brief story about a ${character} learning about ${subject} in ${setting}.` : null,
-                    vocabulary: data.generate_vocabulary === "true" ? [
+        try {
+            // Extract data safely from any format of input
+            let subject, grade, character, setting, generateVocab, generateSummary;
+            
+            // Check if data is in the complex format with payload
+            if (data && data.payload) {
+                // Format 0: Extract from camelCase payload structure
+                subject = data.payload.subject || 'general knowledge';
+                grade = data.payload.academicGrade || '5';
+                character = data.payload.mainCharacter || 'a curious student';
+                setting = data.payload.setting || 'a classroom';
+                generateVocab = !!data.payload.generateVocabulary;
+                generateSummary = !!data.payload.generateSummary;
+            } else if (data) {
+                // Standard format: Extract from snake_case structure
+                subject = data.subject || 'general knowledge';
+                grade = data.academic_grade || '5';
+                character = data.main_character || 'a curious student';
+                setting = data.setting || 'a classroom';
+                
+                // Handle various boolean formats
+                generateVocab = data.generate_vocabulary === true || 
+                              data.generate_vocabulary === 'true' || 
+                              data.generate_vocabulary === 'on';
+                              
+                generateSummary = data.generate_summary === true || 
+                                data.generate_summary === 'true' || 
+                                data.generate_summary === 'on';
+            } else {
+                // Default values if data is empty
+                subject = 'general knowledge';
+                grade = '5';
+                character = 'a curious student';
+                setting = 'a classroom';
+                generateVocab = false;
+                generateSummary = false;
+            }
+            
+            // Ensure subject exists and is properly formatted
+            subject = subject || 'general knowledge';
+            
+            // Create a rich story with varied content based on the subject
+            const generateContent = () => {
+                const introTemplates = [
+                    `Once upon a time, in ${setting}, ${character} embarked on a journey to learn about ${subject}.`,
+                    `In a fascinating ${setting}, ${character} discovered the wonders of ${subject}.`,
+                    `${character} never expected to fall in love with ${subject} until that day in ${setting}.`
+                ];
+                
+                const middleTemplates = [
+                    `Through perseverance and dedication, they discovered amazing insights about ${subject} and grew their knowledge.`,
+                    `By asking thoughtful questions and conducting experiments, they began to understand the fascinating world of ${subject}.`,
+                    `With each new concept they learned, their excitement about ${subject} grew stronger.`
+                ];
+                
+                const endingTemplates = [
+                    `The teacher was impressed by ${character}'s dedication and encouraged them to share their discoveries with the class.`,
+                    `Soon, everyone in ${setting} was talking about the incredible discoveries ${character} had made about ${subject}.`,
+                    `This journey through ${subject} changed how ${character} saw the world forever.`
+                ];
+                
+                // Pick one template from each section randomly
+                const randomPick = arr => arr[Math.floor(Math.random() * arr.length)];
+                
+                return `${randomPick(introTemplates)}\n\n${randomPick(middleTemplates)}\n\n${randomPick(endingTemplates)}\n\n(This is a mock story generated when the server is unavailable.)`;
+            };
+            
+            // Generate vocabulary that matches the subject
+            const generateVocabularyList = () => {
+                if (!generateVocab) return null;
+                
+                const vocabularies = {
+                    'biology': [
+                        { word: "cell", definition: "The smallest structural and functional unit of an organism" },
+                        { word: "ecosystem", definition: "A biological community of interacting organisms and their physical environment" },
+                        { word: "photosynthesis", definition: "The process by which green plants use sunlight to synthesize foods from carbon dioxide and water" }
+                    ],
+                    'mathematics': [
+                        { word: "equation", definition: "A statement that the values of two mathematical expressions are equal" },
+                        { word: "fraction", definition: "A numerical quantity that is not a whole number" },
+                        { word: "geometry", definition: "The branch of mathematics concerned with the properties of space and shapes" }
+                    ],
+                    'history': [
+                        { word: "artifact", definition: "An object made by a human being, typically of cultural or historical interest" },
+                        { word: "civilization", definition: "The stage of human social and cultural development considered most advanced" },
+                        { word: "revolution", definition: "A forcible overthrow of a government or social order in favor of a new system" }
+                    ],
+                    'default': [
                         { word: "perseverance", definition: "Persistence in doing something despite difficulty or delay in achieving success" },
                         { word: "dedication", definition: "The quality of being dedicated or committed to a task or purpose" },
                         { word: "discovery", definition: "The action or process of discovering or being discovered" }
-                    ] : null,
-                    learning_objectives: [
-                        `Understanding key concepts in ${subject}`,
-                        `Developing critical thinking about ${subject}`,
-                        `Applying knowledge of ${subject} in real-world scenarios`
                     ]
+                };
+                
+                // Return subject-specific vocabulary if available, otherwise default
+                return vocabularies[subject.toLowerCase()] || vocabularies['default'];
+            };
+            
+            // Create a realistic server response
+            const mockResponse = {
+                success: true,
+                data: {
+                    story: {
+                        title: `The ${subject.charAt(0).toUpperCase() + subject.slice(1)} Adventure - Grade ${grade}`,
+                        content: generateContent(),
+                        summary: generateSummary ? `A story about ${character} learning about ${subject} in ${setting} and making exciting discoveries.` : null,
+                        vocabulary: generateVocabularyList(),
+                        learning_objectives: [
+                            `Understanding key concepts in ${subject}`,
+                            `Developing critical thinking about ${subject}`,
+                            `Applying knowledge of ${subject} in real-world scenarios`
+                        ]
+                    }
+                },
+                meta: {
+                    processing_time: "0.8s",
+                    generated_at: new Date().toISOString(),
+                    source: "mock-data-generator"
                 }
-            },
-            meta: {
-                processing_time: "0.8s",
-                generated_at: new Date().toISOString()
-            }
-        };
+            };
+            
+            console.log('Generated mock response:', mockResponse);
+            return mockResponse;
+        } catch (error) {
+            console.error('Error in mock data generation:', error);
+            
+            // Super simple fallback if something goes wrong
+            return {
+                success: true,
+                data: {
+                    story: {
+                        title: "Learning Adventure",
+                        content: "Once upon a time, a student embarked on a learning journey. Through dedication and curiosity, they discovered amazing new knowledge. Their teacher was impressed by their progress.\n\n(This is a simple mock story generated as a fallback.)",
+                        summary: null,
+                        vocabulary: null,
+                        learning_objectives: ["Learning through exploration", "Developing critical thinking", "Applying knowledge"]
+                    }
+                }
+            };
+        }
     }
 
     async getAuthToken() {

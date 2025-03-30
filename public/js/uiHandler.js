@@ -250,19 +250,15 @@ export const uiHandler = {
                         type = 'warning';
                         break;
                     default:
-                        message = error.message;
-                }
-                
-                if (error.details) {
-                    message += `: ${error.details}`;
+                        message = error.message || 'API request failed';
                 }
             } else {
-                message = error.message;
+                message = error.message || 'An unexpected error occurred';
             }
         } else if (typeof error === 'string') {
             message = error;
         }
-
+        
         this.showToast(message, type);
     },
 

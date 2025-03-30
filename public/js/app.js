@@ -94,6 +94,11 @@ async function handleStoryFormSubmit(e) {
         const response = await window.apiService.generateStory(requestData);
         console.log('Received response:', response);
         
+        // Handle empty or invalid response
+        if (!response) {
+            throw new Error('Empty response from server');
+        }
+        
         // Display story
         if (window.uiHandler && window.uiHandler.displayStory) {
             window.uiHandler.displayStory(response);
@@ -114,7 +119,7 @@ async function handleStoryFormSubmit(e) {
                             .from('stories')
                             .insert({
                                 user_id: session.user.id,
-                                title: `${data.subject} Story - Grade ${requestData.academic_grade}`,
+                                title: response.title || `${data.subject} Story - Grade ${requestData.academic_grade}`,
                                 content: response.content,
                                 metadata: {
                                     grade: requestData.academic_grade,
@@ -139,7 +144,29 @@ async function handleStoryFormSubmit(e) {
         }
     } catch (error) {
         console.error('Error generating story:', error);
-        showToast(error.message || 'Failed to generate story', 'error');
+        
+        // Get a user-friendly error message
+        let errorMessage = 'Failed to generate story';
+        if (error.message) {
+            errorMessage = error.message;
+        }
+        
+        // Check if this is an ApiError with details
+        if (error.name === 'ApiError') {
+            if (error.status === 500) {
+                errorMessage = 'Server error: The story generation service is currently unavailable. Please try again later.';
+            } else if (error.status === 400) {
+                errorMessage = 'Invalid request: Please check your inputs and try again.';
+            } else if (error.status === 429) {
+                errorMessage = 'Too many requests: Please wait a moment before trying again.';
+            }
+            
+            if (error.details) {
+                console.error('Error details:', error.details);
+            }
+        }
+        
+        showToast(errorMessage, 'error');
     } finally {
         // Hide loading state
         if (window.uiHandler && window.uiHandler.hideLoading) {

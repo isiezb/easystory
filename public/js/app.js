@@ -109,33 +109,41 @@ async function handleStoryFormSubmit(e) {
             try {
                 console.log('User logged in, attempting to save story...');
                 
+                // Ensure we have a valid response object to work with
+                if (!response || typeof response !== 'object') {
+                    throw new Error('Invalid API response received for saving.');
+                }
+
                 // Construct the story object to save based *primarily* on the API response
-                // Use fallbacks cautiously if response fields might be missing
+                // Use fallbacks cautiously only if response fields might genuinely be missing
                 const storyToSave = {
                     user_id: window.auth.getUser().id,
-                    title: response.title || `Generated Story (${new Date().toLocaleDateString()})`, // Use response title or a generic fallback
-                    content: response.content || 'No content generated.', // Use response content
+                    // Prefer response title, fallback to a generic one
+                    title: response.title || `Generated Story (${new Date().toLocaleDateString()})`,
+                    // Prefer response content, fallback if absolutely necessary
+                    content: response.content || 'No content generated.',
                     metadata: {
-                        // Use response fields if available, otherwise null or defaults
-                        grade: response.academic_grade || null, 
-                        subject: response.subject || null,
-                        word_count: response.word_count || null,
-                        language: response.language || null,
-                        setting: response.setting || null,
-                        main_character: response.main_character || null,
-                        // Ensure these boolean flags exist on the response object before accessing
-                        generate_vocabulary: response.hasOwnProperty('generate_vocabulary') ? response.generate_vocabulary : null,
-                        generate_summary: response.hasOwnProperty('generate_summary') ? response.generate_summary : null,
+                        // Extract metadata primarily from response, falling back to form `data` only if necessary
+                        grade: response.academic_grade || data.academic_grade || null,
+                        subject: response.subject || data.subject || null,
+                        word_count: response.word_count || parseInt(data.word_count, 10) || null,
+                        language: response.language || data.language || null,
+                        setting: response.setting || data.setting || null,
+                        main_character: response.main_character || data.main_character || null,
                         // Add fields present in the response, like vocabulary/summary/objectives
-                        vocabulary: response.vocabulary || null,
-                        summary: response.summary || null,
-                        learning_objectives: response.learning_objectives || null,
-                        // Do NOT include 'quiz' as it's likely removed
+                        // Use hasOwnProperty for safety if response structure is uncertain
+                        vocabulary: response.hasOwnProperty('vocabulary') ? response.vocabulary : null,
+                        summary: response.hasOwnProperty('summary') ? response.summary : null,
+                        learning_objectives: response.hasOwnProperty('learning_objectives') ? response.learning_objectives : null,
+                        // Ensure boolean flags are handled correctly, preferring response if available
+                        generate_vocabulary: response.hasOwnProperty('generate_vocabulary') ? response.generate_vocabulary : (data.generate_vocabulary === 'on'),
+                        generate_summary: response.hasOwnProperty('generate_summary') ? response.generate_summary : (data.generate_summary === 'on')
+                        // Do NOT include 'quiz' as it's removed
                     },
-                    created_at: new Date().toISOString() 
+                    created_at: new Date().toISOString()
                 };
 
-                // Remove null/undefined values from metadata before saving if needed by Supabase
+                // Clean metadata: Remove null/undefined values before saving
                 Object.keys(storyToSave.metadata).forEach(key => {
                     if (storyToSave.metadata[key] === null || storyToSave.metadata[key] === undefined) {
                         delete storyToSave.metadata[key];
@@ -158,7 +166,7 @@ async function handleStoryFormSubmit(e) {
                 }
             } catch (saveCatchError) {
                 console.error('Unexpected error during story save process:', saveCatchError);
-                showToast(`Error saving story: ${saveCatchError.message}`, 'error');
+                showToast(`Error saving story: ${saveCatchError.message || 'Unknown error'}`, 'error');
             }
         } else {
             showToast('Story generated! Log in to save it.', 'success');
@@ -434,8 +442,10 @@ async function loadUserStories() {
         console.error('Failed to load stories:', error);
         storiesGrid.innerHTML = '<p>Could not load stories.</p>'; // Clear loading state
         // Provide more detail in the error message
-        const errorMsg = error instanceof ApiError ? `${error.message} (Status: ${error.status})` : error.message;
-        showToast(`Failed to load stories: ${errorMsg || 'Unknown error'}`, 'error');
+        const errorMsg = error instanceof ApiError 
+            ? `${error.message} (Status: ${error.status})` 
+            : (error.message || 'Unknown error');
+        showToast(`Failed to load stories: ${errorMsg}`, 'error');
         myStoriesSection.style.display = 'none'; // Optionally hide section on error
     }
 }

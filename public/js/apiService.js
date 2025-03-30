@@ -87,12 +87,12 @@ class ApiService {
         const settingRaw = String(data.setting || "").trim(); // Default to empty string if not provided
         const mainCharacterRaw = String(data.main_character || "").trim(); // Default to empty string if not provided
         
-        // Convert empty strings for optional fields to null for the API request
-        const subjectSpec = subjectSpecRaw === "" ? null : subjectSpecRaw;
-        const setting = settingRaw === "" ? null : settingRaw;
-        const mainCharacter = mainCharacterRaw === "" ? null : mainCharacterRaw;
+        // Convert empty strings for optional fields to null for potential use later
+        const subjectSpecOrNull = subjectSpecRaw === "" ? null : subjectSpecRaw;
+        const settingOrNull = settingRaw === "" ? null : settingRaw;
+        const mainCharacterOrNull = mainCharacterRaw === "" ? null : mainCharacterRaw;
         
-        const wordCount = data.word_count ? String(data.word_count) : "500";
+        const wordCountStr = data.word_count ? String(data.word_count) : "500";
         const language = data.language ? String(data.language) : "English"; // Capitalized
         
         // IMPORTANT: Checkbox values are undefined when not checked, 'on' when checked
@@ -106,45 +106,64 @@ class ApiService {
         const generateVocabulary = data.generate_vocabulary === 'on'; // true if 'on', false otherwise (including undefined)
         const generateSummary = data.generate_summary === 'on'; // true if 'on', false otherwise (including undefined)
         
+        // --- Prepare Format 1 (Standard with Numbers and Omitted Nulls) --- 
+        let academicGradeNum = null; 
+        if (academicGrade === 'K') { 
+            academicGradeNum = 0; // Or handle as string if server expects 'K'
+        } else if (academicGrade && !isNaN(parseInt(academicGrade, 10))) {
+            academicGradeNum = parseInt(academicGrade, 10);
+        }
+
+        const format1 = {
+            subject: subject,
+            academic_grade: academicGradeNum, // Send as number (or specific handling for K)
+            word_count: parseInt(wordCountStr, 10), // Send as number
+            language: language,
+            generate_vocabulary: generateVocabulary, // Send as boolean
+            generate_summary: generateSummary      // Send as boolean
+        };
+        // Conditionally add optional fields ONLY if they have a non-null value
+        if (subjectSpecOrNull !== null) {
+            format1.subject_specification = subjectSpecOrNull;
+        }
+        if (settingOrNull !== null) {
+            format1.setting = settingOrNull;
+        }
+        if (mainCharacterOrNull !== null) {
+            format1.main_character = mainCharacterOrNull;
+        }
+        // --- End Format 1 --- 
+
         // Create an array of request formats to try
         const requestFormats = [
-            // Format 1: Standard format with explicit boolean flags as literal boolean values
-            {
-                subject: subject,
-                academic_grade: academicGrade,
-                subject_specification: subjectSpec,
-                setting: setting,
-                main_character: mainCharacter,
-                word_count: parseInt(wordCount, 10),
-                language: language,
-                generate_vocabulary: generateVocabulary,
-                generate_summary: generateSummary
-            },
+            // Format 1: Standard format with explicit numbers, booleans, and OMITTED nulls
+            format1,
             
-            // Format 2: String boolean values
+            // Format 2: String boolean values, null optionals
             {
                 subject: subject,
-                academic_grade: academicGrade,
-                subject_specification: subjectSpec,
-                setting: setting,
-                main_character: mainCharacter,
-                word_count: wordCount,
+                academic_grade: academicGrade, // String grade
+                subject_specification: subjectSpecOrNull, // Send null if empty
+                setting: settingOrNull, // Send null if empty
+                main_character: mainCharacterOrNull, // Send null if empty
+                word_count: wordCountStr, // String count
                 language: language,
+                // Send undefined for missing booleans to omit key
                 generate_vocabulary: generateVocabulary === false ? undefined : String(generateVocabulary),
                 generate_summary: generateSummary === false ? undefined : String(generateSummary)
             },
             
-            // Format 3: Using 'on' directly for checkboxes
+            // Format 3: Using 'on' directly for checkboxes, null optionals
             {
                 subject: subject,
-                academic_grade: academicGrade,
-                subject_specification: subjectSpec,
-                setting: setting,
-                main_character: mainCharacter,
-                word_count: wordCount,
+                academic_grade: academicGrade, // String grade
+                subject_specification: subjectSpecOrNull, // Send null if empty
+                setting: settingOrNull, // Send null if empty
+                main_character: mainCharacterOrNull, // Send null if empty
+                word_count: wordCountStr, // String count
                 language: language,
-                generate_vocabulary: data.generate_vocabulary,
-                generate_summary: data.generate_summary
+                generate_vocabulary: data.generate_vocabulary, // Send 'on' or undefined
+                generate_summary: data.generate_summary // Send 'on' or undefined
             },
             
             // Format 4: Raw form data

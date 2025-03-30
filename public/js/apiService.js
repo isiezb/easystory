@@ -424,6 +424,38 @@ class ApiService {
                             `Understanding key concepts in ${subject}`,
                             `Developing critical thinking about ${subject}`,
                             `Applying knowledge of ${subject} in real-world scenarios`
+                        ],
+                        quiz: [
+                            {
+                                question: `What is the main topic of this story?`,
+                                options: [
+                                    `${subject}`,
+                                    `Mathematics`,
+                                    `Geography`,
+                                    `Literature`
+                                ],
+                                correct_answer: 0
+                            },
+                            {
+                                question: `Who is the main character in the story?`,
+                                options: [
+                                    `A teacher`,
+                                    `${character}`,
+                                    `A scientist`,
+                                    `A group of students`
+                                ],
+                                correct_answer: 1
+                            },
+                            {
+                                question: `Where does the story take place?`,
+                                options: [
+                                    `In a laboratory`,
+                                    `In a museum`,
+                                    `${setting}`,
+                                    `In a library`
+                                ],
+                                correct_answer: 2
+                            }
                         ]
                     }
                 },
@@ -448,7 +480,29 @@ class ApiService {
                         content: "Once upon a time, a student embarked on a learning journey. Through dedication and curiosity, they discovered amazing new knowledge. Their teacher was impressed by their progress.\n\n(This is a simple mock story generated as a fallback.)",
                         summary: null,
                         vocabulary: null,
-                        learning_objectives: ["Learning through exploration", "Developing critical thinking", "Applying knowledge"]
+                        learning_objectives: ["Learning through exploration", "Developing critical thinking", "Applying knowledge"],
+                        quiz: [
+                            {
+                                question: "What did the student discover?",
+                                options: [
+                                    "New friends",
+                                    "A secret passage",
+                                    "Amazing new knowledge",
+                                    "A scientific formula"
+                                ],
+                                correct_answer: 2
+                            },
+                            {
+                                question: "Who was impressed by the student's progress?",
+                                options: [
+                                    "The principal",
+                                    "Their teacher",
+                                    "Their parents",
+                                    "Other students"
+                                ],
+                                correct_answer: 1
+                            }
+                        ]
                     }
                 }
             };

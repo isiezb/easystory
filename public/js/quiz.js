@@ -1,4 +1,5 @@
-export const quiz = {
+// Quiz functionality
+const quiz = {
     currentQuiz: null,
     currentQuestionIndex: 0,
     score: 0,
@@ -81,4 +82,7 @@ export const quiz = {
             this.init(this.currentQuiz);
         });
     }
-}; 
+};
+
+// Make quiz globally available
+window.quiz = quiz; 

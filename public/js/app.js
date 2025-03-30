@@ -337,6 +337,28 @@ function displayStory(storyData) {
     // Set HTML and scroll to story
     storyOutput.innerHTML = storyHTML;
     storyOutput.scrollIntoView({ behavior: 'smooth' });
+    
+    // Initialize quiz if available
+    if (storyContent.quiz) {
+        console.log('Quiz data available, initializing quiz:', storyContent.quiz);
+        
+        // Create quiz container if not exists
+        let quizContainer = document.getElementById('quizContainer');
+        if (!quizContainer) {
+            quizContainer = document.createElement('div');
+            quizContainer.id = 'quizContainer';
+            quizContainer.className = 'quiz-container';
+            storyOutput.appendChild(quizContainer);
+        }
+        
+        // Check if window.quiz is available
+        if (window.quiz && typeof window.quiz.init === 'function') {
+            window.quiz.init(storyContent.quiz);
+        } else {
+            console.warn('Quiz module not available, cannot initialize quiz');
+            quizContainer.innerHTML = '<div class="quiz-error">Quiz functionality is currently unavailable.</div>';
+        }
+    }
 }
 
 // Toast notification

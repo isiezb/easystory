@@ -140,53 +140,55 @@ CREATE TABLE IF NOT EXISTS auth.sso_domains (
 );
 
 -- Create stories table with user_id
-CREATE TABLE stories (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
-    academic_grade TEXT NOT NULL,
-    subject TEXT NOT NULL,
+CREATE TABLE IF NOT EXISTS stories (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id TEXT NOT NULL,
+    is_anonymous BOOLEAN DEFAULT FALSE,
+    story_title TEXT NOT NULL,
+    story_text TEXT NOT NULL,
+    subject TEXT,
     subject_specification TEXT,
+    academic_grade TEXT,
     setting TEXT,
     main_character TEXT,
-    word_count INTEGER NOT NULL,
-    language TEXT NOT NULL,
-    story_text TEXT NOT NULL,
-    story_title TEXT NOT NULL,
-    learning_objectives TEXT[] NOT NULL,
-    quiz_questions JSONB NOT NULL,
+    word_count INTEGER,
+    language TEXT,
+    learning_objectives JSONB,
+    quiz_questions JSONB,
     vocabulary_list JSONB,
     story_summary TEXT,
     is_continuation BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
--- Create indexes for better query performance
-CREATE INDEX IF NOT EXISTS idx_stories_user_id ON stories(user_id);
-CREATE INDEX IF NOT EXISTS idx_stories_created_at ON stories(created_at);
-CREATE INDEX IF NOT EXISTS idx_stories_subject ON stories(subject);
-CREATE INDEX IF NOT EXISTS idx_stories_academic_grade ON stories(academic_grade);
+-- For existing tables, add the is_anonymous column if it doesn't exist
+ALTER TABLE stories ADD COLUMN IF NOT EXISTS is_anonymous BOOLEAN DEFAULT FALSE;
 
--- Enable RLS
+-- Create indexes for better query performance
+CREATE INDEX IF NOT EXISTS stories_user_id_idx ON stories(user_id);
+CREATE INDEX IF NOT EXISTS stories_is_anonymous_idx ON stories(is_anonymous);
+CREATE INDEX IF NOT EXISTS stories_created_at_idx ON stories(created_at DESC);
+
+-- Enable Row Level Security on the stories table
 ALTER TABLE stories ENABLE ROW LEVEL SECURITY;
 
--- Create RLS policies
-CREATE POLICY "Users can view their own stories"
-    ON stories FOR SELECT
-    USING (auth.uid() = user_id);
+-- RLS Policies to control access to stories
+CREATE POLICY "Users can view their own stories" 
+    ON stories FOR SELECT 
+    USING (user_id = auth.uid() OR (is_anonymous = true AND user_id = current_setting('request.headers')::json->>'x-anonymous-id'));
 
-CREATE POLICY "Users can insert their own stories"
-    ON stories FOR INSERT
-    WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can insert their own stories" 
+    ON stories FOR INSERT 
+    WITH CHECK (user_id = auth.uid() OR (is_anonymous = true AND user_id = current_setting('request.headers')::json->>'x-anonymous-id'));
 
-CREATE POLICY "Users can update their own stories"
-    ON stories FOR UPDATE
-    USING (auth.uid() = user_id)
-    WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can update their own stories" 
+    ON stories FOR UPDATE 
+    USING (user_id = auth.uid());
 
-CREATE POLICY "Users can delete their own stories"
-    ON stories FOR DELETE
-    USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own stories" 
+    ON stories FOR DELETE 
+    USING (user_id = auth.uid() OR (is_anonymous = true AND user_id = current_setting('request.headers')::json->>'x-anonymous-id'));
 
 -- Drop existing trigger and function if they exist
 DROP TRIGGER IF EXISTS on_user_deletion ON auth.users;
@@ -226,4 +228,9 @@ COMMENT ON COLUMN stories.vocabulary_list IS 'JSON array of vocabulary words and
 COMMENT ON COLUMN stories.story_summary IS 'Brief summary of the story''s key theme and main points';
 COMMENT ON COLUMN stories.is_continuation IS 'Whether this story is a continuation of a previous story';
 COMMENT ON COLUMN stories.created_at IS 'Timestamp when the story was created';
-COMMENT ON COLUMN stories.updated_at IS 'Timestamp when the story was last updated'; 
+COMMENT ON COLUMN stories.updated_at IS 'Timestamp when the story was last updated';
+
+-- Set up storage for story related files if needed
+-- INSERT INTO storage.buckets (id, name, public) VALUES ('story_assets', 'Story Assets', true);
+-- CREATE POLICY "Public Access" ON storage.objects FOR SELECT USING (bucket_id = 'story_assets');
+-- CREATE POLICY "Authenticated users can upload" ON storage.objects FOR INSERT WITH CHECK (bucket_id = 'story_assets' AND auth.role() = 'authenticated'); 

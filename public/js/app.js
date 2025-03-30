@@ -1,11 +1,172 @@
 // DOM Elements
 const storyForm = document.getElementById('storyForm');
 const storyOutput = document.getElementById('storyOutput');
-const loadingOverlay = document.querySelector('.loading-overlay');
+const loadingOverlay = document.getElementById('loadingOverlay');
 const toastContainer = document.getElementById('toastContainer');
 const themeToggle = document.getElementById('themeToggle');
 const otherSubjectGroup = document.getElementById('otherSubjectGroup');
 const subjectSelect = document.getElementById('subject');
+
+// Create a global reference to generateStory so the story-form component can access it
+window.generateStory = async function(formData) {
+    console.log('Generating story with form data:', formData);
+    
+    try {
+        if (!window.apiService) {
+            throw new Error('API service not initialized');
+        }
+        
+        // Show loading overlay via the event system
+        window.showLoading('Creating your story...');
+        
+        console.log('Sending request to generate story...');
+        
+        // Ensure word_count is a number, not a string
+        formData.word_count = parseInt(formData.word_count, 10);
+        
+        const response = await window.apiService.generateStory(formData);
+        console.log('Received response:', response);
+        
+        if (!response) {
+            throw new Error('Empty response received from server');
+        }
+        
+        // Display the story
+        displayStory(response);
+        
+        // Success message
+        window.showToast('Story generated successfully!', 'success');
+        
+        // Scroll to the story output after a small delay to ensure it's rendered
+        setTimeout(() => {
+            if (storyOutput) {
+                window.scrollTo({
+                    top: storyOutput.offsetTop - 20,
+                    behavior: 'smooth'
+                });
+            }
+        }, 300);
+        
+        // Check if Supabase is actually available before attempting save
+        const isSupabaseAvailable = window.supabase && 
+                                  window.supabase.auth && 
+                                  typeof window.supabase.auth.getSession === 'function' &&
+                                  !window.supabase._isMockClient;
+        
+        // Save the story regardless of user authentication status
+        if (isSupabaseAvailable) {
+            try {
+                // Try to get authenticated user first
+                let userId = null;
+                let isAnonymous = true;
+                
+                if (window.auth && typeof window.auth.getUser === 'function') {
+                    const user = window.auth.getUser();
+                    if (user && user.id) {
+                        userId = user.id;
+                        isAnonymous = false;
+                        console.log('Saving story for authenticated user:', userId);
+                    }
+                }
+                
+                // If no authenticated user, use anonymous ID
+                if (!userId) {
+                    userId = getAnonymousUserId();
+                    console.log('Saving story for anonymous user:', userId);
+                }
+                
+                // Ensure we have a valid response object to work with
+                if (!response || typeof response !== 'object') {
+                    throw new Error('Invalid API response received for saving.');
+                }
+
+                // Construct the story object to save
+                const storyToSave = {
+                    user_id: userId,
+                    is_anonymous: isAnonymous,
+                    // Prefer response title, fallback to a generic one
+                    title: response.title || `Generated Story (${new Date().toLocaleDateString()})`,
+                    // Prefer response content, fallback if absolutely necessary
+                    content: response.content || 'No content generated.',
+                    metadata: {
+                        // Extract metadata primarily from response, falling back to form `data` only if necessary
+                        grade: response.academic_grade || formData.academic_grade || null,
+                        subject: response.subject || formData.subject || null,
+                        word_count: response.word_count || parseInt(formData.word_count, 10) || null,
+                        language: response.language || formData.language || null,
+                        setting: response.setting || formData.setting || null,
+                        main_character: response.main_character || formData.main_character || null,
+                        // Add fields present in the response, like vocabulary/summary/objectives
+                        // Use hasOwnProperty for safety if response structure is uncertain
+                        vocabulary: response.hasOwnProperty('vocabulary') ? response.vocabulary : null,
+                        summary: response.hasOwnProperty('summary') ? response.summary : null,
+                        learning_objectives: response.hasOwnProperty('learning_objectives') ? response.learning_objectives : null,
+                        // Ensure boolean flags are handled correctly, preferring response if available
+                        generate_vocabulary: response.hasOwnProperty('generate_vocabulary') ? response.generate_vocabulary : formData.generate_vocabulary,
+                        generate_summary: response.hasOwnProperty('generate_summary') ? response.generate_summary : formData.generate_summary
+                    },
+                    created_at: new Date().toISOString()
+                };
+
+                // Clean metadata: Remove null/undefined values before saving
+                Object.keys(storyToSave.metadata).forEach(key => {
+                    if (storyToSave.metadata[key] === null || storyToSave.metadata[key] === undefined) {
+                        delete storyToSave.metadata[key];
+                    }
+                });
+
+                console.log('Saving story object:', JSON.stringify(storyToSave, null, 2));
+                
+                const { error: saveError } = await window.supabase
+                    .from('stories')
+                    .insert([storyToSave]);
+
+                if (saveError) {
+                    console.error('Error saving story:', saveError);
+                    window.showToast(`Failed to save story: ${saveError.message}`, 'error');
+                } else {
+                    console.log('Story saved successfully');
+                    window.showToast('Story generated and saved!', 'success');
+                    // Only refresh stories list for logged-in users
+                    if (!isAnonymous) {
+                        loadUserStories();
+                    }
+                }
+            } catch (saveCatchError) {
+                console.error('Unexpected error during story save process:', saveCatchError);
+                window.showToast(`Error saving story: ${saveCatchError.message || 'Unknown error'}`, 'error');
+            }
+        } else {
+            console.log('Supabase unavailable, skipping database save');
+        }
+        
+        return response;
+    } catch (error) {
+        console.error('Error generating story:', error);
+        let errorMessage = 'Failed to generate story.';
+        if (error.message) {
+            errorMessage = error.message; 
+        }
+        window.showToast(errorMessage, 'error', 10000);
+        
+        // Try with mock data as a last resort
+        try {
+            if (window.apiService && typeof window.apiService.getMockStoryData === 'function') {
+                window.showToast('Showing mock data for demonstration purposes', 'info');
+                const mockResponse = window.apiService.getMockStoryData(formData);
+                displayStory(mockResponse);
+                return mockResponse;
+            }
+        } catch (mockError) {
+            console.error('Mock data display also failed:', mockError);
+        }
+        
+        throw error;
+    } finally {
+        // Hide loading overlay
+        window.hideLoading();
+    }
+}
 
 // Initialize theme
 function initTheme() {
@@ -60,6 +221,16 @@ function setupEventListeners() {
             }
         });
     }
+
+    // Make showing login modal available globally
+    window.showLoginModal = function() {
+        const authModal = document.getElementById('authModal');
+        if (authModal) {
+            authModal.classList.add('show');
+            document.getElementById('authTitle').textContent = 'Login';
+            document.getElementById('authSubmit').textContent = 'Login';
+        }
+    };
 }
 
 // Get or create anonymous user ID
@@ -347,37 +518,36 @@ async function handleStoryFormSubmit(e) {
     }
 }
 
-// Show loading overlay (Direct Style Manipulation)
-function showLoadingOverlay() {
-    console.log("Attempting to show loading overlay (Direct Style)...");
-    if (loadingOverlay) {
-        console.log("Loading overlay element found.");
-        loadingOverlay.style.display = 'flex';
-        // Use setTimeout to ensure display:flex applies before opacity transition
-        setTimeout(() => {
-            loadingOverlay.style.opacity = '1';
-            console.log("Set loading overlay display: flex, opacity: 1");
-        }, 10); // Small delay
-        window.scrollTo({ top: 0, behavior: 'auto' });
-    } else {
-        console.error("Loading overlay element NOT found in the DOM!");
-    }
+// Show toast message
+function showToast(message, type = 'info', duration = 5000) {
+    const event = new CustomEvent('show-toast', {
+        detail: { message, type, duration },
+        bubbles: true,
+        composed: true
+    });
+    document.dispatchEvent(event);
+    console.log(`Toast: ${message} (${type})`);
 }
 
-// Hide loading overlay (Direct Style Manipulation)
+// Show loading overlay
+function showLoadingOverlay(message = 'Loading...') {
+    const event = new CustomEvent('show-loading', {
+        detail: { message },
+        bubbles: true,
+        composed: true
+    });
+    document.dispatchEvent(event);
+    console.log(`Loading: ${message}`);
+}
+
+// Hide loading overlay
 function hideLoadingOverlay() {
-    console.log("Attempting to hide loading overlay (Direct Style)...");
-    if (loadingOverlay) {
-        console.log("Loading overlay element found.");
-        loadingOverlay.style.opacity = '0';
-        // Wait for opacity transition to finish before hiding completely
-        setTimeout(() => {
-            loadingOverlay.style.display = 'none';
-            console.log("Set loading overlay opacity: 0, display: none");
-        }, 200); // Matches the transition duration (0.2s)
-    } else {
-        console.error("Loading overlay element NOT found in the DOM!");
-    }
+    const event = new CustomEvent('hide-loading', {
+        bubbles: true,
+        composed: true
+    });
+    document.dispatchEvent(event);
+    console.log('Hide loading');
 }
 
 // Display story in the DOM
@@ -413,86 +583,24 @@ function displayStory(storyData) {
         }
         
         // Default fields if missing
-        const title = storyContent.title || '';
-        const content = storyContent.content || 'Content could not be retrieved.';
-        const summary = storyContent.summary;
-        const vocabulary = storyContent.vocabulary;
-        const learningObjectives = storyContent.learning_objectives;
+        storyContent.title = storyContent.title || '';
+        storyContent.content = storyContent.content || 'Content could not be retrieved.';
         
-        // Build HTML for story display
-        let storyHTML = `<div class="story-container">`;
-        
-        // Add title only if it's not 'Generated Story' and not empty
-        if (title && title !== 'Generated Story') {
-            storyHTML += `<h2 class="story-title">${title}</h2>`;
+        // Add save status if available
+        if (storyData.saved !== undefined) {
+            storyContent.saved = storyData.saved;
+            storyContent.save_error = storyData.save_error;
         }
         
-        // Add story content
-        storyHTML += `
-        <div class="story-text">
-            ${content.split('\n').map(p => p ? `<p>${p}</p>` : '').join('')}
-        </div>
-        `;
+        // Clear the story output
+        storyOutput.innerHTML = '';
         
-        // Add save status message if available
-        if (storyData.saved === true) {
-            storyHTML += `
-            <div class="save-status success">
-                <p>✅ Story saved successfully</p>
-            </div>
-            `;
-        } else if (storyData.saved === false) {
-            storyHTML += `
-            <div class="save-status error">
-                <p>⚠️ Story was not saved: ${storyData.save_error || 'Unknown error'}</p>
-            </div>
-            `;
-        }
+        // Create the story content component
+        const storyContentElement = document.createElement('story-content');
+        storyContentElement.story = storyContent;
         
-        // Add summary if available (moved after content)
-        if (summary) {
-            storyHTML += `
-            <div class="story-summary">
-                <h3>Story Summary</h3>
-                <p>${summary}</p>
-            </div>
-            `;
-        }
-        
-        // Add learning objectives if available
-        if (learningObjectives && Array.isArray(learningObjectives) && learningObjectives.length > 0) {
-            storyHTML += `
-            <div class="learning-objectives">
-                <h3>Learning Objectives</h3>
-                <ul>
-                    ${learningObjectives.map(obj => `<li>${obj}</li>`).join('')}
-                </ul>
-            </div>
-            `;
-        }
-        
-        // Add vocabulary if available
-        if (vocabulary && Array.isArray(vocabulary) && vocabulary.length > 0) {
-            storyHTML += `
-            <div class="vocabulary-section">
-                <h3>Vocabulary</h3>
-                <div class="vocabulary-list">
-                    ${vocabulary.map(item => `
-                    <div class="vocabulary-item">
-                        <div class="vocabulary-word">${item.word}</div>
-                        <div class="vocabulary-definition">${item.definition}</div>
-                    </div>
-                    `).join('')}
-                </div>
-            </div>
-            `;
-        }
-        
-        // Close story content div
-        storyHTML += '</div>';
-        
-        // Set HTML
-        storyOutput.innerHTML = storyHTML;
+        // Append the story content component
+        storyOutput.appendChild(storyContentElement);
         
         // Check for quiz data in all possible locations
         let quizData = null;
@@ -630,52 +738,13 @@ function displayStory(storyData) {
             console.log('No valid quiz data available');
         }
         
-        // Now add the story continuation section AFTER the quiz
-        const continuationDiv = document.createElement('div');
-        continuationDiv.className = 'story-continuation';
-        continuationDiv.innerHTML = `
-            <h3>Continue the Story</h3>
-            <div class="continuation-form">
-                <div class="continuation-options">
-                    <div class="continuation-option">
-                        <label for="continuationLength">Length:</label>
-                        <select id="continuationLength" class="continuation-length">
-                            <option value="200">Short (200 words)</option>
-                            <option value="300" selected>Medium (300 words)</option>
-                            <option value="500">Long (500 words)</option>
-                        </select>
-                    </div>
-                    
-                    <div class="continuation-option">
-                        <label for="continuationDifficulty">Difficulty:</label>
-                        <select id="continuationDifficulty" class="continuation-difficulty">
-                            <option value="easier">Easier</option>
-                            <option value="same" selected>Same Level</option>
-                            <option value="harder">More Challenging</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <button id="continueStoryBtn" class="continue-btn">Continue Story</button>
-            </div>
-            <div id="continuationOutput" class="continuation-output"></div>
-        `;
+        // Now add the story continuation component
+        const storyContinuationElement = document.createElement('story-continuation');
+        storyContinuationElement.originalStory = storyContent;
         
-        // Append continuation div to story output
-        storyOutput.appendChild(continuationDiv);
+        // Add the component to the story output
+        storyOutput.appendChild(storyContinuationElement);
         
-        // Set up continue story button
-        const continueStoryBtn = document.getElementById('continueStoryBtn');
-        if (continueStoryBtn) {
-            continueStoryBtn.addEventListener('click', () => {
-                // Get difficulty setting
-                const difficultySelect = document.getElementById('continuationDifficulty');
-                const difficulty = difficultySelect ? difficultySelect.value : 'same';
-                
-                // Pass both original story content and difficulty setting
-                handleContinueStory(storyContent, difficulty);
-            });
-        }
     } catch (error) {
         console.error('Error displaying story:', error);
         storyOutput.innerHTML = `
@@ -686,136 +755,6 @@ function displayStory(storyData) {
         </div>
         `;
     }
-}
-
-// Update handleContinueStory to account for difficulty
-async function handleContinueStory(originalStory, difficulty = 'same') {
-    if (!originalStory || !originalStory.content) {
-        showToast('Cannot continue story: original content missing', 'error');
-        return;
-    }
-    
-    // Show loading state
-    const continueStoryBtn = document.getElementById('continueStoryBtn');
-    const continuationOutput = document.getElementById('continuationOutput');
-    const continuationLength = document.getElementById('continuationLength');
-    
-    if (continueStoryBtn) {
-        continueStoryBtn.disabled = true;
-        continueStoryBtn.innerHTML = '<div class="spinner small"></div> Continuing...';
-    }
-    
-    try {
-        // Prepare continuation data
-        const continuationData = {
-            original_story: originalStory.content,
-            word_count: continuationLength ? continuationLength.value : 300,
-            subject: originalStory.subject,
-            academic_grade: originalStory.academic_grade,
-            language: originalStory.language,
-            difficulty: difficulty // Add the difficulty parameter
-        };
-        
-        // Adjust academic grade based on difficulty if specified
-        if (difficulty === 'easier' && continuationData.academic_grade) {
-            // Try to lower the grade by 1-2 levels if possible
-            const currentGrade = parseInt(continuationData.academic_grade, 10);
-            if (!isNaN(currentGrade) && currentGrade > 1) {
-                continuationData.academic_grade = Math.max(1, currentGrade - 1).toString();
-            }
-        } else if (difficulty === 'harder' && continuationData.academic_grade) {
-            // Try to increase the grade by 1-2 levels
-            const currentGrade = parseInt(continuationData.academic_grade, 10);
-            if (!isNaN(currentGrade)) {
-                continuationData.academic_grade = (currentGrade + 1).toString();
-            }
-        }
-        
-        console.log(`Continuing story with difficulty: ${difficulty}`, continuationData);
-        
-        // Call API to continue story
-        const response = await window.apiService.continueStory(continuationData);
-        console.log('Story continuation response:', response);
-        
-        // Extract continuation content
-        let continuationContent = '';
-        if (response.data && response.data.continuation) {
-            continuationContent = response.data.continuation.content;
-        } else if (response.continuation) {
-            continuationContent = response.continuation.content;
-        } else if (typeof response === 'string') {
-            continuationContent = response;
-        } else {
-            continuationContent = 'Failed to generate continuation.';
-        }
-        
-        // Display continuation
-        if (continuationOutput) {
-            continuationOutput.innerHTML = `
-                <div class="continuation-content">
-                    ${continuationContent.split('\n').map(p => `<p>${p}</p>`).join('')}
-                </div>
-            `;
-            continuationOutput.scrollIntoView({ behavior: 'smooth' });
-        }
-        
-        // Success message
-        showToast('Story continued successfully!', 'success');
-        
-    } catch (error) {
-        console.error('Error continuing story:', error);
-        
-        // Error message
-        showToast('Failed to continue story: ' + (error.message || 'Unknown error'), 'error');
-        
-        // Clear continuation output or show error in it
-        if (continuationOutput) {
-            continuationOutput.innerHTML = `
-                <div class="continuation-error">
-                    <p>Sorry, we couldn't continue the story. Please try again later.</p>
-                </div>
-            `;
-        }
-    } finally {
-        // Reset button
-        if (continueStoryBtn) {
-            continueStoryBtn.disabled = false;
-            continueStoryBtn.innerHTML = 'Continue Story';
-        }
-    }
-}
-
-// Toast notification
-function showToast(message, type = 'success') {
-    if (window.uiHandler && window.uiHandler.showToast) {
-        window.uiHandler.showToast(message, type);
-        return;
-    }
-    
-    if (!toastContainer) return;
-    
-    const toast = document.createElement('div');
-    toast.className = `toast ${type}`;
-    toast.innerHTML = `
-        <div class="toast-content">
-            <div class="toast-title">${type === 'success' ? 'Success' : type === 'error' ? 'Error' : 'Info'}</div>
-            <div class="toast-message">${message}</div>
-        </div>
-        <button class="toast-close">&times;</button>
-    `;
-    
-    toastContainer.appendChild(toast);
-    setTimeout(() => toast.classList.add('show'), 100);
-    
-    toast.querySelector('.toast-close').addEventListener('click', () => {
-        toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 300);
-    });
-    
-    setTimeout(() => {
-        toast.classList.remove('show');
-        setTimeout(() => toast.remove(), 300);
-    }, 5000);
 }
 
 // UI update functions
@@ -899,11 +838,15 @@ async function init() {
         // Setup event listeners
         setupEventListeners();
         
+        // Set isAnonymousUser global flag for use in components
+        window.isAnonymousUser = true;
+        
         // Load user stories if logged in
         if (window.supabase && window.supabase.auth) {
             try {
                 const { data: { session } } = await window.supabase.auth.getSession();
                 if (session?.user) {
+                    window.isAnonymousUser = false;
                     updateUIForLoggedInUser(session.user);
                 } else {
                     updateUIForLoggedOutUser();
@@ -922,7 +865,7 @@ async function init() {
         console.error('Error initializing app:', error);
         // Don't show error if Supabase is not configured
         if (!error.message || !error.message.includes('Supabase not configured')) {
-            showToast('Failed to initialize application', 'error');
+            window.showToast('Failed to initialize application', 'error');
         }
     }
 }

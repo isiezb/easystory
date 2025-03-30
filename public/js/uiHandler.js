@@ -1,25 +1,18 @@
 // UI Handler
 const uiHandler = {
     showLoading(message = 'Loading...') {
-        const loadingOverlay = document.querySelector('.loading-overlay');
+        // Use our Lit component instead
+        const loadingOverlay = document.getElementById('loadingOverlay');
         if (loadingOverlay) {
-            loadingOverlay.style.display = 'flex';
-            
-            // Set custom message if provided
-            const loadingText = loadingOverlay.querySelector('.loading-text');
-            if (loadingText) {
-                loadingText.textContent = message;
-            }
-            
-            // Ensure overlay is visible by scrolling to top
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            loadingOverlay.show(message);
         }
     },
 
     hideLoading() {
-        const loadingOverlay = document.querySelector('.loading-overlay');
+        // Use our Lit component instead
+        const loadingOverlay = document.getElementById('loadingOverlay');
         if (loadingOverlay) {
-            loadingOverlay.style.display = 'none';
+            loadingOverlay.hide();
         }
     },
 
@@ -135,100 +128,39 @@ const uiHandler = {
     },
 
     displayStoriesGrid(stories) {
+        // Use our Lit component for the stories grid
         const storiesGrid = document.getElementById('storiesGrid');
         
-        if (!stories || !Array.isArray(stories)) {
-            this.showError('Invalid stories data');
-            storiesGrid.innerHTML = '<div class="no-stories">No stories yet. Generate your first story!</div>';
+        if (!storiesGrid) {
+            console.error('Stories grid element not found');
             return;
         }
-
-        if (stories.length === 0) {
-            storiesGrid.innerHTML = '<div class="no-stories">No stories yet. Generate your first story!</div>';
-            return;
-        }
-
-        const sanitizeText = (text) => {
-            const div = document.createElement('div');
-            div.textContent = text;
-            return div.innerHTML;
-        };
-
-        const formatDate = (dateString) => {
-            try {
-                return new Date(dateString).toLocaleDateString();
-            } catch (error) {
-                console.error('Date formatting error:', error);
-                return 'Invalid date';
+        
+        // Update the stories property
+        storiesGrid.stories = stories || [];
+        
+        // Attach event listeners using event delegation
+        storiesGrid.addEventListener('view-story', (e) => {
+            const storyId = e.detail.storyId;
+            if (storyId && window.viewStory) {
+                window.viewStory(storyId);
             }
-        };
-
-        storiesGrid.innerHTML = stories.map(story => `
-            <div class="story-card" data-story-id="${story.id}">
-                <h3>${sanitizeText(story.story_title)}</h3>
-                <div class="story-meta">
-                    <span class="story-subject">${sanitizeText(story.subject)}</span>
-                    <span class="story-date">${formatDate(story.created_at)}</span>
-                </div>
-                <div class="story-preview">${sanitizeText(story.story_text.substring(0, 150))}...</div>
-                <div class="story-actions">
-                    <button class="view-story" data-story-id="${story.id}">View Story</button>
-                    <button class="delete-story" data-story-id="${story.id}">Delete</button>
-                </div>
-            </div>
-        `).join('');
-
-        // Add event listeners after rendering
-        storiesGrid.querySelectorAll('.view-story').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const storyId = btn.dataset.storyId;
-                if (storyId) {
-                    window.viewStory(storyId);
-                }
-            });
         });
-
-        storiesGrid.querySelectorAll('.delete-story').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const storyId = btn.dataset.storyId;
-                if (storyId) {
-                    window.deleteStory(storyId);
-                }
-            });
+        
+        storiesGrid.addEventListener('delete-story', (e) => {
+            const storyId = e.detail.storyId;
+            if (storyId && window.deleteStory) {
+                window.deleteStory(storyId);
+            }
         });
     },
 
     showToast(message, type = 'info', duration = 5000) {
-        const toast = document.querySelector('.toast-container');
-        const toastElement = document.createElement('div');
-        toastElement.className = `toast ${type}`;
-        
-        // Add icon based on type
-        const icon = this.getToastIcon(type);
-        
-        toastElement.innerHTML = `
-            <div class="toast-content">
-                <div class="toast-header">
-                    ${icon}
-                    <div class="toast-title">${type.charAt(0).toUpperCase() + type.slice(1)}</div>
-                </div>
-                <div class="toast-message">${message}</div>
-            </div>
-            <button class="toast-close" aria-label="Close">&times;</button>
-        `;
-
-        toast.appendChild(toastElement);
-
-        // Add close button functionality
-        const closeBtn = toastElement.querySelector('.toast-close');
-        closeBtn.addEventListener('click', () => {
-            toastElement.remove();
-        });
-
-        // Auto-remove after duration
-        setTimeout(() => {
-            toastElement.remove();
-        }, duration);
+        // Use our Lit component for toasts
+        const toastContainer = document.getElementById('toastContainer');
+        if (toastContainer) {
+            toastContainer.showToast(message, type, duration);
+        }
     },
 
     getToastIcon(type) {
@@ -279,21 +211,7 @@ const uiHandler = {
     },
 
     showSuccess(message) {
-        const toast = document.createElement('div');
-        toast.className = 'toast success';
-        toast.innerHTML = `
-            <div class="toast-content">
-                <div class="toast-title">Success</div>
-                <div class="toast-message">${message}</div>
-            </div>
-            <button class="toast-close">&times;</button>
-        `;
-        document.getElementById('toastContainer').appendChild(toast);
-        setTimeout(() => toast.classList.add('show'), 100);
-        setTimeout(() => {
-            toast.classList.remove('show');
-            setTimeout(() => toast.remove(), 300);
-        }, 5000);
+        this.showToast(message, 'success');
     },
 
     updateUserProfile(user) {

@@ -1,3 +1,5 @@
+import { env } from './env.js';
+
 // Wait for window._env_ to be initialized
 const waitForEnv = () => {
     return new Promise((resolve) => {
@@ -59,11 +61,10 @@ export const configPromise = initConfig();
 
 // Export a default config object for synchronous access
 export const config = {
-    server: {
-        url: window.location.origin
-    },
-    supabase: {
-        url: window._env_?.SUPABASE_URL || '',
-        key: window._env_?.SUPABASE_KEY || ''
-    }
-}; 
+    serverUrl: env.SERVER_URL,
+    supabaseUrl: env.SUPABASE_URL,
+    supabaseKey: env.SUPABASE_KEY
+};
+
+// Make config globally available
+window._config = config; 

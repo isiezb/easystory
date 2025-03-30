@@ -519,24 +519,40 @@ class ApiService {
                 return null;
             }
             
-            // Try to get the session using async method
-            const { data } = await window.supabase.auth.getSession();
-            const token = data?.session?.access_token;
-            
-            if (token) {
-                console.log('Retrieved auth token successfully');
-                return token;
+            // First approach: Try to get the session using getSession
+            try {
+                const { data } = await window.supabase.auth.getSession();
+                if (data?.session?.access_token) {
+                    console.log('Retrieved auth token from getSession');
+                    return data.session.access_token;
+                }
+            } catch (sessionError) {
+                console.warn('Error getting session:', sessionError);
             }
             
-            // If we don't have a token but auth is initialized, check if user is actually logged in
-            const authState = await window.supabase.auth.getUser();
-            if (authState?.data?.user) {
-                console.log('User is logged in but token unavailable');
-                // Could trigger a refresh here in the future
-            } else {
-                console.log('No active session found');
+            // Second approach: Check for session directly (older versions)
+            if (window.supabase.auth.session) {
+                const token = window.supabase.auth.session?.access_token;
+                if (token) {
+                    console.log('Retrieved auth token from session property');
+                    return token;
+                }
             }
             
+            // Third approach: Try getUser if it exists
+            if (typeof window.supabase.auth.getUser === 'function') {
+                try {
+                    const { data } = await window.supabase.auth.getUser();
+                    if (data?.user) {
+                        console.log('User is logged in but token unavailable');
+                        // User exists but we can't get the token directly
+                    }
+                } catch (userError) {
+                    console.warn('Error getting user:', userError);
+                }
+            }
+            
+            console.log('No active session found or token available');
             return null;
         } catch (error) {
             console.error('Error getting auth token:', error);

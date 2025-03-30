@@ -25,18 +25,29 @@
                 window.supabase = {
                     _isMockClient: true,
                     auth: {
+                        // Session access - both direct and via method
+                        session: null,
                         getSession: async () => ({
                             data: { session: null },
                             error: null
                         }),
+                        // Auth state changes
                         onAuthStateChange: (callback) => {
                             console.log('Auth state change listener registered, but supabase not loaded');
                             return { data: { subscription: { unsubscribe: () => {} } } };
                         },
+                        // Auth actions
                         signOut: async () => ({ error: null }),
                         signInWithPassword: async () => ({ 
                             error: { message: 'Supabase not initialized' } 
-                        })
+                        }),
+                        // For compatibility with both API versions
+                        getUser: async () => ({
+                            data: { user: null },
+                            error: null
+                        }),
+                        // For older versions
+                        user: () => null
                     },
                     from: () => ({
                         insert: () => ({
@@ -58,13 +69,23 @@
         window.supabase = {
             _isMockClient: true,
             auth: {
+                // Session access - both direct and via method
+                session: null,
                 getSession: async () => ({
                     data: { session: null },
                     error: null
                 }),
+                // Auth state changes
                 onAuthStateChange: () => ({
                     data: { subscription: { unsubscribe: () => {} } }
-                })
+                }),
+                // For compatibility with both API versions
+                getUser: async () => ({
+                    data: { user: null },
+                    error: null
+                }),
+                // For older versions
+                user: () => null
             }
         };
         console.log('Mock Supabase client created after error');

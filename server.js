@@ -20,7 +20,7 @@ app.use(helmet({
     contentSecurityPolicy: {
         directives: {
             defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'", "*.supabase.co", "cdn.jsdelivr.net"],
+            scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "*.supabase.co", "cdn.jsdelivr.net", "https://unpkg.com"],
             styleSrc: ["'self'", "'unsafe-inline'", "fonts.googleapis.com"],
             fontSrc: ["'self'", "fonts.gstatic.com"],
             imgSrc: ["'self'", "data:", "*.supabase.co"],
@@ -498,8 +498,9 @@ app.post('/continue-story', apiLimiter, async (req, res) => {
         // Similar structure to generateStoryWithOpenRouter but simplified for continuation
         try {
             logger.info('Sending continuation request to OpenRouter');
-            const response = await openai.chat.completions.create({
-                model: "openrouter/openai/gpt-3.5-turbo",
+            
+            const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
+                model: 'openai/gpt-3.5-turbo',
                 messages: [
                     { role: "system", content: "You are a creative educational story generator." },
                     { role: "user", content: prompt }
@@ -509,10 +510,15 @@ app.post('/continue-story', apiLimiter, async (req, res) => {
                 top_p: 1,
                 frequency_penalty: 0,
                 presence_penalty: 0
+            }, {
+                headers: {
+                    'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+                    'Content-Type': 'application/json'
+                }
             });
 
             logger.info('OpenRouter continuation response received');
-            const continuationContent = response.choices[0].message.content;
+            const continuationContent = response.data.choices[0].message.content;
 
             // If user is logged in, save continuation to Supabase
             const authHeader = req.headers.authorization;
@@ -565,8 +571,8 @@ app.post('/continue-story', apiLimiter, async (req, res) => {
                     }
                 },
                 meta: {
-                    processing_time: `${((Date.now() - new Date(response.created).getTime()) / 1000).toFixed(2)}s`,
-                    model: response.model
+                    processing_time: `${((Date.now() - new Date(response.data.created * 1000).getTime()) / 1000).toFixed(2)}s`,
+                    model: response.data.model
                 }
             };
 

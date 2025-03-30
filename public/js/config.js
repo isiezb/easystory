@@ -48,12 +48,7 @@ const initConfig = async () => {
     // Validate required environment variables
     if (!config.serverUrl) {
         console.error('SERVER_URL is not configured');
-    }
-    if (!config.supabaseUrl) {
-        console.error('SUPABASE_URL is not configured');
-    }
-    if (!config.supabaseKey) {
-        console.error('SUPABASE_KEY is not configured');
+        throw new Error('SERVER_URL is not configured');
     }
 
     return config;
@@ -62,12 +57,13 @@ const initConfig = async () => {
 // Export a promise that resolves to the config
 export const configPromise = initConfig();
 
+// Export a default config object for synchronous access
 export const config = {
     server: {
-        url: window._env_?.SERVER_URL || 'https://quiz-story.onrender.com'
+        url: window.location.origin
     },
     supabase: {
-        url: window._env_?.SUPABASE_URL,
-        key: window._env_?.SUPABASE_KEY
+        url: window._env_?.SUPABASE_URL || '',
+        key: window._env_?.SUPABASE_KEY || ''
     }
 }; 

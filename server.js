@@ -31,6 +31,11 @@ if (!process.env.SUPABASE_KEY) {
     process.exit(1);
 }
 
+if (!process.env.OPENROUTER_API_KEY) {
+    logger.error('OPENROUTER_API_KEY is not set');
+    process.exit(1);
+}
+
 // Initialize Supabase client
 let supabase;
 try {
@@ -146,11 +151,6 @@ app.post('/generate-story', authenticateUser, async (req, res) => {
             throw new AppError('Invalid input data', 400);
         }
 
-        // Check for OpenRouter API key
-        if (!process.env.OPENROUTER_API_KEY) {
-            throw new AppError('OpenRouter API key is not configured', 500);
-        }
-
         // Log request details
         logger.info('Generating story', {
             subject,
@@ -187,7 +187,7 @@ app.post('/generate-story', authenticateUser, async (req, res) => {
             }
         }`;
 
-        // Generate story and quiz using OpenRouter
+        // Generate story and quiz using OpenRouter with timeout
         const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
             model: "google/gemini-pro",
             messages: [
@@ -199,18 +199,26 @@ app.post('/generate-story', authenticateUser, async (req, res) => {
             headers: {
                 'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
                 'Content-Type': 'application/json'
-            }
+            },
+            timeout: 30000 // 30 second timeout
         });
 
         let storyData;
         try {
-            storyData = response.data.choices[0].message.content;
+            const content = response.data.choices[0].message.content;
+            storyData = typeof content === 'string' ? JSON.parse(content) : content;
+            
+            // Validate story data structure
+            if (!storyData.story || !storyData.quiz) {
+                throw new Error('Invalid story data structure');
+            }
         } catch (error) {
             logger.error('Failed to parse OpenRouter response', { error: error.message });
             throw new AppError('Invalid response format from AI', 500);
         }
 
         // Save to database
+        let savedStory;
         try {
             const { data: story, error: dbError } = await supabase
                 .from('stories')
@@ -231,10 +239,11 @@ app.post('/generate-story', authenticateUser, async (req, res) => {
                 .single();
 
             if (dbError) throw dbError;
+            savedStory = story;
             logger.info('Story saved to database', { storyId: story.id });
         } catch (error) {
             logger.error('Failed to save story to database', { error: error.message });
-            // Don't throw here, just log the error
+            throw new AppError('Failed to save story to database', 500);
         }
 
         // Send response
@@ -243,14 +252,18 @@ app.post('/generate-story', authenticateUser, async (req, res) => {
             data: {
                 story: {
                     ...storyData.story,
-                    id: story?.id // Include the database ID if available
+                    id: savedStory.id
                 },
                 quiz: storyData.quiz
             }
         });
 
     } catch (error) {
-        handleError(error, req, res);
+        if (error.code === 'ECONNABORTED') {
+            handleError(new AppError('Request timeout', 504), req, res);
+        } else {
+            handleError(error, req, res);
+        }
     }
 });
 

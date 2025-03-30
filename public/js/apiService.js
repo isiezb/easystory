@@ -77,15 +77,20 @@ export const apiService = {
                 console.log('Generating story with formData:', formData);
                 console.log('Server URL:', config.serverUrl);
                 
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
+
                 const response = await fetch(`${config.serverUrl}/generate-story`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${await this.getAuthToken()}`
                     },
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify(formData),
+                    signal: controller.signal
                 });
 
+                clearTimeout(timeoutId);
                 console.log('Response status:', response.status);
                 
                 if (!response.ok) {
@@ -101,6 +106,9 @@ export const apiService = {
                 return await this.handleResponse(response);
             } catch (error) {
                 console.error('Error in generateStory:', error);
+                if (error.name === 'AbortError') {
+                    throw new ApiError('Request timed out', 504);
+                }
                 if (error instanceof ApiError) throw error;
                 throw new ApiError(
                     'Network error while generating story',

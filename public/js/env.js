@@ -1,5 +1,5 @@
 // Environment variables
-export const env = {
+const env = {
     SERVER_URL: window._env_?.SERVER_URL || window.location.origin,
     SUPABASE_URL: window._env_?.SUPABASE_URL || '',
     SUPABASE_KEY: window._env_?.SUPABASE_KEY || ''

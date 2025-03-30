@@ -1,15 +1,31 @@
-import { config } from './config.js';
-
+// Initialize Supabase client
 let supabaseClient = null;
 
-try {
-    if (window.supabase && window.supabase.createClient) {
-        supabaseClient = window.supabase.createClient(config.supabaseUrl, config.supabaseKey);
-    } else {
-        console.warn('Supabase not loaded. Please check if the script is properly loaded.');
+function initSupabase() {
+    try {
+        if (window.supabase && window.supabase.createClient) {
+            supabaseClient = window.supabase.createClient(
+                window._config.supabaseUrl,
+                window._config.supabaseKey,
+                {
+                    auth: {
+                        autoRefreshToken: true,
+                        persistSession: true,
+                        detectSessionInUrl: true
+                    }
+                }
+            );
+            console.log('Supabase client initialized successfully');
+        } else {
+            console.warn('Supabase not loaded. Please check if the script is properly loaded.');
+        }
+    } catch (error) {
+        console.error('Error initializing Supabase:', error);
     }
-} catch (error) {
-    console.error('Error initializing Supabase:', error);
 }
 
-export const supabase = supabaseClient; 
+// Initialize when the script loads
+initSupabase();
+
+// Make supabase client globally available
+window.supabase = supabaseClient; 

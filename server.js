@@ -249,10 +249,10 @@ app.post('/generate-story', apiLimiter, async (req, res) => {
         if (authHeader) {
             try {
                 const token = authHeader.split(' ')[1];
-                const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+                const { data: { user }, error: userError } = await supabase.auth.getUser(token);
                 
-                if (user && !authError) {
-                    const { data, error: saveError } = await supabase
+                if (!userError && user) {
+                    const { data, error } = await supabase
                         .from('stories')
                         .insert({
                             user_id: user.id,
@@ -261,7 +261,7 @@ app.post('/generate-story', apiLimiter, async (req, res) => {
                             subject_specification: inputs.subject_specification,
                             setting: inputs.setting,
                             main_character: inputs.main_character,
-                            word_count: parseInt(inputs.word_count),
+                            word_count: inputs.word_count,
                             language: inputs.language,
                             story_text: response.content,
                             story_title: inputs.subject_specification || 'Untitled Story',
@@ -274,16 +274,14 @@ app.post('/generate-story', apiLimiter, async (req, res) => {
                         .select()
                         .single();
 
-                    if (saveError) {
-                        logger.error('Error saving story to Supabase:', saveError);
-                        // Don't throw error, just log it since story generation was successful
+                    if (error) {
+                        logger.error('Error saving story to Supabase:', error);
                     } else {
                         logger.info('Story saved to Supabase:', { storyId: data.id });
                     }
                 }
             } catch (error) {
                 logger.error('Error handling Supabase save:', error);
-                // Don't throw error, just log it since story generation was successful
             }
         }
 

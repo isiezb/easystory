@@ -15,14 +15,6 @@ if (!supabaseKey) {
     throw new Error('Missing SUPABASE_KEY environment variable');
 }
 
-// Validate URL format
-try {
-    new URL(supabaseUrl);
-} catch (error) {
-    console.error('Invalid SUPABASE_URL format:', supabaseUrl);
-    throw new Error('Invalid SUPABASE_URL format');
-}
-
 // Initialize Supabase client
 const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 

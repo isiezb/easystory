@@ -14,9 +14,16 @@ console.log('Configuration:', {
 });
 
 export const config = {
-    serverUrl,
-    supabaseUrl,
-    supabaseKey
+    serverUrl: window._env_?.SERVER_URL || window.location.origin,
+    supabaseUrl: window._env_?.SUPABASE_URL,
+    supabaseKey: window._env_?.SUPABASE_KEY,
+    openRouterKey: window._env_?.OPENROUTER_KEY,
+    openRouterModel: 'openai/gpt-4-turbo-preview',
+    maxRetries: 3,
+    retryDelay: 1000,
+    storyTimeout: 60000, // 60 seconds
+    maxWordCount: 5000,
+    minWordCount: 100
 };
 
 // Validate required environment variables

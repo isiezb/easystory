@@ -7,6 +7,9 @@ const themeToggle = document.getElementById('themeToggle');
 const otherSubjectGroup = document.getElementById('otherSubjectGroup');
 const subjectSelect = document.getElementById('subject');
 
+// Initialize global API service immediately
+window.apiService = new ApiService();
+
 // Initialize theme
 function initTheme() {
     const currentTheme = localStorage.getItem('theme') || 'light';

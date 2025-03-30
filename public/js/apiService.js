@@ -32,7 +32,8 @@ class ApiError extends Error {
 // API Service class
 class ApiService {
     constructor() {
-        this.baseUrl = '';
+        // Initialize with a default value to avoid "no config" errors
+        this.baseUrl = window.location.origin;
         this.initPromise = this.init();
     }
 
@@ -41,28 +42,30 @@ class ApiService {
      */
     async init() {
         try {
-            if (window._config) {
-                console.log('Using existing config');
+            // Ensure we have a valid baseUrl
+            if (window._config && window._config.serverUrl) {
+                console.log('Using existing config for API service');
                 this.baseUrl = window._config.serverUrl;
-            } else if (window.configPromise) {
-                console.log('Waiting for config promise to resolve');
-                const config = await window.configPromise;
-                this.baseUrl = config.serverUrl;
+            } else if (window._env_ && window._env_.SERVER_URL) {
+                console.log('Using env variable for API service');
+                this.baseUrl = window._env_.SERVER_URL;
             } else {
-                throw new Error('No config available for ApiService');
+                console.log('No specific config found, defaulting to current origin');
+                // Already set to window.location.origin in constructor
             }
 
             // Ensure the baseUrl has no trailing slash
             this.baseUrl = this.baseUrl.replace(/\/$/, '');
             console.log('API Service initialized with base URL:', this.baseUrl);
-
+            
             // Test server connectivity
             this.testServerConnection();
             
             return true;
         } catch (error) {
             console.error('Failed to initialize API service:', error);
-            throw error;
+            // Don't throw - use default baseUrl instead
+            return false;
         }
     }
 
@@ -200,13 +203,13 @@ class ApiService {
      */
     async generateStory(data) {
         // Wait for initialization if needed
-        if (this.initPromise) {
-            try {
+        try {
+            if (this.initPromise) {
                 await this.initPromise;
-            } catch (error) {
-                console.error('API Service initialization failed:', error);
-                // Continue anyway, to try the request
             }
+        } catch (error) {
+            console.warn('API Service initialization had issues, but continuing with request anyway');
+            // Continue anyway using the default baseUrl
         }
         
         console.log('Generating story with data:', data);

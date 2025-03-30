@@ -59,16 +59,27 @@ class ApiService {
     async generateStory(data) {
         console.log('Generating story with data:', data);
         
-        // Validate data
-        if (!data.subject) {
-            console.warn('Missing subject in request data');
-            data.subject = 'general';
-        }
+        // Create a properly formatted request object based on server expectations
+        const requestData = {
+            // Required fields with fallbacks
+            academic_grade: data.academic_grade || data.grade || "5",
+            subject: data.subject || "general",
+            
+            // Optional fields with fallbacks
+            subject_specification: data.subject_specification || "",
+            setting: data.setting || "a classroom",
+            main_character: data.main_character || data.character || "a student",
+            word_count: parseInt(data.word_count || data.wordCount || 500),
+            language: data.language || "english",
+            
+            // Boolean flags
+            generate_vocabulary: data.generate_vocabulary === 'on' || data.vocabulary === 'on' || false,
+            generate_summary: data.generate_summary === 'on' || data.summary === 'on' || false,
+            generate_quiz: data.generate_quiz === 'on' || data.quiz === 'on' || false
+        };
         
-        if (!data.academic_grade) {
-            console.warn('Missing academic_grade in request data');
-            data.academic_grade = '5';
-        }
+        // Log the final formatted request
+        console.log('Formatted request data for API:', requestData);
         
         try {
             const headers = {
@@ -89,14 +100,14 @@ class ApiService {
             // Use mock data if in development mode or specified in config
             if (window._config?.useMockData || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
                 console.log('Using mock story data');
-                return this.getMockStoryData(data);
+                return this.getMockStoryData(requestData);
             }
             
             console.log(`Sending API request to ${this.baseUrl}/generate-story`);
             const response = await fetch(`${this.baseUrl}/generate-story`, {
                 method: 'POST',
                 headers: headers,
-                body: JSON.stringify(data)
+                body: JSON.stringify(requestData)
             });
             
             console.log('Received response status:', response.status);
@@ -108,7 +119,7 @@ class ApiService {
             if (error.name === 'TypeError' && error.message.includes('Failed to fetch') || 
                 (error.name === 'ApiError' && error.status === 500)) {
                 console.log('Network or server error, using mock data');
-                return this.getMockStoryData(data);
+                return this.getMockStoryData(requestData);
             }
             
             throw error;
@@ -117,18 +128,47 @@ class ApiService {
     
     // Mock data for development and fallback
     getMockStoryData(data) {
+        const subject = data.subject || 'general knowledge';
+        const grade = data.academic_grade || '5';
+        const character = data.main_character || 'a curious student';
+        const setting = data.setting || 'a classroom';
+        
         return {
-            title: `The ${data.subject} Adventure`,
-            content: `Once upon a time, in ${data.setting || 'a magical place'}, ${data.main_character || 'a curious student'} embarked on a journey to learn about ${data.subject}.\n\nThrough perseverance and dedication, they discovered amazing insights and grew their knowledge.\n\nThis is a mock story generated for development purposes when the server is unavailable.`,
-            summary: "A brief story about learning and discovery.",
-            vocabulary: [
+            title: `The ${subject.charAt(0).toUpperCase() + subject.slice(1)} Adventure - Grade ${grade}`,
+            content: `Once upon a time, in ${setting}, ${character} embarked on a journey to learn about ${subject}.\n\nThrough perseverance and dedication, they discovered amazing insights about ${subject} and grew their knowledge.\n\nThe teacher was impressed by ${character}'s dedication and encouraged them to share their discoveries with the class.\n\nThis is a simulated story generated when the server is unavailable.`,
+            summary: data.generate_summary ? `A brief story about a ${character} learning about ${subject} in ${setting}.` : null,
+            vocabulary: data.generate_vocabulary ? [
                 { word: "perseverance", definition: "Persistence in doing something despite difficulty or delay in achieving success" },
-                { word: "dedication", definition: "The quality of being dedicated or committed to a task or purpose" }
-            ],
+                { word: "dedication", definition: "The quality of being dedicated or committed to a task or purpose" },
+                { word: "discovery", definition: "The action or process of discovering or being discovered" }
+            ] : null,
             learning_objectives: [
-                "Understanding key concepts in " + data.subject,
-                "Applying knowledge in real-world scenarios"
-            ]
+                `Understanding key concepts in ${subject}`,
+                `Developing critical thinking about ${subject}`,
+                `Applying knowledge of ${subject} in real-world scenarios`
+            ],
+            quiz: data.generate_quiz ? [
+                {
+                    question: `What did ${character} learn about in the story?`,
+                    options: [
+                        subject,
+                        "mathematics",
+                        "history",
+                        "science"
+                    ],
+                    answer: 0
+                },
+                {
+                    question: "What quality helped the character learn?",
+                    options: [
+                        "luck",
+                        "wealth",
+                        "perseverance",
+                        "magic"
+                    ],
+                    answer: 2
+                }
+            ] : null
         };
     }
 

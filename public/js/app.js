@@ -182,21 +182,61 @@ function displayStory(storyData) {
     if (!storyOutput) return;
     
     // Ensure storyData has the expected structure
-    const content = storyData.content || storyData.story?.content || storyData.story || storyData;
+    const content = storyData.content || storyData.story?.content || storyData.story || '';
     const title = storyData.title || storyData.story?.title || 'Generated Story';
+    const summary = storyData.summary || storyData.story?.summary || null;
+    const vocabulary = storyData.vocabulary || storyData.story?.vocabulary || null;
+    const learningObjectives = storyData.learning_objectives || storyData.story?.learning_objectives || [];
     
-    storyOutput.innerHTML = `
+    // Build story HTML
+    let storyHTML = `
         <div class="story-container">
             <h2>${title}</h2>
+            ${summary ? `
+                <div class="story-summary">
+                    <h3>Summary</h3>
+                    <p>${summary}</p>
+                </div>
+            ` : ''}
             <div class="story-content">
                 ${typeof content === 'string' 
                   ? content.split('\n').map(p => `<p>${p}</p>`).join('') 
                   : '<p>No content available</p>'}
             </div>
-        </div>
     `;
     
-    // Scroll to story
+    // Add learning objectives if available
+    if (learningObjectives && learningObjectives.length > 0) {
+        storyHTML += `
+            <div class="learning-objectives">
+                <h3>Learning Objectives</h3>
+                <ul>
+                    ${learningObjectives.map(objective => `<li>${objective}</li>`).join('')}
+                </ul>
+            </div>
+        `;
+    }
+    
+    // Add vocabulary if available
+    if (vocabulary && vocabulary.length > 0) {
+        storyHTML += `
+            <div class="vocabulary">
+                <h3>Vocabulary</h3>
+                <dl>
+                    ${vocabulary.map(item => `
+                        <dt>${item.word}</dt>
+                        <dd>${item.definition}</dd>
+                    `).join('')}
+                </dl>
+            </div>
+        `;
+    }
+    
+    // Close container
+    storyHTML += `</div>`;
+    
+    // Set HTML and scroll to story
+    storyOutput.innerHTML = storyHTML;
     storyOutput.scrollIntoView({ behavior: 'smooth' });
 }
 

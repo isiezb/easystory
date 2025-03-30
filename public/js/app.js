@@ -1,6 +1,7 @@
 import { apiService } from './apiService.js';
 import { supabase } from './supabase.js';
 import { auth } from './auth.js';
+import { uiHandler } from './uiHandler.js';
 
 // DOM Elements
 const storyForm = document.getElementById('storyForm');
@@ -69,54 +70,26 @@ storyForm.addEventListener('submit', async (e) => {
         data.subject = data.other_subject;
     }
     
+    // Format data for API
+    const requestData = {
+        academic_grade: data.academic_grade,
+        subject: data.subject,
+        subject_specification: data.subject_specification || '',
+        setting: data.setting || 'a classroom',
+        main_character: data.main_character || 'a student',
+        word_count: parseInt(data.word_count),
+        language: data.language,
+        generate_vocabulary: data.generate_vocabulary === 'on',
+        generate_summary: data.generate_summary === 'on'
+    };
+    
     try {
-        loadingOverlay.style.display = 'flex';
-        const response = await apiService.generateStory(data);
+        uiHandler.showLoading();
+        const response = await apiService.generateStory(requestData);
         
-        // Display story
-        storyOutput.innerHTML = `
-            <div class="story-content">
-                <div class="story-meta">
-                    <span>Grade: ${data.academic_grade}</span>
-                    <span>Subject: ${data.subject}</span>
-                    <span>Length: ${data.word_count} words</span>
-                </div>
-                <div class="story-text">${response.content}</div>
-            </div>
-        `;
-        
-        // Display vocabulary if requested
-        if (data.generate_vocabulary && response.vocabulary) {
-            const vocabularySection = document.createElement('div');
-            vocabularySection.className = 'vocabulary-section';
-            vocabularySection.innerHTML = `
-                <h3>Vocabulary List</h3>
-                <div class="vocabulary-list">
-                    ${response.vocabulary.map(word => `
-                        <div class="vocabulary-item">
-                            <div class="vocabulary-word">${word.word}</div>
-                            <div class="vocabulary-definition">${word.definition}</div>
-                            <div class="vocabulary-example">${word.example}</div>
-                            <div class="vocabulary-part">${word.part_of_speech}</div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-            storyOutput.appendChild(vocabularySection);
-        }
-        
-        // Display summary if requested
-        if (data.generate_summary && response.summary) {
-            const summarySection = document.createElement('div');
-            summarySection.className = 'story-summary';
-            summarySection.innerHTML = `
-                <div class="story-summary-title">Story Summary</div>
-                <div class="story-summary-content">${response.summary}</div>
-            `;
-            storyOutput.appendChild(summarySection);
-        }
-        
-        showToast('Story generated successfully!');
+        // Display story using uiHandler
+        uiHandler.displayStory(response);
+        uiHandler.showToast('Story generated successfully!', 'success');
         
         // Save story to Supabase if user is logged in
         const { data: { session } } = await supabase.auth.getSession();
@@ -142,29 +115,29 @@ storyForm.addEventListener('submit', async (e) => {
                 if (error) throw error;
             } catch (error) {
                 console.error('Error saving story:', error);
-                showToast('Failed to save story', 'error');
+                uiHandler.showToast('Failed to save story', 'error');
             }
         }
     } catch (error) {
         console.error('Error generating story:', error);
-        showToast(error.message || 'Failed to generate story', 'error');
+        uiHandler.showError(error);
     } finally {
-        loadingOverlay.style.display = 'none';
+        uiHandler.hideLoading();
     }
 });
 
 // UI update functions
-function updateUIForLoggedInUser() {
+function updateUIForLoggedInUser(user) {
     document.getElementById('loginBtn').style.display = 'none';
     document.getElementById('signupBtn').style.display = 'none';
     document.getElementById('logoutBtn').style.display = 'block';
     document.getElementById('userProfile').style.display = 'flex';
-    document.getElementById('userAvatar').textContent = currentUser.email[0].toUpperCase();
-    document.getElementById('userEmail').textContent = currentUser.email;
+    document.getElementById('userAvatar').textContent = user.user_metadata.email[0].toUpperCase();
+    document.getElementById('userEmail').textContent = user.user_metadata.email;
     
     // Show My Stories section
     document.getElementById('myStoriesSection').style.display = 'block';
-    loadUserStories(currentUser.id);
+    loadUserStories(user.id);
 }
 
 function updateUIForLoggedOutUser() {
@@ -182,16 +155,16 @@ async function init() {
         // Initialize Supabase
         await auth.init();
         
-        // Initialize UI
-        initializeUI();
-        
         // Setup event listeners
         setupEventListeners();
         
         // Load user stories if logged in
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
+            updateUIForLoggedInUser(session.user);
             await loadUserStories(session.user.id);
+        } else {
+            updateUIForLoggedOutUser();
         }
     } catch (error) {
         console.error('Error initializing app:', error);

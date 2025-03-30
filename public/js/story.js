@@ -20,20 +20,25 @@ export const story = {
             // Save story to Supabase
             const { data: { session } } = await supabase.auth.getSession();
             if (session) {
-                const { data, error } = await supabase.getClient().from('stories').insert({
+                const storyData = {
                     user_id: session.user.id,
-                    title: formData.subject_specification || 'Untitled Story',
-                    content: response.content,
-                    metadata: {
-                        subject: formData.subject,
-                        academic_grade: formData.academic_grade,
-                        word_count: formData.word_count,
-                        language: formData.language,
-                        quiz: response.quiz,
-                        vocabulary: response.vocabulary,
-                        summary: response.summary
-                    }
-                }).select().single();
+                    academic_grade: formData.academic_grade,
+                    subject: formData.subject,
+                    subject_specification: formData.subject_specification,
+                    setting: formData.setting,
+                    main_character: formData.main_character,
+                    word_count: parseInt(formData.word_count),
+                    language: formData.language,
+                    story_text: response.content,
+                    story_title: formData.subject_specification || 'Untitled Story',
+                    learning_objectives: response.learning_objectives || [],
+                    quiz_questions: response.quiz || [],
+                    vocabulary_list: response.vocabulary || [],
+                    story_summary: response.summary || '',
+                    is_continuation: false
+                };
+
+                const { data, error } = await supabase.getClient().from('stories').insert(storyData).select().single();
 
                 if (error) {
                     console.error('Error saving story to Supabase:', error);

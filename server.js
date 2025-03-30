@@ -244,34 +244,36 @@ The story should:
 6. Include a vocabulary list
 7. Include a summary
 
-Format the response as JSON with the following structure:
+IMPORTANT: Your response must be a valid JSON object with exactly this structure:
 {
     "content": "the story text",
-    "learning_objectives": ["objective 1", "objective 2", ...],
+    "learning_objectives": ["objective 1", "objective 2", "objective 3"],
     "vocabulary": [
         {
-            "word": "word",
-            "definition": "definition",
-            "example": "example sentence",
-            "part_of_speech": "part of speech"
+            "word": "word1",
+            "definition": "definition1",
+            "example": "example1",
+            "part_of_speech": "noun"
         }
     ],
     "quiz": [
         {
-            "question": "question text",
-            "options": ["option 1", "option 2", "option 3", "option 4"],
+            "question": "question1",
+            "options": ["option1", "option2", "option3", "option4"],
             "correctAnswer": 0
         }
     ],
-    "summary": "brief summary of the story"
-}`;
+    "summary": "brief summary"
+}
+
+Do not include any text before or after the JSON object.`;
 
         const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
             model: 'openai/gpt-4-turbo-preview',
             messages: [
                 {
                     role: 'system',
-                    content: 'You are a professional educational storyteller. Always respond in valid JSON format.'
+                    content: 'You are a professional educational storyteller. You must ALWAYS respond with a valid JSON object containing the story and its components. Never include any text before or after the JSON object.'
                 },
                 {
                     role: 'user',
@@ -288,24 +290,62 @@ Format the response as JSON with the following structure:
         });
 
         if (!response.data?.choices?.[0]?.message?.content) {
+            logger.error('OpenRouter response missing content:', response.data);
             throw new AppError('Invalid response from OpenRouter', 500);
         }
 
         const content = response.data.choices[0].message.content;
+        logger.info('Raw OpenRouter response:', content);
+
         let parsedContent;
         try {
-            parsedContent = JSON.parse(content);
+            // Try to find JSON content between curly braces
+            const jsonMatch = content.match(/\{[\s\S]*\}/);
+            if (jsonMatch) {
+                parsedContent = JSON.parse(jsonMatch[0]);
+            } else {
+                parsedContent = JSON.parse(content);
+            }
         } catch (error) {
             logger.error('Failed to parse OpenRouter response:', error);
+            logger.error('Raw content:', content);
             throw new AppError('Invalid response format from OpenRouter', 500);
         }
 
         // Validate the response structure
-        if (!parsedContent.content || !Array.isArray(parsedContent.learning_objectives) || 
-            !Array.isArray(parsedContent.vocabulary) || !Array.isArray(parsedContent.quiz) || 
-            !parsedContent.summary) {
-            throw new AppError('Invalid response structure from OpenRouter', 500);
+        const requiredFields = ['content', 'learning_objectives', 'vocabulary', 'quiz', 'summary'];
+        const missingFields = requiredFields.filter(field => !parsedContent[field]);
+        
+        if (missingFields.length > 0) {
+            logger.error('Missing required fields:', missingFields);
+            logger.error('Parsed content:', parsedContent);
+            throw new AppError(`Invalid response structure: missing ${missingFields.join(', ')}`, 500);
         }
+
+        // Validate arrays
+        if (!Array.isArray(parsedContent.learning_objectives)) {
+            throw new AppError('learning_objectives must be an array', 500);
+        }
+        if (!Array.isArray(parsedContent.vocabulary)) {
+            throw new AppError('vocabulary must be an array', 500);
+        }
+        if (!Array.isArray(parsedContent.quiz)) {
+            throw new AppError('quiz must be an array', 500);
+        }
+
+        // Validate quiz structure
+        parsedContent.quiz.forEach((q, index) => {
+            if (!q.question || !Array.isArray(q.options) || q.options.length !== 4 || typeof q.correctAnswer !== 'number') {
+                throw new AppError(`Invalid quiz question at index ${index}`, 500);
+            }
+        });
+
+        // Validate vocabulary structure
+        parsedContent.vocabulary.forEach((v, index) => {
+            if (!v.word || !v.definition || !v.example || !v.part_of_speech) {
+                throw new AppError(`Invalid vocabulary item at index ${index}`, 500);
+            }
+        });
 
         return parsedContent;
     } catch (error) {

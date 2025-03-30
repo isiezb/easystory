@@ -1,4 +1,3 @@
-import { configPromise } from './config.js';
 import { supabase } from './supabase.js';
 
 class ApiError extends Error {
@@ -12,14 +11,10 @@ class ApiError extends Error {
 
 class ApiService {
     constructor() {
-        this.config = null;
-    }
-
-    async init() {
-        if (!this.config) {
-            this.config = await configPromise;
+        this.serverUrl = window._env_?.SERVER_URL;
+        if (!this.serverUrl) {
+            throw new Error('Missing SERVER_URL configuration');
         }
-        return this.config;
     }
 
     async handleResponse(response) {
@@ -60,28 +55,6 @@ class ApiService {
         return data.message || statusMessages[status] || 'An error occurred';
     }
 
-    async retryWithBackoff(fn, maxRetries = 3, initialDelay = 1000) {
-        let lastError;
-        
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
-            try {
-                return await fn();
-            } catch (error) {
-                lastError = error;
-                if (error instanceof ApiError && error.status >= 500) {
-                    if (attempt < maxRetries) {
-                        const delay = initialDelay * Math.pow(2, attempt - 1);
-                        await new Promise(resolve => setTimeout(resolve, delay));
-                        continue;
-                    }
-                }
-                throw error;
-            }
-        }
-        
-        throw lastError;
-    }
-
     async generateStory(formData) {
         try {
             const data = {
@@ -97,10 +70,9 @@ class ApiService {
             };
 
             console.log('Sending data to server:', data);
-            console.log('Server URL:', window._env_?.SERVER_URL);
-            console.log('Auth token:', await this.getAuthToken());
+            console.log('Server URL:', this.serverUrl);
 
-            const response = await fetch(`${window._env_?.SERVER_URL}/generate-story`, {
+            const response = await fetch(`${this.serverUrl}/generate-story`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -109,12 +81,7 @@ class ApiService {
                 body: JSON.stringify(data)
             });
 
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Failed to generate story');
-            }
-
-            const result = await response.json();
+            const result = await this.handleResponse(response);
             console.log('Server response:', result);
             return result;
         } catch (error) {
@@ -124,22 +91,19 @@ class ApiService {
     }
 
     async fetchUserStories(userId) {
-        await this.init();
-        const response = await fetch(`${this.config.serverUrl}/user-stories/${userId}`);
+        const response = await fetch(`${this.serverUrl}/user-stories/${userId}`);
         return this.handleResponse(response);
     }
 
     async deleteStory(storyId) {
-        await this.init();
-        const response = await fetch(`${this.config.serverUrl}/stories/${storyId}`, {
+        const response = await fetch(`${this.serverUrl}/stories/${storyId}`, {
             method: 'DELETE'
         });
         return this.handleResponse(response);
     }
 
     async getStoryById(storyId) {
-        await this.init();
-        const response = await fetch(`${this.config.serverUrl}/stories/${storyId}`);
+        const response = await fetch(`${this.serverUrl}/stories/${storyId}`);
         return this.handleResponse(response);
     }
 

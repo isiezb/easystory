@@ -80,7 +80,7 @@ storyForm.addEventListener('submit', async (e) => {
                     <span>Subject: ${data.subject}</span>
                     <span>Length: ${data.word_count} words</span>
                 </div>
-                <div class="story-text">${response.story}</div>
+                <div class="story-text">${response.content}</div>
             </div>
         `;
         
@@ -95,6 +95,8 @@ storyForm.addEventListener('submit', async (e) => {
                         <div class="vocabulary-item">
                             <div class="vocabulary-word">${word.word}</div>
                             <div class="vocabulary-definition">${word.definition}</div>
+                            <div class="vocabulary-example">${word.example}</div>
+                            <div class="vocabulary-part">${word.part_of_speech}</div>
                         </div>
                     `).join('')}
                 </div>
@@ -124,13 +126,15 @@ storyForm.addEventListener('submit', async (e) => {
                     .insert({
                         user_id: session.user.id,
                         title: `${data.subject} Story - Grade ${data.academic_grade}`,
-                        content: response.story,
+                        content: response.content,
                         metadata: {
                             grade: data.academic_grade,
                             subject: data.subject,
                             word_count: data.word_count,
                             vocabulary: response.vocabulary,
-                            summary: response.summary
+                            summary: response.summary,
+                            learning_objectives: response.learning_objectives,
+                            quiz: response.quiz
                         }
                     });
                 

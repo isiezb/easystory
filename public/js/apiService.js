@@ -704,6 +704,12 @@ class ApiService {
             if (data.academic_grade) continuationRequest.academic_grade = data.academic_grade;
             if (data.subject) continuationRequest.subject = data.subject;
             
+            // Add difficulty parameter if provided
+            if (data.difficulty) {
+                continuationRequest.difficulty = data.difficulty;
+                console.log(`Using specified difficulty: ${data.difficulty}`);
+            }
+            
             // Use development mode mock data if configured
             if (window._config?.useMockData || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
                 console.log('Using mock data for story continuation');
@@ -757,19 +763,46 @@ class ApiService {
     
     // Generate mock data for story continuation
     getMockStoryContinuation(data) {
-        console.log('Generating mock story continuation data');
+        console.log('Generating mock story continuation data with difficulty:', data.difficulty);
         
         try {
             const originalContent = data.original_story || "Once upon a time, there was a story that needed to continue.";
             let continuationText = "";
+            const difficulty = data.difficulty || 'same';
+            
+            // Use difficulty to adjust the continuation tone and complexity
+            let difficultyPrefix = '';
+            if (difficulty === 'easier') {
+                difficultyPrefix = '(This is a simpler continuation with more straightforward language.) ';
+            } else if (difficulty === 'harder') {
+                difficultyPrefix = '(This is a more advanced continuation with more complex language and concepts.) ';
+            }
             
             // Generate a realistic continuation based on the original content
             if (originalContent.includes("mathematics") || originalContent.includes("Math")) {
-                continuationText = "The student continued to explore mathematical concepts with growing excitement. They discovered that equations could be like puzzles, each with its own unique solution waiting to be found.\n\nAfter mastering the basics, they moved on to more complex problems. Their teacher noticed their progress and gave them special projects to challenge their abilities. Soon, other students were asking for help, and the student found joy in explaining mathematical concepts to their peers.\n\n(This is a mock continuation of the mathematics story.)";
+                if (difficulty === 'easier') {
+                    continuationText = "The student found that math could be fun! They learned how to add larger numbers and solve simple problems. Their teacher showed them math tricks to make calculations faster.\n\nThey shared these tricks with friends during lunch. Soon, everyone was practicing together.\n\n\"Math isn't scary,\" they told their classmates. \"It's like a puzzle game!\"\n\n" + difficultyPrefix;
+                } else if (difficulty === 'harder') {
+                    continuationText = "The student delved deeper into advanced mathematical principles, exploring the elegant relationship between differential equations and their applications in physics. They derived formulas that described natural phenomena with remarkable precision.\n\nTheir teacher, impressed by this sophisticated understanding, introduced them to non-Euclidean geometry and complex analysis. The abstract concepts were challenging, but through persistent investigation and logical reasoning, the student began to comprehend these multidimensional frameworks.\n\n" + difficultyPrefix;
+                } else {
+                    continuationText = "The student continued to explore mathematical concepts with growing excitement. They discovered that equations could be like puzzles, each with its own unique solution waiting to be found.\n\nAfter mastering the basics, they moved on to more complex problems. Their teacher noticed their progress and gave them special projects to challenge their abilities. Soon, other students were asking for help, and the student found joy in explaining mathematical concepts to their peers.\n\n" + difficultyPrefix;
+                }
             } else if (originalContent.includes("biology") || originalContent.includes("science")) {
-                continuationText = "As they continued their scientific journey, the student began conducting simple experiments to observe biological processes firsthand. They carefully documented their findings in a journal, adding detailed sketches of what they observed.\n\nTheir fascination with living organisms grew stronger each day. At home, they started a small garden to watch plants grow and change. Their parents encouraged this curiosity by taking them to the natural history museum, where they spent hours examining the exhibits.\n\n(This is a mock continuation of the biology story.)";
+                if (difficulty === 'easier') {
+                    continuationText = "The student learned about plants and animals. They saw how living things need water, food, and air to survive. Their teacher brought a plant to class that they could all take care of.\n\nAt home, they watched birds in their yard. They noticed how the birds built nests and looked for food. It was exciting to see science happening all around them!\n\n" + difficultyPrefix;
+                } else if (difficulty === 'harder') {
+                    continuationText = "The student's investigation into cellular biology revealed the sophisticated mechanisms of mitochondrial function and ATP synthesis. They examined electron transport chains and chemiosmotic coupling with increasing fascination.\n\nTheir independent research project on epigenetic modifications demonstrated how environmental factors could influence gene expression without altering the DNA sequence itself. The complexity of biological systems became increasingly apparent as they studied the intricate regulatory networks that maintain homeostasis.\n\n" + difficultyPrefix;
+                } else {
+                    continuationText = "As they continued their scientific journey, the student began conducting simple experiments to observe biological processes firsthand. They carefully documented their findings in a journal, adding detailed sketches of what they observed.\n\nTheir fascination with living organisms grew stronger each day. At home, they started a small garden to watch plants grow and change. Their parents encouraged this curiosity by taking them to the natural history museum, where they spent hours examining the exhibits.\n\n" + difficultyPrefix;
+                }
             } else {
-                continuationText = "The journey continued with even more fascinating discoveries. Each new piece of knowledge built upon the last, creating a deeper understanding of the subject.\n\nAs confidence grew, so did the desire to share these insights with others. The excitement of learning proved contagious, inspiring friends and classmates to join in the exploration.\n\nThe teacher noticed this growing enthusiasm and provided increasingly challenging material, which was met with determination and creativity.\n\n(This is a mock continuation generated when the server is unavailable.)";
+                if (difficulty === 'easier') {
+                    continuationText = "The learning journey got better each day. Finding new facts was fun and easy. Friends joined in, and everyone shared what they knew.\n\nThe teacher gave simple tasks that made learning feel like play. There were pictures and stories that helped explain big ideas in simple ways.\n\n\"I love learning!\" the student said with a smile.\n\n" + difficultyPrefix;
+                } else if (difficulty === 'harder') {
+                    continuationText = "The intellectual expedition intensified as multifaceted concepts emerged from prior knowledge foundations. The learner synthesized disparate theoretical frameworks into a cohesive analytical paradigm that transcended conventional disciplinary boundaries.\n\nPedagogical methodologies evolved to accommodate this sophisticated cognitive progression, incorporating dialectical discourse and epistemological inquiry. Peers observed this scholarly transformation with admiration, recognizing the profound implications for collective intellectual advancement.\n\n" + difficultyPrefix;
+                } else {
+                    continuationText = "The journey continued with even more fascinating discoveries. Each new piece of knowledge built upon the last, creating a deeper understanding of the subject.\n\nAs confidence grew, so did the desire to share these insights with others. The excitement of learning proved contagious, inspiring friends and classmates to join in the exploration.\n\nThe teacher noticed this growing enthusiasm and provided increasingly challenging material, which was met with determination and creativity.\n\n" + difficultyPrefix;
+                }
             }
             
             // Create a realistic response structure
@@ -779,13 +812,15 @@ class ApiService {
                     continuation: {
                         content: continuationText,
                         original_story: originalContent,
-                        word_count: continuationText.split(' ').length
+                        word_count: continuationText.split(' ').length,
+                        difficulty: difficulty
                     }
                 },
                 meta: {
                     processing_time: "0.5s",
                     generated_at: new Date().toISOString(),
-                    source: "mock-continuation-generator"
+                    source: "mock-continuation-generator",
+                    difficulty_applied: difficulty
                 }
             };
         } catch (error) {
@@ -798,7 +833,8 @@ class ApiService {
                     continuation: {
                         content: "The story continued with more exciting developments. New challenges arose, but were overcome through perseverance and creativity.\n\n(This is a simple mock continuation generated as a fallback.)",
                         original_story: data.original_story || "Original story content",
-                        word_count: 25
+                        word_count: 25,
+                        difficulty: data.difficulty || 'same'
                     }
                 }
             };

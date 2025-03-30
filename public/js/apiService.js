@@ -83,16 +83,44 @@ class ApiService {
     }
 
     async generateStory(formData) {
-        await this.init();
-        const response = await fetch(`${this.config.serverUrl}/generate-story`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${this.config.openRouterKey}`
-            },
-            body: JSON.stringify(formData)
-        });
-        return this.handleResponse(response);
+        try {
+            const data = {
+                academic_grade: formData.academic_grade,
+                subject: formData.subject,
+                subject_specification: formData.subject_specification || '',
+                setting: formData.setting,
+                main_character: formData.main_character,
+                word_count: parseInt(formData.word_count),
+                language: formData.language,
+                generate_vocabulary: formData.generate_vocabulary === 'true',
+                generate_summary: formData.generate_summary === 'true'
+            };
+
+            console.log('Sending data to server:', data);
+            console.log('Server URL:', window._env_?.SERVER_URL);
+            console.log('Auth token:', await this.getAuthToken());
+
+            const response = await fetch(`${window._env_?.SERVER_URL}/generate-story`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${await this.getAuthToken()}`
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to generate story');
+            }
+
+            const result = await response.json();
+            console.log('Server response:', result);
+            return result;
+        } catch (error) {
+            console.error('Error in generateStory:', error);
+            throw error;
+        }
     }
 
     async fetchUserStories(userId) {

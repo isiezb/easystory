@@ -62,8 +62,12 @@ async function handleStoryFormSubmit(e) {
     const formData = new FormData(storyForm);
     const data = Object.fromEntries(formData.entries());
     
-    // Log raw form data for debugging
-    console.log('Raw form data:', data);
+    // Add more detailed logging for debugging
+    console.log('Form submission - Raw form data:', data);
+    // Log each field individually to identify potential issues
+    Object.entries(data).forEach(([key, value]) => {
+        console.log(`Form field: ${key} = ${value} (${typeof value})`);
+    });
     
     // Handle other subject
     if (data.subject === 'other' && data.other_subject) {

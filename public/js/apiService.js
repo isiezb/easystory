@@ -98,8 +98,12 @@ class ApiService {
             }
         };
         
+        // Also create bare bones version with just raw form data
+        const rawFormData = {...data};
+        
         // Log the final formatted request
         console.log('Formatted request data for API:', apiRequest);
+        console.log('Raw form data for fallback:', rawFormData);
         
         try {
             const headers = {
@@ -125,35 +129,60 @@ class ApiService {
             }
             
             console.log(`Sending API request to ${this.baseUrl}/generate-story`);
-            console.log('Request body:', JSON.stringify(apiRequest, null, 2));
             
-            // Try both formats - with and without wrapper
+            // Try multiple formats in sequence, from most structured to least
             let response;
+            let errorMessages = [];
+            
             try {
                 // Try with wrapper first
+                console.log('Attempt 1: With wrapper structure');
+                console.log('Request body:', JSON.stringify(apiRequest, null, 2));
                 response = await fetch(`${this.baseUrl}/generate-story`, {
                     method: 'POST',
                     headers: headers,
                     body: JSON.stringify(apiRequest)
                 });
                 
-                // If we get a 400 status, try without the wrapper
-                if (response.status === 400) {
-                    console.log('Retrying without request wrapper');
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    errorMessages.push(`Attempt 1 failed with status ${response.status}: ${errorText}`);
+                    console.warn(`First attempt failed with status ${response.status}`, errorText);
+                    
+                    // Try without the wrapper
+                    console.log('Attempt 2: Without wrapper structure');
+                    console.log('Request body:', JSON.stringify(requestData, null, 2));
                     response = await fetch(`${this.baseUrl}/generate-story`, {
                         method: 'POST',
                         headers: headers,
                         body: JSON.stringify(requestData)
                     });
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        errorMessages.push(`Attempt 2 failed with status ${response.status}: ${errorText}`);
+                        console.warn(`Second attempt failed with status ${response.status}`, errorText);
+                        
+                        // Try with completely raw form data as a last resort
+                        console.log('Attempt 3: With raw form data');
+                        console.log('Request body:', JSON.stringify(rawFormData, null, 2));
+                        response = await fetch(`${this.baseUrl}/generate-story`, {
+                            method: 'POST',
+                            headers: headers,
+                            body: JSON.stringify(rawFormData)
+                        });
+                        
+                        if (!response.ok) {
+                            const errorText = await response.text();
+                            errorMessages.push(`Attempt 3 failed with status ${response.status}: ${errorText}`);
+                            console.warn(`Third attempt failed with status ${response.status}`, errorText);
+                            throw new Error(`All request formats failed. ${errorMessages.join(' | ')}`);
+                        }
+                    }
                 }
             } catch (fetchError) {
                 console.error('Fetch error:', fetchError);
-                // Try one more time with just the core data
-                response = await fetch(`${this.baseUrl}/generate-story`, {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify(requestData)
-                });
+                throw new Error(`Network error: ${fetchError.message}. ${errorMessages.join(' | ')}`);
             }
             
             console.log('Received response status:', response.status);

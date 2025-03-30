@@ -152,6 +152,29 @@ storyForm.addEventListener('submit', async (e) => {
     }
 });
 
+// UI update functions
+function updateUIForLoggedInUser() {
+    document.getElementById('loginBtn').style.display = 'none';
+    document.getElementById('signupBtn').style.display = 'none';
+    document.getElementById('logoutBtn').style.display = 'block';
+    document.getElementById('userProfile').style.display = 'flex';
+    document.getElementById('userAvatar').textContent = currentUser.email[0].toUpperCase();
+    document.getElementById('userEmail').textContent = currentUser.email;
+    
+    // Show My Stories section
+    document.getElementById('myStoriesSection').style.display = 'block';
+    loadUserStories(currentUser.id);
+}
+
+function updateUIForLoggedOutUser() {
+    document.getElementById('loginBtn').style.display = 'block';
+    document.getElementById('signupBtn').style.display = 'block';
+    document.getElementById('logoutBtn').style.display = 'none';
+    document.getElementById('userProfile').style.display = 'none';
+    document.getElementById('myStoriesSection').style.display = 'none';
+    document.getElementById('storiesGrid').innerHTML = '';
+}
+
 // Initialize app
 async function init() {
     try {

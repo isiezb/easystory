@@ -104,67 +104,74 @@ async function handleStoryFormSubmit(e) {
             displayStory(response);
         }
         
-        // Show success toast
-        showToast('Story generated successfully!', 'success');
-        
-        // Save story to Supabase if user is logged in
-        if (window.supabase && window.supabase.auth) {
+        // If user is logged in, save the story
+        if (window.auth && window.auth.getUser()) {
             try {
-                const { data: { session } } = await window.supabase.auth.getSession();
-                if (session) {
-                    try {
-                        const { error } = await window.supabase
-                            .from('stories')
-                            .insert({
-                                user_id: session.user.id,
-                                title: response.title || `${data.subject} Story - Grade ${data.academic_grade || data.grade || '5'}`,
-                                content: response.content,
-                                metadata: {
-                                    grade: data.academic_grade || data.grade || '5',
-                                    subject: data.subject,
-                                    word_count: Number(data.word_count || data.wordCount || 500),
-                                    vocabulary: response.vocabulary,
-                                    summary: response.summary,
-                                    learning_objectives: response.learning_objectives,
-                                    quiz: response.quiz
-                                }
-                            });
-                        
-                        if (error) throw error;
-                    } catch (error) {
-                        console.error('Error saving story:', error);
-                        showToast('Story generated but failed to save', 'warning');
+                console.log('User logged in, attempting to save story...');
+                
+                // Construct the story object to save based *primarily* on the API response
+                // Use fallbacks cautiously if response fields might be missing
+                const storyToSave = {
+                    user_id: window.auth.getUser().id,
+                    title: response.title || `Generated Story (${new Date().toLocaleDateString()})`, // Use response title or a generic fallback
+                    content: response.content || 'No content generated.', // Use response content
+                    metadata: {
+                        // Use response fields if available, otherwise null or defaults
+                        grade: response.academic_grade || null, 
+                        subject: response.subject || null,
+                        word_count: response.word_count || null,
+                        language: response.language || null,
+                        setting: response.setting || null,
+                        main_character: response.main_character || null,
+                        // Ensure these boolean flags exist on the response object before accessing
+                        generate_vocabulary: response.hasOwnProperty('generate_vocabulary') ? response.generate_vocabulary : null,
+                        generate_summary: response.hasOwnProperty('generate_summary') ? response.generate_summary : null,
+                        // Add fields present in the response, like vocabulary/summary/objectives
+                        vocabulary: response.vocabulary || null,
+                        summary: response.summary || null,
+                        learning_objectives: response.learning_objectives || null,
+                        // Do NOT include 'quiz' as it's likely removed
+                    },
+                    created_at: new Date().toISOString() 
+                };
+
+                // Remove null/undefined values from metadata before saving if needed by Supabase
+                Object.keys(storyToSave.metadata).forEach(key => {
+                    if (storyToSave.metadata[key] === null || storyToSave.metadata[key] === undefined) {
+                        delete storyToSave.metadata[key];
                     }
+                });
+
+                console.log('Saving story object:', JSON.stringify(storyToSave, null, 2));
+                
+                const { error: saveError } = await window.supabaseClient
+                    .from('stories')
+                    .insert([storyToSave]);
+
+                if (saveError) {
+                    console.error('Error saving story:', saveError);
+                    showToast(`Failed to save story: ${saveError.message}`, 'error');
+                } else {
+                    console.log('Story saved successfully');
+                    showToast('Story generated and saved!', 'success');
+                    loadUserStories(); // Refresh stories list
                 }
-            } catch (supabaseError) {
-                console.error('Error getting supabase session:', supabaseError);
+            } catch (saveCatchError) {
+                console.error('Unexpected error during story save process:', saveCatchError);
+                showToast(`Error saving story: ${saveCatchError.message}`, 'error');
             }
+        } else {
+            showToast('Story generated! Log in to save it.', 'success');
         }
     } catch (error) {
         console.error('Error generating story:', error);
-        
-        // Get a user-friendly error message
-        let errorMessage = 'Failed to generate story';
-        if (error.message) {
-            errorMessage = error.message;
+        let errorMessage = 'Failed to generate story.';
+        if (error instanceof ApiError) {
+            errorMessage = `API Error (${error.status}): ${error.message}`;
+        } else if (error.message) {
+            errorMessage = error.message; // Display the more specific error from the multi-step fetch
         }
-        
-        // Check if this is an ApiError with details
-        if (error.name === 'ApiError') {
-            if (error.status === 500) {
-                errorMessage = 'Server error: The story generation service is currently unavailable. Please try again later.';
-            } else if (error.status === 400) {
-                errorMessage = 'Invalid request: Please check your inputs and try again.';
-            } else if (error.status === 429) {
-                errorMessage = 'Too many requests: Please wait a moment before trying again.';
-            }
-            
-            if (error.details) {
-                console.error('Error details:', error.details);
-            }
-        }
-        
-        showToast(errorMessage, 'error');
+        showToast(errorMessage, 'error', 10000); // Show error for longer
     } finally {
         // Hide loading state
         if (window.uiHandler && window.uiHandler.hideLoading) {
@@ -324,7 +331,7 @@ function updateUIForLoggedInUser(user) {
         // Show My Stories section
         if (myStoriesSection) {
             myStoriesSection.style.display = 'block';
-            loadUserStories(user.id);
+            loadUserStories();
         }
     } catch (error) {
         console.error('Error updating UI for logged in user:', error);
@@ -398,62 +405,38 @@ async function init() {
 }
 
 // Load user stories
-async function loadUserStories(userId) {
+async function loadUserStories() {
+    if (!window.auth || !window.supabaseClient) return; // Ensure dependencies are loaded
+
+    const user = window.auth.getUser();
+    if (!user) return;
+
+    console.log('Loading stories for user:', user.id);
     const storiesGrid = document.getElementById('storiesGrid');
-    if (!storiesGrid) return;
-    
-    storiesGrid.innerHTML = '<div class="loading-stories">Loading stories...</div>';
-    
+    const myStoriesSection = document.getElementById('myStoriesSection');
+    if (!storiesGrid || !myStoriesSection) return;
+
+    storiesGrid.innerHTML = '<div class="loading-spinner-small"></div> Loading stories...'; // Show loading state
+    myStoriesSection.style.display = 'block';
+
     try {
-        if (!window.apiService) {
-            throw new Error('API service not initialized');
-        }
-        
-        const stories = await window.apiService.fetchUserStories(userId);
-        
-        if (!stories || stories.length === 0) {
-            storiesGrid.innerHTML = '<div class="no-stories">No stories yet. Generate your first story!</div>';
-            return;
-        }
-        
-        storiesGrid.innerHTML = stories.map(story => `
-            <div class="story-card">
-                <h3>${story.title || 'Untitled Story'}</h3>
-                <div class="story-meta">
-                    <span class="story-subject">${story.metadata?.subject || 'Unknown'}</span>
-                    <span class="story-date">${new Date(story.created_at).toLocaleDateString()}</span>
-                </div>
-                <div class="story-preview">${story.content ? story.content.substring(0, 150) + '...' : 'No content'}</div>
-                <div class="story-actions">
-                    <button class="view-story" data-story-id="${story.id}">View Story</button>
-                    <button class="delete-story" data-story-id="${story.id}">Delete</button>
-                </div>
-            </div>
-        `).join('');
-        
-        // Add event listeners to buttons
-        storiesGrid.querySelectorAll('.view-story').forEach(button => {
-            button.addEventListener('click', () => {
-                const storyId = button.getAttribute('data-story-id');
-                if (window.story && typeof window.story.view === 'function') {
-                    window.story.view(storyId);
-                }
+        const stories = await window.apiService.fetchUserStories();
+        storiesGrid.innerHTML = ''; // Clear loading state
+        if (stories && stories.length > 0) {
+            stories.forEach(story => {
+                const storyElement = createStorySummaryElement(story);
+                storiesGrid.appendChild(storyElement);
             });
-        });
-        
-        storiesGrid.querySelectorAll('.delete-story').forEach(button => {
-            button.addEventListener('click', () => {
-                const storyId = button.getAttribute('data-story-id');
-                if (window.story && typeof window.story.delete === 'function') {
-                    window.story.delete(storyId);
-                }
-            });
-        });
+        } else {
+            storiesGrid.innerHTML = '<p>No stories saved yet.</p>';
+        }
     } catch (error) {
-        console.error('Error loading stories:', error);
-        if (storiesGrid) {
-            storiesGrid.innerHTML = '<div class="no-stories">Failed to load stories</div>';
-        }
+        console.error('Failed to load stories:', error);
+        storiesGrid.innerHTML = '<p>Could not load stories.</p>'; // Clear loading state
+        // Provide more detail in the error message
+        const errorMsg = error instanceof ApiError ? `${error.message} (Status: ${error.status})` : error.message;
+        showToast(`Failed to load stories: ${errorMsg || 'Unknown error'}`, 'error');
+        myStoriesSection.style.display = 'none'; // Optionally hide section on error
     }
 }
 

@@ -22,37 +22,56 @@ class ApiService {
     }
 
     async handleResponse(response) {
+        console.log('Handling response with status:', response.status);
+
         if (!response.ok) {
-            let errorMessage = 'API request failed';
-            let details = null;
+            console.warn('Response not OK', response.status, response.statusText);
+            let errorData;
+            let errorMessage = `API request failed with status ${response.status}`;
+            
+            // Check content type to decide how to parse the error body
+            const contentType = response.headers.get('content-type');
             
             try {
-                const errorData = await response.json();
-                console.error('API error response:', errorData);
-                errorMessage = errorData.message || errorData.error || errorMessage;
-                details = errorData;
-            } catch (e) {
-                console.error('Error parsing error response:', e);
-                try {
-                    // Try to get text if JSON parsing fails
+                if (contentType && contentType.includes('application/json')) {
+                    errorData = await response.json();
+                    console.log('Parsed JSON error response:', errorData);
+                    // Try to find a meaningful message within the JSON error object
+                    errorMessage = errorData.error?.message || errorData.message || errorData.detail || JSON.stringify(errorData);
+                } else {
+                    // If not JSON, read as text
                     const errorText = await response.text();
-                    console.error('Error response text:', errorText);
-                    errorMessage = errorText || errorMessage;
-                } catch (textError) {
-                    console.error('Error getting error response text:', textError);
+                    console.log('Received non-JSON error response text:', errorText);
+                    errorData = { message: errorText }; 
+                    errorMessage = errorText.substring(0, 200); // Limit length for display
+                }
+            } catch (parseError) {
+                // This catches errors during response.json() or response.text()
+                console.error('Error parsing error response body:', parseError);
+                try {
+                    // As a last resort, try reading as text if JSON parsing failed
+                    const errorText = await response.text(); 
+                    errorData = { message: `Failed to parse error response. Body: ${errorText.substring(0, 100)}...` };
+                    errorMessage = errorData.message;
+                } catch (nestedParseError) {
+                     console.error('Error reading error response body as text after JSON parse failed:', nestedParseError);
+                     errorData = { message: 'Failed to parse error response and could not read body as text.' };
+                     errorMessage = errorData.message;
                 }
             }
             
-            throw new ApiError(errorMessage, response.status, details);
+            console.error(`API Error: ${response.status} - ${errorMessage}`, errorData);
+            throw new ApiError(errorMessage, response.status, errorData);
         }
-        
+
+        // Handle successful responses (2xx)
         try {
-            return await response.json();
-        } catch (e) {
-            console.error('Error parsing JSON response:', e);
-            const text = await response.text();
-            console.log('Response text:', text);
-            throw new Error('Invalid JSON response from server');
+            const responseData = await response.json();
+            console.log('Successful API response data:', responseData);
+            return this.parseStoryResponse(responseData); // Use the flexible parser
+        } catch (jsonError) {
+            console.error('Error parsing successful JSON response:', jsonError);
+            throw new Error('Failed to parse successful API response.');
         }
     }
 
@@ -215,13 +234,22 @@ class ApiService {
         } catch (error) {
             console.error('Error in generateStory:', error);
             
-            // If this is a network error or server error, return mock data
-            if (error.name === 'TypeError' && error.message.includes('Failed to fetch') || 
-                (error.name === 'ApiError' && error.status === 500)) {
-                console.log('Network or server error, using mock data');
-                return this.getMockStoryData(requestFormats[0]);
+            // Fallback to mock data for network errors or general server errors (5xx)
+            const shouldFallback = (error.name === 'TypeError' && error.message.includes('Failed to fetch')) || 
+                                   (error.name === 'ApiError' && error.status >= 500 && error.status < 600);
+
+            if (shouldFallback) {
+                console.log('Network or server error, attempting to use mock data as fallback.');
+                try {
+                    return this.getMockStoryData(requestFormats[0]); // Use the primary format for mock data generation
+                } catch (mockError) {
+                    console.error('Error generating mock data after primary error:', mockError);
+                    // If mock data also fails, re-throw the original error
+                    throw error; 
+                }
             }
             
+            // Re-throw other errors (like 4xx client errors or specific ApiErrors)
             throw error;
         }
     }

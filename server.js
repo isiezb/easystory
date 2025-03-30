@@ -185,8 +185,8 @@ function validateInputs(inputs) {
         
         // Check each required field individually for better debugging
         const missingFields = [];
-    for (const field of requiredFields) {
-        if (!inputs[field]) {
+        for (const field of requiredFields) {
+            if (!inputs[field]) {
                 missingFields.push(field);
                 logger.error(`Missing required field: ${field}`);
             }
@@ -220,6 +220,13 @@ function validateInputs(inputs) {
             return false;
         }
         
+        // Validate academic_grade is one of the supported values
+        const validGrades = ['K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12', 'University'];
+        if (!validGrades.includes(inputs.academic_grade)) {
+            logger.error(`Validation failed: academic_grade must be one of ${validGrades.join(', ')}, got: ${inputs.academic_grade}`);
+            return false;
+        }
+        
         // Validate language is one of the supported languages (case sensitive)
         const supportedLanguages = ['English', 'Spanish', 'French', 'German', 'Italian'];
         if (!supportedLanguages.includes(inputs.language)) {
@@ -232,10 +239,10 @@ function validateInputs(inputs) {
         return true;
     } catch (error) {
         logger.error('Error during input validation:', error);
-            return false;
-        }
+        return false;
     }
-    
+}
+
 // Validate quiz structure
 const validateQuizStructure = (quiz) => {
     if (!quiz || !Array.isArray(quiz.questions)) {

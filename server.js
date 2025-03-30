@@ -86,11 +86,13 @@ app.get('/health', (req, res) => {
 // Serve environment variables
 app.get('/env-config.js', (req, res) => {
     res.setHeader('Content-Type', 'application/javascript');
-    res.send(`window._env_ = {
-        SERVER_URL: '${process.env.SERVER_URL || ''}',
-        SUPABASE_URL: '${process.env.SUPABASE_URL}',
-        SUPABASE_KEY: '${process.env.SUPABASE_KEY}'
-    };`);
+    res.send(`
+        window._env_ = {
+            SERVER_URL: '${process.env.SERVER_URL || window.location.origin}',
+            SUPABASE_URL: '${process.env.SUPABASE_URL}',
+            SUPABASE_KEY: '${process.env.SUPABASE_KEY}'
+        };
+    `);
 });
 
 // Authentication middleware

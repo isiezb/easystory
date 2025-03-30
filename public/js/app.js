@@ -347,27 +347,34 @@ async function handleStoryFormSubmit(e) {
     }
 }
 
-// Show loading overlay (Simplified)
+// Show loading overlay (Direct Style Manipulation)
 function showLoadingOverlay() {
-    console.log("Attempting to show loading overlay...");
+    console.log("Attempting to show loading overlay (Direct Style)...");
     if (loadingOverlay) {
         console.log("Loading overlay element found.");
-        loadingOverlay.classList.add('visible');
-        console.log("Added 'visible' class to loading overlay.");
-        // Scroll to top
+        loadingOverlay.style.display = 'flex';
+        // Use setTimeout to ensure display:flex applies before opacity transition
+        setTimeout(() => {
+            loadingOverlay.style.opacity = '1';
+            console.log("Set loading overlay display: flex, opacity: 1");
+        }, 10); // Small delay
         window.scrollTo({ top: 0, behavior: 'auto' });
     } else {
         console.error("Loading overlay element NOT found in the DOM!");
     }
 }
 
-// Hide loading overlay (Simplified)
+// Hide loading overlay (Direct Style Manipulation)
 function hideLoadingOverlay() {
-    console.log("Attempting to hide loading overlay...");
+    console.log("Attempting to hide loading overlay (Direct Style)...");
     if (loadingOverlay) {
         console.log("Loading overlay element found.");
-        loadingOverlay.classList.remove('visible');
-        console.log("Removed 'visible' class from loading overlay.");
+        loadingOverlay.style.opacity = '0';
+        // Wait for opacity transition to finish before hiding completely
+        setTimeout(() => {
+            loadingOverlay.style.display = 'none';
+            console.log("Set loading overlay opacity: 0, display: none");
+        }, 200); // Matches the transition duration (0.2s)
     } else {
         console.error("Loading overlay element NOT found in the DOM!");
     }

@@ -86,11 +86,23 @@ app.get('/health', (req, res) => {
 // Serve environment variables
 app.get('/env-config.js', (req, res) => {
     res.setHeader('Content-Type', 'application/javascript');
+    
+    // Ensure URLs are properly formatted
+    const supabaseUrl = process.env.SUPABASE_URL?.replace(/\/$/, ''); // Remove trailing slash if present
+    
     const env = {
         SERVER_URL: process.env.SERVER_URL || '',
-        SUPABASE_URL: process.env.SUPABASE_URL || '',
+        SUPABASE_URL: supabaseUrl || '',
         SUPABASE_KEY: process.env.SUPABASE_KEY || ''
     };
+    
+    // Log the environment variables being sent (without sensitive data)
+    logger.info('Sending environment variables:', {
+        hasServerUrl: !!env.SERVER_URL,
+        hasSupabaseUrl: !!env.SUPABASE_URL,
+        supabaseUrlLength: env.SUPABASE_URL?.length,
+        hasSupabaseKey: !!env.SUPABASE_KEY
+    });
     
     res.send(`
         window._env_ = ${JSON.stringify(env)};

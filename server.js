@@ -167,6 +167,9 @@ const authenticateUser = async (req, res, next) => {
     }
 };
 
+// Input sanitization function
+const sanitizeInput = (str) => str.replace(/[<>]/g, '').trim();
+
 // Input validation function
 const validateInputs = (inputs) => {
     const requiredFields = [
@@ -186,8 +189,20 @@ const validateInputs = (inputs) => {
         }
     }
     
-    // Validate word_count is a number
-    if (typeof inputs.word_count !== 'number') {
+    // Validate word_count is a number and within reasonable range
+    if (typeof inputs.word_count !== 'number' || inputs.word_count < 100 || inputs.word_count > 5000) {
+        return false;
+    }
+    
+    // Validate academic_grade is a valid grade level
+    const validGrades = ['K', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12'];
+    if (!validGrades.includes(inputs.academic_grade)) {
+        return false;
+    }
+    
+    // Validate language is supported
+    const supportedLanguages = ['English', 'Spanish', 'French', 'German', 'Italian'];
+    if (!supportedLanguages.includes(inputs.language)) {
         return false;
     }
     
@@ -227,27 +242,32 @@ app.post('/generate-story', apiLimiter, authenticateUser, async (req, res) => {
         
         // Validate inputs
         if (!validateInputs(req.body)) {
-            throw new AppError('Invalid input data', 400);
+            throw new AppError('Invalid input data. Please check your inputs and try again.', 400);
         }
+
+        // Sanitize inputs
+        const sanitizedInputs = {
+            academic_grade: sanitizeInput(academic_grade),
+            subject: sanitizeInput(subject),
+            subject_specification: sanitizeInput(subject_specification),
+            setting: sanitizeInput(setting),
+            main_character: sanitizeInput(main_character),
+            word_count: parseInt(word_count),
+            language: sanitizeInput(language)
+        };
 
         // Log request details
         logger.info('Generating story', {
-            academic_grade,
-            subject,
-            subject_specification,
-            setting,
-            main_character,
-            word_count,
-            language,
+            ...sanitizedInputs,
             generate_vocabulary,
             generate_summary,
             userId: req.user.id
         });
 
         // Construct the prompt
-        const prompt = `Create an educational story for ${academic_grade} grade students about ${subject_specification} in ${subject}.
-        The story should be set in ${setting} and feature ${main_character} as the main character.
-        The story should be approximately ${word_count} words long and written in ${language}.
+        const prompt = `Create an educational story for ${sanitizedInputs.academic_grade} grade students about ${sanitizedInputs.subject_specification} in ${sanitizedInputs.subject}.
+        The story should be set in ${sanitizedInputs.setting} and feature ${sanitizedInputs.main_character} as the main character.
+        The story should be approximately ${sanitizedInputs.word_count} words long and written in ${sanitizedInputs.language}.
         ${generate_vocabulary ? 'Include a vocabulary list at the end.' : ''}
         ${generate_summary ? 'Include a summary at the beginning.' : ''}
         
@@ -293,7 +313,8 @@ app.post('/generate-story', apiLimiter, authenticateUser, async (req, res) => {
         let storyData;
         try {
             if (!response.data?.choices?.[0]?.message?.content) {
-                throw new Error('Invalid response structure from OpenRouter');
+                logger.error('Empty response from OpenRouter:', response.data);
+                throw new Error('Empty response from OpenRouter');
             }
 
             const content = response.data.choices[0].message.content;

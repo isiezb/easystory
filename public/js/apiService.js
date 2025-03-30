@@ -328,6 +328,12 @@ class ApiService {
         // Format 4: Raw form data
         const format4 = {...data};
         
+        // Format 5: Super minimal (absolute essentials only)
+        const format5 = {
+            subject: subject,
+            academic_grade: academicGrade
+        };
+        
         // Create an array of request formats to try
         const requestFormats = [
             // Format 0: Completely different approach with camelCase fields
@@ -343,7 +349,10 @@ class ApiService {
             format3,
             
             // Format 4: Raw form data
-            format4
+            format4,
+            
+            // Format 5: Super minimal (absolute essentials only)
+            format5
         ];
         
         // Log all the request formats we'll try
@@ -402,7 +411,15 @@ class ApiService {
                 try {
                     console.log(`Attempt ${i+1}: Using format:`, JSON.stringify(format, null, 2));
                     
-                    response = await fetch(`${this.baseUrl}/generate-story`, {
+                    // Try different endpoint paths if we're on the last attempts
+                    let endpointPath = '/generate-story';
+                    if (i === requestFormats.length - 1) {
+                        // Try the alternate endpoint paths on the last format
+                        endpointPath = '/api/generate-story';
+                        console.log(`Trying alternate endpoint path: ${endpointPath}`);
+                    }
+                    
+                    response = await fetch(`${this.baseUrl}${endpointPath}`, {
                         method: 'POST',
                         headers: headers,
                         body: JSON.stringify(format)
@@ -431,14 +448,80 @@ class ApiService {
                         errorMessages.push(`Format ${i+1} failed: ${JSON.stringify(error)}`);
                         console.warn(`Format ${i+1} failed with status ${response.status}:`, errorText);
                         
+                        // If this was the first failure, add a small delay before trying the next format
+                        // This can help with potential rate limiting or server processing issues
+                        if (!response.ok && i < requestFormats.length - 1) {
+                            const delayMs = 500; // 500ms delay between attempts
+                            console.log(`Adding ${delayMs}ms delay before next attempt...`);
+                            await new Promise(resolve => setTimeout(resolve, delayMs));
+                        }
+                        
                         // If we reached the last format, try URL-encoded as a final last-resort
                         if (i === requestFormats.length - 1 && !hasSuccess) {
                             console.log('Attempting final URL-encoded format as last resort');
                             
-                            // Try with URL-encoded form data (Content-Type: application/x-www-form-urlencoded)
+                            // Try both endpoint paths with URL encoding
+                            const endpointPaths = ['/generate-story', '/api/generate-story'];
+                            
+                            for (const path of endpointPaths) {
+                                try {
+                                    console.log(`URL-encoded request to ${path}:`, urlEncodedParams.toString());
+                                    const urlEncodedResponse = await fetch(`${this.baseUrl}${path}`, {
+                                        method: 'POST',
+                                        headers: {
+                                            ...headers,
+                                            'Content-Type': 'application/x-www-form-urlencoded'
+                                        },
+                                        body: urlEncodedParams
+                                    });
+                                    
+                                    console.log(`URL-encoded response from ${path}:`, {
+                                        status: urlEncodedResponse.status,
+                                        statusText: urlEncodedResponse.statusText
+                                    });
+                                    
+                                    if (urlEncodedResponse.ok) {
+                                        console.log(`URL-encoded format to ${path} succeeded!`);
+                                        response = urlEncodedResponse;
+                                        hasSuccess = true;
+                                        break; // Exit the loop if we succeed
+                                    } else {
+                                        const errorText = await urlEncodedResponse.text();
+                                        errorMessages.push(`URL-encoded format to ${path} failed: ${urlEncodedResponse.status} ${errorText}`);
+                                    }
+                                } catch (urlEncodedError) {
+                                    console.error(`URL-encoded request error to ${path}:`, urlEncodedError);
+                                    errorMessages.push(`URL-encoded format error to ${path}: ${urlEncodedError.message}`);
+                                }
+                                
+                                // Add delay between endpoint attempts
+                                await new Promise(resolve => setTimeout(resolve, 300));
+                            }
+                        }
+                    }
+                } catch (fetchError) {
+                    console.error(`Fetch error in attempt ${i+1}:`, fetchError);
+                    errorMessages.push(`Format ${i+1} fetch error: ${fetchError.message}`);
+                    
+                    // If this was the first failure, add a small delay before trying the next format
+                    // This can help with potential rate limiting or server processing issues
+                    if (!response.ok && i < requestFormats.length - 1) {
+                        const delayMs = 500; // 500ms delay between attempts
+                        console.log(`Adding ${delayMs}ms delay before next attempt...`);
+                        await new Promise(resolve => setTimeout(resolve, delayMs));
+                    }
+                    
+                    // If we reached the last format, try URL-encoded as a final last-resort
+                    if (i === requestFormats.length - 1 && !hasSuccess) {
+                        console.log('Attempting final URL-encoded format as last resort (after fetch error)');
+                        
+                        // Try both endpoint paths with URL encoding
+                        const endpointPaths = ['/generate-story', '/api/generate-story'];
+                        
+                        for (const path of endpointPaths) {
                             try {
-                                console.log('URL-encoded request:', urlEncodedParams.toString());
-                                const urlEncodedResponse = await fetch(`${this.baseUrl}/generate-story`, {
+                                console.log(`URL-encoded request to ${path}:`, urlEncodedParams.toString());
+                                const urlEncodedResponse = await fetch(`${this.baseUrl}${path}`, {
                                     method: 'POST',
                                     headers: {
                                         ...headers,
@@ -447,61 +530,27 @@ class ApiService {
                                     body: urlEncodedParams
                                 });
                                 
-                                console.log('URL-encoded response:', {
+                                console.log(`URL-encoded response from ${path}:`, {
                                     status: urlEncodedResponse.status,
                                     statusText: urlEncodedResponse.statusText
                                 });
                                 
                                 if (urlEncodedResponse.ok) {
-                                    console.log('URL-encoded format succeeded!');
+                                    console.log(`URL-encoded format to ${path} succeeded!`);
                                     response = urlEncodedResponse;
                                     hasSuccess = true;
+                                    break; // Exit the loop if we succeed
                                 } else {
                                     const errorText = await urlEncodedResponse.text();
-                                    errorMessages.push(`URL-encoded format failed: ${urlEncodedResponse.status} ${errorText}`);
+                                    errorMessages.push(`URL-encoded format to ${path} failed: ${urlEncodedResponse.status} ${errorText}`);
                                 }
                             } catch (urlEncodedError) {
-                                console.error('URL-encoded request error:', urlEncodedError);
-                                errorMessages.push(`URL-encoded format error: ${urlEncodedError.message}`);
+                                console.error(`URL-encoded request error to ${path}:`, urlEncodedError);
+                                errorMessages.push(`URL-encoded format error to ${path}: ${urlEncodedError.message}`);
                             }
-                        }
-                    }
-                } catch (fetchError) {
-                    console.error(`Fetch error in attempt ${i+1}:`, fetchError);
-                    errorMessages.push(`Format ${i+1} fetch error: ${fetchError.message}`);
-                    
-                    // If we reached the last format, try URL-encoded as a final last-resort
-                    if (i === requestFormats.length - 1 && !hasSuccess) {
-                        console.log('Attempting final URL-encoded format as last resort');
-                        
-                        // Try with URL-encoded form data (Content-Type: application/x-www-form-urlencoded)
-                        try {
-                            console.log('URL-encoded request:', urlEncodedParams.toString());
-                            const urlEncodedResponse = await fetch(`${this.baseUrl}/generate-story`, {
-                                method: 'POST',
-                                headers: {
-                                    ...headers,
-                                    'Content-Type': 'application/x-www-form-urlencoded'
-                                },
-                                body: urlEncodedParams
-                            });
                             
-                            console.log('URL-encoded response:', {
-                                status: urlEncodedResponse.status,
-                                statusText: urlEncodedResponse.statusText
-                            });
-                            
-                            if (urlEncodedResponse.ok) {
-                                console.log('URL-encoded format succeeded!');
-                                response = urlEncodedResponse;
-                                hasSuccess = true;
-                            } else {
-                                const errorText = await urlEncodedResponse.text();
-                                errorMessages.push(`URL-encoded format failed: ${urlEncodedResponse.status} ${errorText}`);
-                            }
-                        } catch (urlEncodedError) {
-                            console.error('URL-encoded request error:', urlEncodedError);
-                            errorMessages.push(`URL-encoded format error: ${urlEncodedError.message}`);
+                            // Add delay between endpoint attempts
+                            await new Promise(resolve => setTimeout(resolve, 300));
                         }
                     }
                 }

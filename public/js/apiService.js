@@ -76,7 +76,12 @@ export const apiService = {
             try {
                 console.log('Generating story with formData:', formData);
                 console.log('Server URL:', config.serverUrl);
+                console.log('Auth token:', await this.getAuthToken());
                 
+                if (!config.serverUrl) {
+                    throw new ApiError('Server URL is not configured', 500);
+                }
+
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
 

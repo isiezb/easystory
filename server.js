@@ -126,7 +126,15 @@ const authenticateUser = async (req, res, next) => {
 
 // Input validation function
 const validateInputs = (inputs) => {
-    const requiredFields = ['subject', 'grade', 'topic', 'learning_objectives'];
+    const requiredFields = [
+        'academic_grade',
+        'subject',
+        'subject_specification',
+        'setting',
+        'main_character',
+        'word_count',
+        'language'
+    ];
     
     // Check if all required fields are present
     for (const field of requiredFields) {
@@ -135,8 +143,8 @@ const validateInputs = (inputs) => {
         }
     }
     
-    // Validate learning_objectives is an array
-    if (!Array.isArray(inputs.learning_objectives)) {
+    // Validate word_count is a number
+    if (typeof inputs.word_count !== 'number') {
         return false;
     }
     
@@ -146,7 +154,17 @@ const validateInputs = (inputs) => {
 // API Routes
 app.post('/generate-story', authenticateUser, async (req, res) => {
     try {
-        const { subject, grade, topic, learning_objectives } = req.body;
+        const {
+            academic_grade,
+            subject,
+            subject_specification,
+            setting,
+            main_character,
+            word_count,
+            language,
+            generate_vocabulary,
+            generate_summary
+        } = req.body;
         
         // Validate inputs
         if (!validateInputs(req.body)) {
@@ -155,17 +173,24 @@ app.post('/generate-story', authenticateUser, async (req, res) => {
 
         // Log request details
         logger.info('Generating story', {
+            academic_grade,
             subject,
-            grade,
-            topic,
-            learning_objectives,
+            subject_specification,
+            setting,
+            main_character,
+            word_count,
+            language,
+            generate_vocabulary,
+            generate_summary,
             userId: req.user.id
         });
 
         // Construct the prompt
-        const prompt = `Create an educational story for ${grade} grade students about ${topic} in ${subject}. 
-        The story should be engaging and help students understand the following learning objectives:
-        ${learning_objectives.map(obj => `- ${obj}`).join('\n')}
+        const prompt = `Create an educational story for ${academic_grade} grade students about ${subject_specification} in ${subject}.
+        The story should be set in ${setting} and feature ${main_character} as the main character.
+        The story should be approximately ${word_count} words long and written in ${language}.
+        ${generate_vocabulary ? 'Include a vocabulary list at the end.' : ''}
+        ${generate_summary ? 'Include a summary at the beginning.' : ''}
         
         Please provide the response in the following JSON format:
         {
@@ -200,7 +225,9 @@ app.post('/generate-story', authenticateUser, async (req, res) => {
         }, {
             headers: {
                 'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'HTTP-Referer': process.env.SERVER_URL || 'http://localhost:3000',
+                'X-Title': 'Quiz Story Generator'
             },
             timeout: 30000 // 30 second timeout
         });
@@ -215,7 +242,19 @@ app.post('/generate-story', authenticateUser, async (req, res) => {
                 throw new Error('Invalid story data structure');
             }
         } catch (error) {
-            logger.error('Failed to parse OpenRouter response', { error: error.message });
+            logger.error('Failed to parse OpenRouter response', { 
+                error: error.message,
+                response: response.data 
+            });
+            
+            if (error.response?.status === 429) {
+                throw new AppError('Rate limit exceeded. Please try again later.', 429);
+            } else if (error.response?.status === 401) {
+                throw new AppError('Invalid API key. Please check your OpenRouter API key.', 500);
+            } else if (error.response?.status === 403) {
+                throw new AppError('Access denied. Please check your OpenRouter API key permissions.', 500);
+            }
+            
             throw new AppError('Invalid response format from AI', 500);
         }
 
@@ -229,18 +268,26 @@ app.post('/generate-story', authenticateUser, async (req, res) => {
                     story_title: storyData.story.title,
                     story_text: storyData.story.content,
                     subject: subject,
-                    grade: grade,
-                    topic: topic,
+                    academic_grade: academic_grade,
+                    subject_specification: subject_specification,
+                    setting: setting,
+                    main_character: main_character,
+                    word_count: word_count,
+                    language: language,
                     learning_objectives: storyData.story.learning_objectives,
                     image_prompt: storyData.story.imagePrompt,
                     audio_url: storyData.story.audioUrl,
                     image_url: storyData.story.imageUrl,
-                    quiz_questions: storyData.quiz.questions
+                    quiz_questions: storyData.quiz.questions,
+                    created_at: new Date().toISOString()
                 }])
                 .select()
                 .single();
 
-            if (dbError) throw dbError;
+            if (dbError) {
+                logger.error('Database error:', dbError);
+                throw dbError;
+            }
             savedStory = story;
             logger.info('Story saved to database', { storyId: story.id });
         } catch (error) {
@@ -279,14 +326,14 @@ app.get('/user-stories', authenticateUser, async (req, res) => {
             .order('created_at', { ascending: false });
 
         if (error) {
-            console.error('Supabase query error:', error);
-            return res.status(500).json({ error: 'Failed to fetch stories' });
+            logger.error('Supabase query error:', error);
+            throw new AppError('Failed to fetch stories', 500, error.message);
         }
 
         res.json(stories);
     } catch (error) {
-        console.error('Error:', error);
-        res.status(500).json({ error: 'Failed to fetch stories' });
+        logger.error('Error fetching user stories:', error);
+        handleError(error, req, res);
     }
 });
 

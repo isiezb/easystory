@@ -228,6 +228,11 @@ const validateQuizStructure = (quiz) => {
 // API Routes
 app.post('/generate-story', apiLimiter, authenticateUser, async (req, res) => {
     try {
+        // Validate request body
+        if (!req.body || typeof req.body !== 'object') {
+            throw new AppError('Invalid request body', 400);
+        }
+
         const {
             academic_grade,
             subject,
@@ -293,27 +298,42 @@ app.post('/generate-story', apiLimiter, authenticateUser, async (req, res) => {
             }
         }`;
 
-        // Generate story and quiz using OpenRouter with timeout
-        const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
-            model: "google/gemini-pro",
-            messages: [
-                { role: "system", content: "You are an expert educational storyteller and quiz creator. Always respond with valid JSON." },
-                { role: "user", content: prompt }
-            ]
-        }, {
-            headers: {
-                'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
-                'Content-Type': 'application/json',
-                'HTTP-Referer': process.env.SERVER_URL || 'http://localhost:3000',
-                'X-Title': 'Quiz Story Generator'
-            },
-            timeout: 30000 // 30 second timeout
-        });
+        // Generate story and quiz using OpenRouter with timeout and retries
+        let response;
+        let retries = 3;
+        while (retries > 0) {
+            try {
+                response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
+                    model: "google/gemini-pro",
+                    messages: [
+                        { role: "system", content: "You are an expert educational storyteller and quiz creator. Always respond with valid JSON." },
+                        { role: "user", content: prompt }
+                    ]
+                }, {
+                    headers: {
+                        'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+                        'Content-Type': 'application/json',
+                        'HTTP-Referer': process.env.SERVER_URL || 'http://localhost:3000',
+                        'X-Title': 'Quiz Story Generator'
+                    },
+                    timeout: 60000 // 60 second timeout
+                });
+                break;
+            } catch (error) {
+                retries--;
+                if (retries === 0) {
+                    logger.error('OpenRouter API request failed after retries:', error);
+                    throw new AppError('Failed to generate story. Please try again later.', 503);
+                }
+                // Wait before retrying
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+        }
 
         let storyData;
         try {
-            if (!response.data?.choices?.[0]?.message?.content) {
-                logger.error('Empty response from OpenRouter:', response.data);
+            if (!response?.data?.choices?.[0]?.message?.content) {
+                logger.error('Empty response from OpenRouter:', response?.data);
                 throw new Error('Empty response from OpenRouter');
             }
 
@@ -339,7 +359,7 @@ app.post('/generate-story', apiLimiter, authenticateUser, async (req, res) => {
         } catch (error) {
             logger.error('Failed to parse OpenRouter response', { 
                 error: error.message,
-                response: response.data 
+                response: response?.data 
             });
             
             if (error.response?.data?.error) {
@@ -357,61 +377,60 @@ app.post('/generate-story', apiLimiter, authenticateUser, async (req, res) => {
             throw new AppError('Invalid response format from AI', 500);
         }
 
-        // Save to database
+        // Save to database with retries
         let savedStory;
-        try {
-            const { data: story, error: dbError } = await supabase
-                .from('stories')
-                .insert([{
-                    user_id: req.user.id,
-                    story_title: storyData.story.title,
-                    story_text: storyData.story.content,
-                    subject: subject,
-                    academic_grade: academic_grade,
-                    subject_specification: subject_specification,
-                    setting: setting,
-                    main_character: main_character,
-                    word_count: word_count,
-                    language: language,
-                    learning_objectives: storyData.story.learning_objectives,
-                    image_prompt: storyData.story.imagePrompt,
-                    audio_url: storyData.story.audioUrl,
-                    image_url: storyData.story.imageUrl,
-                    quiz_questions: storyData.quiz.questions,
-                    created_at: new Date().toISOString()
-                }])
-                .select()
-                .single();
+        let dbRetries = 3;
+        while (dbRetries > 0) {
+            try {
+                const { data: story, error: dbError } = await supabase
+                    .from('stories')
+                    .insert([{
+                        user_id: req.user.id,
+                        story_title: storyData.story.title,
+                        story_text: storyData.story.content,
+                        subject: subject,
+                        academic_grade: academic_grade,
+                        subject_specification: subject_specification,
+                        setting: setting,
+                        main_character: main_character,
+                        word_count: word_count,
+                        language: language,
+                        learning_objectives: storyData.story.learning_objectives,
+                        image_prompt: storyData.story.imagePrompt,
+                        audio_url: storyData.story.audioUrl,
+                        image_url: storyData.story.imageUrl,
+                        quiz_questions: storyData.quiz.questions,
+                        created_at: new Date().toISOString()
+                    }])
+                    .select()
+                    .single();
 
-            if (dbError) {
-                logger.error('Database error:', dbError);
-                throw dbError;
+                if (dbError) {
+                    throw dbError;
+                }
+                savedStory = story;
+                logger.info('Story saved to database', { storyId: story.id });
+                break;
+            } catch (error) {
+                dbRetries--;
+                if (dbRetries === 0) {
+                    logger.error('Failed to save story to database after retries:', error);
+                    throw new AppError('Failed to save story. Please try again later.', 503);
+                }
+                // Wait before retrying
+                await new Promise(resolve => setTimeout(resolve, 1000));
             }
-            savedStory = story;
-            logger.info('Story saved to database', { storyId: story.id });
-        } catch (error) {
-            logger.error('Failed to save story to database', { error: error.message });
-            throw new AppError('Failed to save story to database', 500);
         }
 
         // Send response
         res.json({
             success: true,
-            data: {
-                story: {
-                    ...storyData.story,
-                    id: savedStory.id
-                },
-                quiz: storyData.quiz
-            }
+            story: storyData.story,
+            quiz: storyData.quiz,
+            savedStory
         });
-
     } catch (error) {
-        if (error.code === 'ECONNABORTED') {
-            handleError(new AppError('Request timeout', 504), req, res);
-        } else {
-            handleError(error, req, res);
-        }
+        handleError(error, res);
     }
 });
 

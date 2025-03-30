@@ -12,6 +12,9 @@ const helmet = require('helmet');
 const app = express();
 const port = process.env.PORT || 3000;
 
+// Fix for 'trust proxy' error with express-rate-limit
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet({
     contentSecurityPolicy: {
@@ -93,6 +96,7 @@ app.use(cors({
     allowedHeaders: '*'
 }));
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Request logging middleware
 app.use((req, res, next) => {
@@ -383,9 +387,15 @@ app.post('/generate-story', apiLimiter, async (req, res) => {
         if (authHeader) {
             try {
                 const token = authHeader.split(' ')[1];
+                logger.info('Auth token received, attempting to identify user');
+                
                 const { data: { user }, error: userError } = await supabase.auth.getUser(token);
                 
-                if (!userError && user) {
+                if (userError) {
+                    logger.error('Error identifying user:', userError);
+                } else if (user) {
+                    logger.info(`User identified: ${user.id}, saving story to database`);
+                    
                     const { data, error } = await supabase
                         .from('stories')
                         .insert({
@@ -411,12 +421,16 @@ app.post('/generate-story', apiLimiter, async (req, res) => {
                     if (error) {
                         logger.error('Error saving story to Supabase:', error);
                     } else {
-                        logger.info('Story saved to Supabase:', { storyId: data.id });
+                        logger.info('Story saved to Supabase successfully:', { storyId: data.id });
                     }
+                } else {
+                    logger.warn('No user found with provided token');
                 }
             } catch (error) {
                 logger.error('Error handling Supabase save:', error);
             }
+        } else {
+            logger.info('No authorization header, skipping database save');
         }
 
         res.json(response);
@@ -451,6 +465,118 @@ app.get('/user-stories', apiLimiter, authenticateUser, async (req, res) => {
         res.json(stories);
     } catch (error) {
         logger.error('Error fetching user stories:', error);
+        handleError(error, req, res);
+    }
+});
+
+// Story continuation endpoint
+app.post('/continue-story', apiLimiter, async (req, res) => {
+    try {
+        const inputs = req.body;
+        logger.info('Received story continuation request:', {
+            word_count: inputs.word_count,
+            language: inputs.language,
+            is_continuation: inputs.is_continuation
+        });
+
+        // Validate inputs
+        if (!inputs.original_story) {
+            logger.error('Missing original_story in continuation request');
+            throw new AppError('Original story content is required', 400);
+        }
+
+        // Continue story using OpenRouter
+        const prompt = `
+        Continue the following story. Make it engaging and educational.
+        Original story: ${inputs.original_story}
+        
+        Continuation prompt: ${inputs.continuation_prompt || 'Continue the story'}
+        
+        Word count: approximately ${inputs.word_count || 300} words.
+        `;
+
+        // Similar structure to generateStoryWithOpenRouter but simplified for continuation
+        try {
+            logger.info('Sending continuation request to OpenRouter');
+            const response = await openai.chat.completions.create({
+                model: "openrouter/openai/gpt-3.5-turbo",
+                messages: [
+                    { role: "system", content: "You are a creative educational story generator." },
+                    { role: "user", content: prompt }
+                ],
+                temperature: 0.7,
+                max_tokens: 1500,
+                top_p: 1,
+                frequency_penalty: 0,
+                presence_penalty: 0
+            });
+
+            logger.info('OpenRouter continuation response received');
+            const continuationContent = response.choices[0].message.content;
+
+            // If user is logged in, save continuation to Supabase
+            const authHeader = req.headers.authorization;
+            if (authHeader) {
+                try {
+                    const token = authHeader.split(' ')[1];
+                    logger.info('Auth token received, attempting to identify user for continuation save');
+                    
+                    const { data: { user }, error: userError } = await supabase.auth.getUser(token);
+                    
+                    if (userError) {
+                        logger.error('Error identifying user for continuation:', userError);
+                    } else if (user) {
+                        logger.info(`User identified: ${user.id}, saving continuation to database`);
+                        
+                        const { data, error } = await supabase
+                            .from('story_continuations')
+                            .insert({
+                                user_id: user.id,
+                                original_story: inputs.original_story,
+                                continuation_text: continuationContent,
+                                word_count: inputs.word_count || 300,
+                                language: inputs.language || 'English',
+                                created_at: new Date().toISOString()
+                            })
+                            .select()
+                            .single();
+
+                        if (error) {
+                            logger.error('Error saving continuation to Supabase:', error);
+                        } else {
+                            logger.info('Continuation saved to Supabase successfully:', { continuationId: data.id });
+                        }
+                    } else {
+                        logger.warn('No user found with provided token for continuation');
+                    }
+                } catch (error) {
+                    logger.error('Error handling continuation Supabase save:', error);
+                }
+            }
+
+            const responseObj = {
+                success: true,
+                data: {
+                    continuation: {
+                        content: continuationContent,
+                        original_story: inputs.original_story,
+                        word_count: continuationContent.split(/\s+/).length,
+                        timestamp: new Date().toISOString()
+                    }
+                },
+                meta: {
+                    processing_time: `${((Date.now() - new Date(response.created).getTime()) / 1000).toFixed(2)}s`,
+                    model: response.model
+                }
+            };
+
+            res.json(responseObj);
+        } catch (error) {
+            logger.error('Error in OpenRouter continuation request:', error);
+            throw new AppError('Failed to generate story continuation', 500);
+        }
+    } catch (error) {
+        logger.error('Error in continue-story endpoint:', error);
         handleError(error, req, res);
     }
 });

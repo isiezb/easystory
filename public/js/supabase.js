@@ -23,6 +23,7 @@
                 console.warn('Supabase not loaded. Creating mock client.');
                 
                 window.supabase = {
+                    _isMockClient: true,
                     auth: {
                         getSession: async () => ({
                             data: { session: null },
@@ -55,6 +56,7 @@
         console.error('Error initializing Supabase:', error);
         // Create a mock client for error case
         window.supabase = {
+            _isMockClient: true,
             auth: {
                 getSession: async () => ({
                     data: { session: null },

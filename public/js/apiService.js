@@ -257,18 +257,20 @@ class ApiService {
             // Build the base headers that are always included
             const headers = {
                 'Content-Type': 'application/json',
-                'Accept': 'application/json, text/html, */*'
+                'Accept': 'application/json'
             };
             
-            // Only add auth token if Supabase is available
+            // Add auth token if available
             try {
                 const token = await this.getAuthToken();
                 if (token) {
+                    console.log('Adding auth token to request');
                     headers['Authorization'] = `Bearer ${token}`;
+                } else {
+                    console.log('No auth token available');
                 }
             } catch (error) {
                 console.warn('Failed to get auth token:', error);
-                // Continue without auth token
             }
             
             // Use mock data if in development mode or specified in config
@@ -511,13 +513,31 @@ class ApiService {
 
     async getAuthToken() {
         try {
+            // Check if Supabase is available
             if (!window.supabase || !window.supabase.auth) {
                 console.warn('Supabase auth not available');
                 return null;
             }
             
-            const { data: { session } } = await window.supabase.auth.getSession();
-            return session?.access_token;
+            // Try to get the session using async method
+            const { data } = await window.supabase.auth.getSession();
+            const token = data?.session?.access_token;
+            
+            if (token) {
+                console.log('Retrieved auth token successfully');
+                return token;
+            }
+            
+            // If we don't have a token but auth is initialized, check if user is actually logged in
+            const authState = await window.supabase.auth.getUser();
+            if (authState?.data?.user) {
+                console.log('User is logged in but token unavailable');
+                // Could trigger a refresh here in the future
+            } else {
+                console.log('No active session found');
+            }
+            
+            return null;
         } catch (error) {
             console.error('Error getting auth token:', error);
             return null;

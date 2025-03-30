@@ -15,16 +15,33 @@ export const uiHandler = {
     displayStory(storyData) {
         const storyOutput = document.getElementById('storyOutput');
         
+        // Validate story data structure
+        if (!storyData || typeof storyData !== 'object') {
+            this.showError('Invalid story data');
+            return;
+        }
+
         const story = typeof storyData === 'string' ? {
             title: 'Story',
             content: storyData,
             learning_objectives: ['Understanding the main concepts', 'Analyzing key events', 'Applying knowledge']
         } : storyData.story;
+
+        if (!story || !story.title || !story.content) {
+            this.showError('Story data is missing required fields');
+            return;
+        }
+
+        const sanitizeText = (text) => {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        };
         
         const storyHTML = `
             <div class="story__content">
                 <div class="story__header">
-                    <h2 class="story__title">${story.title}</h2>
+                    <h2 class="story__title">${sanitizeText(story.title)}</h2>
                     <button id="tts-button" class="story__tts-btn" aria-label="Text to Speech" disabled>
                         <span class="story__tts-icon">🔊</span>
                     </button>
@@ -32,14 +49,14 @@ export const uiHandler = {
                 ${story.summary ? `
                     <div class="story__summary">
                         <div class="story__summary-title">Story Summary</div>
-                        <div class="story__summary-content">${story.summary}</div>
+                        <div class="story__summary-content">${sanitizeText(story.summary)}</div>
                     </div>
                 ` : ''}
                 <div class="story__meta">
                     <div class="story__learning-objectives">
                         <h4>Learning Objectives:</h4>
                         <ul>
-                            ${story.learning_objectives.map(obj => `<li>${obj}</li>`).join('')}
+                            ${(story.learning_objectives || []).map(obj => `<li>${sanitizeText(obj)}</li>`).join('')}
                         </ul>
                     </div>
                 </div>
@@ -47,7 +64,7 @@ export const uiHandler = {
                 <div class="story__text">
                     ${story.content.split('\n').map(paragraph => `
                         <div class="story__paragraph-container">
-                            <p class="story__paragraph">${paragraph}</p>
+                            <p class="story__paragraph">${sanitizeText(paragraph)}</p>
                             <button class="story__tts-btn story__tts-btn--paragraph" aria-label="Read paragraph" disabled>
                                 <span class="story__tts-icon">🔊</span>
                             </button>
@@ -74,20 +91,30 @@ export const uiHandler = {
 
     setupStoryActions() {
         const copyBtn = document.querySelector('.story__action-btn--copy');
-        copyBtn.addEventListener('click', () => {
-            const storyText = document.querySelector('.story__text').textContent;
-            navigator.clipboard.writeText(storyText);
-            copyBtn.classList.add('story__action-btn--active');
-            copyBtn.querySelector('span').textContent = 'Copied!';
-            setTimeout(() => {
-                copyBtn.classList.remove('story__action-btn--active');
-                copyBtn.querySelector('span').textContent = 'Copy';
-            }, 2000);
+        copyBtn.addEventListener('click', async () => {
+            try {
+                const storyText = document.querySelector('.story__text').textContent;
+                await navigator.clipboard.writeText(storyText);
+                copyBtn.classList.add('story__action-btn--active');
+                copyBtn.querySelector('span').textContent = 'Copied!';
+                setTimeout(() => {
+                    copyBtn.classList.remove('story__action-btn--active');
+                    copyBtn.querySelector('span').textContent = 'Copy';
+                }, 2000);
+            } catch (error) {
+                this.showError('Failed to copy text to clipboard');
+                console.error('Clipboard error:', error);
+            }
         });
         
         const printBtn = document.querySelector('.story__action-btn--print');
         printBtn.addEventListener('click', () => {
-            window.print();
+            try {
+                window.print();
+            } catch (error) {
+                this.showError('Failed to open print dialog');
+                console.error('Print error:', error);
+            }
         });
     },
 

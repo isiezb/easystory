@@ -1,23 +1,29 @@
 export const quizHandler = {
     displayQuiz(quiz) {
-        if (!quiz || !Array.isArray(quiz) || quiz.length === 0) {
+        if (!quiz || !quiz.questions || !Array.isArray(quiz.questions) || quiz.questions.length === 0) {
             console.error('Invalid quiz data:', quiz);
             return;
         }
 
+        const sanitizeText = (text) => {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        };
+
         const quizSection = document.createElement('div');
         quizSection.className = 'quiz';
         
-        const quizHTML = quiz.map((q, i) => `
+        const quizHTML = quiz.questions.map((q, i) => `
             <div class="quiz__question">
-                <p class="quiz__question-text">${i + 1}. ${q.question}</p>
+                <p class="quiz__question-text">${i + 1}. ${sanitizeText(q.question)}</p>
                 <div class="quiz__options">
                     ${q.options.map((opt, j) => {
                         const letter = ['A', 'B', 'C', 'D'][j];
                         return `
                             <div class="quiz__option">
                                 <input type="radio" name="q${i}" value="${letter}" id="q${i}_${j}">
-                                <label for="q${i}_${j}">${letter}. ${opt}</label>
+                                <label for="q${i}_${j}">${letter}. ${sanitizeText(opt)}</label>
                                 <svg class="quiz__option-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path class="quiz__option-icon--correct" d="M20 6L9 17l-5-5" stroke-linecap="round" stroke-linejoin="round"/>
                                     <path class="quiz__option-icon--incorrect" d="M18 6L6 18M6 6l12 12" stroke-linecap="round" stroke-linejoin="round"/>
@@ -79,11 +85,11 @@ export const quizHandler = {
 
     checkAnswers(quiz) {
         let score = 0;
-        const totalQuestions = quiz.length;
+        const totalQuestions = quiz.questions.length;
 
         this.resetQuizState();
 
-        quiz.forEach((q, i) => {
+        quiz.questions.forEach((q, i) => {
             const selected = document.querySelector(`input[name="q${i}"]:checked`);
             const feedback = document.querySelector(`#q${i}_0`).closest('.quiz__question').querySelector('.quiz__feedback');
             const feedbackText = feedback.querySelector('.quiz__feedback-text');
@@ -96,7 +102,7 @@ export const quizHandler = {
 
             const selectedOption = selected.closest('.quiz__option');
             const selectedValue = selected.value;
-            const isCorrect = selectedValue === q.correct_answer;
+            const isCorrect = selectedValue === ['A', 'B', 'C', 'D'][q.correctAnswer];
             const selectedIcon = selectedOption.querySelector('.quiz__option-icon');
             
             if (isCorrect) {
@@ -134,16 +140,16 @@ export const quizHandler = {
         
         const allOptions = document.querySelectorAll(`input[name="q${index}"]`);
         allOptions.forEach(opt => {
-            if (opt.value === question.correct_answer) {
+            if (opt.value === ['A', 'B', 'C', 'D'][question.correctAnswer]) {
                 const correctOption = opt.closest('.quiz__option');
                 correctOption.classList.add('quiz__option--correct');
                 correctOption.querySelector('.quiz__option-icon').classList.add('quiz__option-icon--correct', 'quiz__option-icon--show');
             }
         });
         
-        const correctOption = question.options[['A', 'B', 'C', 'D'].indexOf(question.correct_answer)];
+        const correctOption = question.options[question.correctAnswer];
         this.showFeedback(feedback, feedbackText, feedbackIcon, false, 
-            `Incorrect. The correct answer is ${question.correct_answer}. ${correctOption}. ${question.explanation || ''}`);
+            `Incorrect. The correct answer is ${['A', 'B', 'C', 'D'][question.correctAnswer]}. ${correctOption}. ${question.explanation || ''}`);
     },
 
     showFeedback(feedback, feedbackText, feedbackIcon, isCorrect, message) {

@@ -256,8 +256,13 @@ class ApiService {
         let anonymousId = null;
         if (window.localStorage) {
             anonymousId = localStorage.getItem('anonymousUserId');
-            if (!anonymousId && window.getAnonymousUserId) {
-                anonymousId = window.getAnonymousUserId();
+            if (!anonymousId) {
+                // Generate a new anonymous ID if needed
+                anonymousId = 'anon-' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+                localStorage.setItem('anonymousUserId', anonymousId);
+                console.log('Generated new anonymous user ID:', anonymousId);
+            } else {
+                console.log('Using existing anonymous user ID:', anonymousId);
             }
         }
         

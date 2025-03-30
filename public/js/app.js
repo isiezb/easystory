@@ -64,13 +64,20 @@ function setupEventListeners() {
 
 // Get or create anonymous user ID
 function getAnonymousUserId() {
-    let anonymousId = localStorage.getItem('anonymousUserId');
-    if (!anonymousId) {
-        // Generate a UUID-like identifier
-        anonymousId = 'anon-' + Date.now() + '-' + Math.random().toString(36).substring(2, 15);
-        localStorage.setItem('anonymousUserId', anonymousId);
+    try {
+        let anonymousId = localStorage.getItem('anonymousUserId');
+        if (!anonymousId) {
+            anonymousId = 'anon-' + Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+            localStorage.setItem('anonymousUserId', anonymousId);
+            console.log('Created new anonymous user ID:', anonymousId);
+        } else {
+            console.log('Using existing anonymous user ID:', anonymousId);
+        }
+        return anonymousId;
+    } catch (error) {
+        console.error('Error managing anonymous user ID:', error);
+        return null;
     }
-    return anonymousId;
 }
 
 // Make anonymousUserId function available globally
@@ -376,6 +383,31 @@ function displayStory(storyData) {
         </div>
         `;
         
+        // Add save status message if available
+        if (storyData.saved === true) {
+            storyHTML += `
+            <div class="save-status success">
+                <p>✅ Story saved successfully</p>
+            </div>
+            `;
+        } else if (storyData.saved === false) {
+            storyHTML += `
+            <div class="save-status error">
+                <p>⚠️ Story was not saved: ${storyData.save_error || 'Unknown error'}</p>
+            </div>
+            `;
+        }
+        
+        // Add summary if available (moved after content)
+        if (summary) {
+            storyHTML += `
+            <div class="story-summary">
+                <h3>Story Summary</h3>
+                <p>${summary}</p>
+            </div>
+            `;
+        }
+        
         // Add learning objectives if available
         if (learningObjectives && Array.isArray(learningObjectives) && learningObjectives.length > 0) {
             storyHTML += `
@@ -401,16 +433,6 @@ function displayStory(storyData) {
                     </div>
                     `).join('')}
                 </div>
-            </div>
-            `;
-        }
-        
-        // Add summary at the end if available
-        if (summary) {
-            storyHTML += `
-            <div class="story-summary">
-                <div class="story-summary-title">Summary</div>
-                <div class="story-summary-content">${summary}</div>
             </div>
             `;
         }

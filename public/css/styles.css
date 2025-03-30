@@ -147,4 +147,45 @@
     text-align: center;
     color: var(--text-muted);
     background-color: var(--bg-secondary);
+}
+
+/* Save status message styles */
+.save-status {
+    padding: 10px 15px;
+    border-radius: 5px;
+    margin: 15px 0;
+    font-weight: 500;
+}
+
+.save-status.success {
+    background-color: rgba(0, 200, 83, 0.1);
+    color: #00c853;
+    border-left: 4px solid #00c853;
+}
+
+.save-status.error {
+    background-color: rgba(244, 67, 54, 0.1);
+    color: #f44336;
+    border-left: 4px solid #f44336;
+}
+
+/* Story summary styles - updated for new position */
+.story-summary {
+    background-color: var(--color-background-secondary);
+    padding: 15px;
+    margin: 20px 0;
+    border-radius: 8px;
+}
+
+.story-summary h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 1.2rem;
+    color: var(--color-primary);
+}
+
+.story-summary p {
+    margin: 0;
+    font-size: 1rem;
+    line-height: 1.5;
 } 

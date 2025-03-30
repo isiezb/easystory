@@ -1953,23 +1953,6 @@
                     </fieldset>
 
                     <fieldset class="form-group">
-                        <legend>Story Elements</legend>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="setting">Story Setting</label>
-                                <input type="text" id="setting" name="setting" 
-                                    placeholder="e.g., a small village in the mountains">
-                            </div>
-
-                            <div class="form-group">
-                                <label for="mainCharacter">Main Character</label>
-                                <input type="text" id="mainCharacter" name="main_character" 
-                                    placeholder="e.g., a curious young scientist">
-                            </div>
-                        </div>
-                    </fieldset>
-
-                    <fieldset class="form-group">
                         <legend>Format Settings</legend>
                         <div class="form-row">
                             <div class="form-group">
@@ -1992,17 +1975,21 @@
                                 </select>
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="generateVocabulary" name="generate_vocabulary">
-                                <span>Generate Vocabulary List</span>
-                            </label>
-                        </div>
-                        <div class="form-group">
-                            <label class="checkbox-label">
-                                <input type="checkbox" id="generateSummary" name="generate_summary">
-                                <span>Generate Story Summary</span>
-                            </label>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="generateVocabulary">Vocabulary List</label>
+                                <select id="generateVocabulary" name="generate_vocabulary">
+                                    <option value="on" selected>Include Vocabulary</option>
+                                    <option value="off">No Vocabulary</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="generateSummary">Story Summary</label>
+                                <select id="generateSummary" name="generate_summary">
+                                    <option value="on" selected>Include Summary</option>
+                                    <option value="off">No Summary</option>
+                                </select>
+                            </div>
                         </div>
                     </fieldset>
 

@@ -437,9 +437,12 @@ app.post('/generate-story', apiLimiter, async (req, res) => {
             
             if (userId) {
                 logger.info(`Anonymous user ID provided: ${userId}`);
+                isAnonymous = true;
             } else {
-                logger.info('No user identification available, skipping database save');
-                return res.json(response);
+                // Generate a random anonymous ID if none was provided
+                userId = 'anon-' + Math.random().toString(36).substring(2, 15);
+                isAnonymous = true;
+                logger.info(`Generated anonymous user ID: ${userId}`);
             }
         }
         
@@ -448,31 +451,44 @@ app.post('/generate-story', apiLimiter, async (req, res) => {
             logger.info(`Saving story for ${isAnonymous ? 'anonymous' : 'authenticated'} user: ${userId}`);
             
             try {
+                const story = {
+                    user_id: userId,
+                    is_anonymous: isAnonymous,
+                    academic_grade: inputs.academic_grade,
+                    subject: inputs.subject,
+                    subject_specification: inputs.subject_specification || '',
+                    setting: inputs.setting || '',
+                    main_character: inputs.main_character || '',
+                    word_count: inputs.word_count,
+                    language: inputs.language,
+                    story_text: response.content,
+                    story_title: inputs.subject_specification || 'Untitled Story',
+                    learning_objectives: response.learning_objectives || [],
+                    quiz_questions: response.quiz || [],
+                    vocabulary_list: response.vocabulary || [],
+                    story_summary: response.summary || '',
+                    is_continuation: false
+                };
+                
+                logger.info('Saving story with data:', { 
+                    user_id: userId, 
+                    is_anonymous: isAnonymous,
+                    subject: inputs.subject
+                });
+
                 const { data, error } = await supabase
                     .from('stories')
-                    .insert({
-                        user_id: userId,
-                        is_anonymous: isAnonymous,
-                        academic_grade: inputs.academic_grade,
-                        subject: inputs.subject,
-                        subject_specification: inputs.subject_specification,
-                        setting: inputs.setting,
-                        main_character: inputs.main_character,
-                        word_count: inputs.word_count,
-                        language: inputs.language,
-                        story_text: response.content,
-                        story_title: inputs.subject_specification || 'Untitled Story',
-                        learning_objectives: response.learning_objectives || [],
-                        quiz_questions: response.quiz || [],
-                        vocabulary_list: response.vocabulary || [],
-                        story_summary: response.summary || '',
-                        is_continuation: false
-                    })
+                    .insert(story)
                     .select()
                     .single();
 
                 if (error) {
                     logger.error('Error saving story to Supabase:', error);
+                    logger.error('Error details:', JSON.stringify(error));
+                    
+                    // Add error info to the response
+                    response.saved = false;
+                    response.save_error = 'Database error: ' + error.message;
                 } else {
                     logger.info('Story saved to Supabase successfully:', { storyId: data.id });
                     // Add saved flag to response
@@ -481,9 +497,14 @@ app.post('/generate-story', apiLimiter, async (req, res) => {
                 }
             } catch (error) {
                 logger.error('Error handling Supabase save:', error);
+                logger.error('Error stack:', error.stack);
+                response.saved = false;
+                response.save_error = 'Exception during save: ' + error.message;
             }
         } else {
             logger.info('No user identification, skipping database save');
+            response.saved = false;
+            response.save_error = 'No user identification available';
         }
 
         res.json(response);

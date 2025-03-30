@@ -80,6 +80,18 @@ async function handleStoryFormSubmit(e) {
         return;
     }
     
+    // === New Check: Prevent API call if "Other" is selected but not specified ===
+    if (data.subject === 'other' && !data.other_subject) {
+        showToast('Please specify the subject when selecting "Other"', 'error');
+        // Optionally, focus the input field:
+        const otherSubjectInput = document.getElementById('otherSubject');
+        if (otherSubjectInput) {
+            otherSubjectInput.focus();
+        }
+        return; // Stop submission
+    }
+    // === End New Check ===
+    
     // Show loading state
     if (window.uiHandler && window.uiHandler.showLoading) {
         window.uiHandler.showLoading();

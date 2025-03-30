@@ -74,7 +74,15 @@ export const apiService = {
     async generateStory(formData) {
         return this.retryWithBackoff(async () => {
             try {
-                console.log('Generating story with formData:', formData);
+                // Format form data
+                const formattedData = {
+                    ...formData,
+                    word_count: parseInt(formData.word_count, 10),
+                    generate_vocabulary: !!formData.generate_vocabulary,
+                    generate_summary: !!formData.generate_summary
+                };
+
+                console.log('Generating story with formatted data:', formattedData);
                 console.log('Server URL:', config.serverUrl);
                 console.log('Auth token:', await this.getAuthToken());
                 
@@ -91,7 +99,7 @@ export const apiService = {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${await this.getAuthToken()}`
                     },
-                    body: JSON.stringify(formData),
+                    body: JSON.stringify(formattedData),
                     signal: controller.signal
                 });
 

@@ -219,11 +219,10 @@ class ApiService {
         const subject = String(data.subject || "general").trim();
         const academicGrade = String(data.academic_grade || "5").trim();
         
-        // CRITICAL: Server requires these fields, even if empty
-        // Cannot be null or undefined - must be non-empty strings
-        const subjectSpecRaw = String(data.subject_specification || "Basic concepts").trim();
-        const settingRaw = String(data.setting || "a classroom").trim();
-        const mainCharacterRaw = String(data.main_character || "a student").trim();
+        // Optional fields - will be set to defaults on the server if empty
+        const subjectSpecRaw = data.subject_specification ? String(data.subject_specification).trim() : "";
+        const settingRaw = data.setting ? String(data.setting).trim() : "";
+        const mainCharacterRaw = data.main_character ? String(data.main_character).trim() : "";
         
         // CRITICAL: Server requires word_count as NUMBER (not string)
         // Must be between 100-5000
@@ -244,9 +243,9 @@ class ApiService {
         const serverFormat = {
             subject: subject,
             academic_grade: academicGrade,
-            subject_specification: subjectSpecRaw, // Must be non-empty string
-            setting: settingRaw, // Must be non-empty string
-            main_character: mainCharacterRaw, // Must be non-empty string
+            subject_specification: subjectSpecRaw, // Optional
+            setting: settingRaw, // Optional
+            main_character: mainCharacterRaw, // Optional
             word_count: wordCount, // Must be a number between 100-5000
             language: language, // Must match exact capitalization
             generate_vocabulary: data.generate_vocabulary === 'on', // Boolean for optional features

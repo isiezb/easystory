@@ -181,7 +181,7 @@ function validateInputs(inputs) {
         logger.info('Validating input data:', JSON.stringify(inputs));
         
         // Check for required fields with detailed logging
-        const requiredFields = ['subject', 'academic_grade', 'subject_specification', 'setting', 'main_character', 'word_count', 'language'];
+        const requiredFields = ['subject', 'academic_grade', 'word_count', 'language'];
         
         // Check each required field individually for better debugging
         const missingFields = [];
@@ -195,6 +195,22 @@ function validateInputs(inputs) {
         if (missingFields.length > 0) {
             logger.error(`Validation failed: Missing required fields: ${missingFields.join(', ')}`);
             return false;
+        }
+        
+        // Set default values for optional fields if they are empty
+        if (!inputs.subject_specification) {
+            inputs.subject_specification = "Basic concepts";
+            logger.info("Using default value for subject_specification: 'Basic concepts'");
+        }
+        
+        if (!inputs.setting) {
+            inputs.setting = "a classroom";
+            logger.info("Using default value for setting: 'a classroom'");
+        }
+        
+        if (!inputs.main_character) {
+            inputs.main_character = "a student";
+            logger.info("Using default value for main_character: 'a student'");
         }
         
         // Validate word_count is a number within range

@@ -185,8 +185,8 @@ function validateInputs(inputs) {
         
         // Check each required field individually for better debugging
         const missingFields = [];
-        for (const field of requiredFields) {
-            if (!inputs[field]) {
+    for (const field of requiredFields) {
+        if (!inputs[field]) {
                 missingFields.push(field);
                 logger.error(`Missing required field: ${field}`);
             }

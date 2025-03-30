@@ -122,31 +122,20 @@ async function handleStoryFormSubmit(e) {
     // === End New Check ===
     
     // Show loading state
-    if (loadingOverlay) {
-        // Ensure loading overlay is properly displayed
-        loadingOverlay.style.display = 'flex';
-        const loadingText = loadingOverlay.querySelector('.loading-text');
-        if (loadingText) {
-            loadingText.textContent = 'Generating Your Story';
+    showLoadingOverlay('Generating Your Story');
+    
+    // Update the submit button state
+    const submitButton = storyForm.querySelector('button[type="submit"]');
+    if (submitButton) {
+        submitButton.disabled = true;
+        const spinner = submitButton.querySelector('.spinner');
+        if (spinner) {
+            spinner.style.display = 'block';
         }
-        // Scroll to top to make loading overlay more visible
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        
-        // Also update the submit button state
-        const submitButton = storyForm.querySelector('button[type="submit"]');
-        if (submitButton) {
-            submitButton.disabled = true;
-            const spinner = submitButton.querySelector('.spinner');
-            if (spinner) {
-                spinner.style.display = 'block';
-            }
-            const spanText = submitButton.querySelector('span');
-            if (spanText) {
-                spanText.textContent = 'Generating...';
-            }
+        const spanText = submitButton.querySelector('span');
+        if (spanText) {
+            spanText.textContent = 'Generating...';
         }
-    } else if (window.uiHandler && window.uiHandler.showLoading) {
-        window.uiHandler.showLoading('Generating Your Story');
     }
     
     try {
@@ -170,10 +159,15 @@ async function handleStoryFormSubmit(e) {
             // Success message
             showToast('Story generated successfully!', 'success');
             
-            // Scroll to the story output immediately
-            if (storyOutput) {
-                storyOutput.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
+            // Scroll to the story output after a small delay to ensure it's rendered
+            setTimeout(() => {
+                if (storyOutput) {
+                    window.scrollTo({
+                        top: storyOutput.offsetTop - 20,
+                        behavior: 'smooth'
+                    });
+                }
+            }, 300);
             
             // Check if Supabase is actually available before attempting save
             const isSupabaseAvailable = window.supabase && 
@@ -336,11 +330,56 @@ async function handleStoryFormSubmit(e) {
         showToast(errorMessage, 'error', 10000); // Show error for longer
     } finally {
         // Hide loading state
-        if (window.uiHandler && window.uiHandler.hideLoading) {
-            window.uiHandler.hideLoading();
-        } else if (loadingOverlay) {
-            loadingOverlay.style.display = 'none';
+        hideLoadingOverlay();
+        
+        // Reset the submit button
+        if (submitButton) {
+            submitButton.disabled = false;
+            const spinner = submitButton.querySelector('.spinner');
+            if (spinner) {
+                spinner.style.display = 'none';
+            }
+            const spanText = submitButton.querySelector('span');
+            if (spanText) {
+                spanText.textContent = 'Generate Story';
+            }
         }
+    }
+}
+
+// Show loading overlay
+function showLoadingOverlay(message = 'Loading...') {
+    if (loadingOverlay) {
+        // Set the message
+        const loadingText = loadingOverlay.querySelector('.loading-text');
+        if (loadingText) {
+            loadingText.textContent = message;
+        }
+        
+        // Make sure it's visible and add the visible class for the transition
+        loadingOverlay.style.display = 'flex';
+        
+        // Force a reflow to ensure the transition works
+        void loadingOverlay.offsetWidth;
+        
+        // Add visible class to trigger opacity transition
+        loadingOverlay.classList.add('visible');
+        
+        // Scroll to top
+        window.scrollTo({ top: 0, behavior: 'auto' });
+    }
+}
+
+// Hide loading overlay
+function hideLoadingOverlay() {
+    if (loadingOverlay) {
+        // Remove visible class first to trigger opacity transition
+        loadingOverlay.classList.remove('visible');
+        
+        // After the transition, hide the overlay completely
+        setTimeout(() => {
+            loadingOverlay.style.display = 'none';
+        }, 300); // Match the transition duration from CSS
     }
 }
 

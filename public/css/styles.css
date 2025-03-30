@@ -156,23 +156,31 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: rgba(0, 0, 0, 0.8);
     display: none;
     justify-content: center;
     align-items: center;
-    z-index: 9999;
-    backdrop-filter: blur(5px);
+    z-index: 10000;
+    backdrop-filter: blur(8px);
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.loading-overlay.visible {
+    opacity: 1;
+    display: flex !important;
 }
 
 .loading-container {
     background-color: var(--card-bg, #fff);
-    padding: 2rem;
+    padding: 2.5rem;
     border-radius: 16px;
-    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
     text-align: center;
     max-width: 90%;
-    width: 400px;
+    width: 450px;
     animation: pulseAnimation 2s infinite;
+    border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
 @keyframes pulseAnimation {

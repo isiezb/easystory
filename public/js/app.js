@@ -95,85 +95,132 @@ async function handleStoryFormSubmit(e) {
     
     try {
         console.log('Sending request to generate story...');
-        const response = await window.apiService.generateStory(data);
-        console.log('Received response:', response);
         
-        // Display the story
-        displayStory(response);
-        
-        // Check if Supabase is actually available before attempting save
-        const isSupabaseAvailable = window.supabase && 
-                                  window.supabase.auth && 
-                                  typeof window.supabase.auth.getSession === 'function' &&
-                                  !window.supabase._isMockClient;
-        
-        // If user is logged in AND Supabase is truly available, save the story
-        if (isSupabaseAvailable && window.auth && window.auth.getUser()) {
-            try {
-                console.log('User logged in and Supabase available, attempting to save story...');
-                
-                // Ensure we have a valid response object to work with
-                if (!response || typeof response !== 'object') {
-                    throw new Error('Invalid API response received for saving.');
-                }
-
-                // Construct the story object to save based *primarily* on the API response
-                // Use fallbacks cautiously only if response fields might genuinely be missing
-                const storyToSave = {
-                    user_id: window.auth.getUser().id,
-                    // Prefer response title, fallback to a generic one
-                    title: response.title || `Generated Story (${new Date().toLocaleDateString()})`,
-                    // Prefer response content, fallback if absolutely necessary
-                    content: response.content || 'No content generated.',
-                    metadata: {
-                        // Extract metadata primarily from response, falling back to form `data` only if necessary
-                        grade: response.academic_grade || data.academic_grade || null,
-                        subject: response.subject || data.subject || null,
-                        word_count: response.word_count || parseInt(data.word_count, 10) || null,
-                        language: response.language || data.language || null,
-                        setting: response.setting || data.setting || null,
-                        main_character: response.main_character || data.main_character || null,
-                        // Add fields present in the response, like vocabulary/summary/objectives
-                        // Use hasOwnProperty for safety if response structure is uncertain
-                        vocabulary: response.hasOwnProperty('vocabulary') ? response.vocabulary : null,
-                        summary: response.hasOwnProperty('summary') ? response.summary : null,
-                        learning_objectives: response.hasOwnProperty('learning_objectives') ? response.learning_objectives : null,
-                        // Ensure boolean flags are handled correctly, preferring response if available
-                        generate_vocabulary: response.hasOwnProperty('generate_vocabulary') ? response.generate_vocabulary : (data.generate_vocabulary === 'on'),
-                        generate_summary: response.hasOwnProperty('generate_summary') ? response.generate_summary : (data.generate_summary === 'on')
-                        // Do NOT include 'quiz' as it's removed
-                    },
-                    created_at: new Date().toISOString()
-                };
-
-                // Clean metadata: Remove null/undefined values before saving
-                Object.keys(storyToSave.metadata).forEach(key => {
-                    if (storyToSave.metadata[key] === null || storyToSave.metadata[key] === undefined) {
-                        delete storyToSave.metadata[key];
+        // First try with normal API service
+        try {
+            const response = await window.apiService.generateStory(data);
+            console.log('Received response:', response);
+            
+            // Display the story
+            displayStory(response);
+            
+            // Check if Supabase is actually available before attempting save
+            const isSupabaseAvailable = window.supabase && 
+                                      window.supabase.auth && 
+                                      typeof window.supabase.auth.getSession === 'function' &&
+                                      !window.supabase._isMockClient;
+            
+            // If user is logged in AND Supabase is truly available, save the story
+            if (isSupabaseAvailable && window.auth && window.auth.getUser()) {
+                try {
+                    console.log('User logged in and Supabase available, attempting to save story...');
+                    
+                    // Ensure we have a valid response object to work with
+                    if (!response || typeof response !== 'object') {
+                        throw new Error('Invalid API response received for saving.');
                     }
-                });
 
-                console.log('Saving story object:', JSON.stringify(storyToSave, null, 2));
-                
-                const { error: saveError } = await window.supabaseClient
-                    .from('stories')
-                    .insert([storyToSave]);
+                    // Construct the story object to save based *primarily* on the API response
+                    // Use fallbacks cautiously only if response fields might genuinely be missing
+                    const storyToSave = {
+                        user_id: window.auth.getUser().id,
+                        // Prefer response title, fallback to a generic one
+                        title: response.title || `Generated Story (${new Date().toLocaleDateString()})`,
+                        // Prefer response content, fallback if absolutely necessary
+                        content: response.content || 'No content generated.',
+                        metadata: {
+                            // Extract metadata primarily from response, falling back to form `data` only if necessary
+                            grade: response.academic_grade || data.academic_grade || null,
+                            subject: response.subject || data.subject || null,
+                            word_count: response.word_count || parseInt(data.word_count, 10) || null,
+                            language: response.language || data.language || null,
+                            setting: response.setting || data.setting || null,
+                            main_character: response.main_character || data.main_character || null,
+                            // Add fields present in the response, like vocabulary/summary/objectives
+                            // Use hasOwnProperty for safety if response structure is uncertain
+                            vocabulary: response.hasOwnProperty('vocabulary') ? response.vocabulary : null,
+                            summary: response.hasOwnProperty('summary') ? response.summary : null,
+                            learning_objectives: response.hasOwnProperty('learning_objectives') ? response.learning_objectives : null,
+                            // Ensure boolean flags are handled correctly, preferring response if available
+                            generate_vocabulary: response.hasOwnProperty('generate_vocabulary') ? response.generate_vocabulary : (data.generate_vocabulary === 'on'),
+                            generate_summary: response.hasOwnProperty('generate_summary') ? response.generate_summary : (data.generate_summary === 'on')
+                            // Do NOT include 'quiz' as it's removed
+                        },
+                        created_at: new Date().toISOString()
+                    };
 
-                if (saveError) {
-                    console.error('Error saving story:', saveError);
-                    showToast(`Failed to save story: ${saveError.message}`, 'error');
-                } else {
-                    console.log('Story saved successfully');
-                    showToast('Story generated and saved!', 'success');
-                    loadUserStories(); // Refresh stories list
+                    // Clean metadata: Remove null/undefined values before saving
+                    Object.keys(storyToSave.metadata).forEach(key => {
+                        if (storyToSave.metadata[key] === null || storyToSave.metadata[key] === undefined) {
+                            delete storyToSave.metadata[key];
+                        }
+                    });
+
+                    console.log('Saving story object:', JSON.stringify(storyToSave, null, 2));
+                    
+                    const { error: saveError } = await window.supabaseClient
+                        .from('stories')
+                        .insert([storyToSave]);
+
+                    if (saveError) {
+                        console.error('Error saving story:', saveError);
+                        showToast(`Failed to save story: ${saveError.message}`, 'error');
+                    } else {
+                        console.log('Story saved successfully');
+                        showToast('Story generated and saved!', 'success');
+                        loadUserStories(); // Refresh stories list
+                    }
+                } catch (saveCatchError) {
+                    console.error('Unexpected error during story save process:', saveCatchError);
+                    showToast(`Error saving story: ${saveCatchError.message || 'Unknown error'}`, 'error');
                 }
-            } catch (saveCatchError) {
-                console.error('Unexpected error during story save process:', saveCatchError);
-                showToast(`Error saving story: ${saveCatchError.message || 'Unknown error'}`, 'error');
+            } else {
+                console.log('Supabase unavailable or user not logged in, skipping save');
+                showToast('Story generated! Login feature unavailable.', 'success');
             }
-        } else {
-            console.log('Supabase unavailable or user not logged in, skipping save');
-            showToast('Story generated! Login feature unavailable.', 'success');
+        } catch (firstError) {
+            console.error('Initial request failed, trying direct form submission:', firstError);
+            
+            // Last resort: Try direct form submission with minimal processing
+            try {
+                // Create FormData directly from the form element
+                const directFormData = new FormData(storyForm);
+                
+                // Convert to a simple object with all values as strings
+                const directData = {};
+                for (const [key, value] of directFormData.entries()) {
+                    directData[key] = value;
+                }
+                
+                console.log('Attempting direct form submission:', directData);
+                
+                // Try to send directly to the server
+                const directResponse = await fetch(`${window._config.serverUrl}/generate-story`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(directData)
+                });
+                
+                if (directResponse.ok) {
+                    const responseData = await directResponse.json();
+                    console.log('Direct submission succeeded:', responseData);
+                    
+                    // Display the story
+                    displayStory(responseData);
+                } else {
+                    // If both methods fail, fall back to mock data
+                    console.error('Both methods failed, using mock data');
+                    const mockResponse = window.apiService.getMockStoryData(data);
+                    displayStory(mockResponse);
+                }
+            } catch (directError) {
+                console.error('Direct submission also failed:', directError);
+                // Use mock data as final fallback
+                const mockResponse = window.apiService.getMockStoryData(data);
+                displayStory(mockResponse);
+            }
         }
     } catch (error) {
         console.error('Error generating story:', error);

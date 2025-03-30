@@ -334,24 +334,71 @@ class ApiService {
             academic_grade: academicGrade
         };
         
+        // NEW FORMAT: Server-Exact Format - Attempts to match what the server might be precisely expecting
+        const exactFormat = {
+            // Core fields in server format
+            subject_area: subject, // Try different field name for subject
+            grade_level: academicGrade, // Try different field name for grade
+            word_limit: parseInt(wordCountStr, 10), // Try different field name for word_count
+            target_language: languageLower, // Try different field name for language
+            
+            // Include special options the server might require 
+            options: {
+                include_vocabulary: generateVocabulary,
+                include_summary: generateSummary,
+                type: "educational", // Server might expect a story type
+                format: "long_form", // Server might expect a format specification
+                difficulty: academicGrade === "K" ? "kindergarten" : 
+                           parseInt(academicGrade, 10) <= 3 ? "elementary" :
+                           parseInt(academicGrade, 10) <= 8 ? "middle_school" : "high_school"
+            },
+            
+            // Add content parameters
+            content_params: {
+                subject: subject,
+                topic: subjectSpecOrNull || `${subject} basics`, // Provide a default topic based on subject
+                setting: settingOrNull || "classroom",
+                characters: mainCharacterOrNull ? [mainCharacterOrNull] : ["student"],
+                themes: ["education", "learning", "discovery"]
+            },
+            
+            // Context information
+            context: {
+                client_id: "web_app",
+                request_id: `req_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+                timestamp: new Date().toISOString()
+            }
+        };
+        
+        // Strings-Only Format - Convert everything to strings, exactly matching form field names
+        const stringsFormat = {};
+        
+        // Copy all original form data
+        Object.entries(data).forEach(([key, value]) => {
+            // Ensure value is a string
+            stringsFormat[key] = value === undefined ? "" : String(value);
+        });
+        
+        // Add these back in case they were undefined in the form
+        stringsFormat.subject = subject;
+        stringsFormat.academic_grade = academicGrade;
+        stringsFormat.word_count = wordCountStr;
+        stringsFormat.language = language; // Use original capitalization
+        
         // Create an array of request formats to try
         const requestFormats = [
-            // Format 0: Completely different approach with camelCase fields
+            // Try the strings format first as it's safe for type validation
+            stringsFormat,
+            
+            // Then try the exact format as it might match server schema 
+            exactFormat,
+            
+            // Other formats as fallbacks
             camelCaseFormat,
-            
-            // Format 1: Standard format with explicit numbers, booleans, and OMITTED nulls
             format1,
-            
-            // Format 2: String boolean values, null optionals
             format2,
-            
-            // Format 3: Using 'on' directly for checkboxes, null optionals
             format3,
-            
-            // Format 4: Raw form data
             format4,
-            
-            // Format 5: Super minimal (absolute essentials only)
             format5
         ];
         

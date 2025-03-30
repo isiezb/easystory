@@ -68,42 +68,64 @@ class ApiService {
         const wordCount = data.word_count ? String(data.word_count) : "500";
         const language = data.language ? String(data.language) : "English"; // Capitalized
         
-        // Format booleans as strings, which is often expected by APIs
-        const generateVocabulary = data.generate_vocabulary === 'on' ? "true" : "false";
-        const generateSummary = data.generate_summary === 'on' ? "true" : "false";
+        // IMPORTANT: Checkbox values are undefined when not checked, 'on' when checked
+        // Debug the actual checkbox values
+        console.log('Raw checkbox values:', {
+            generate_vocabulary: data.generate_vocabulary,
+            generate_summary: data.generate_summary
+        });
         
-        // Create a properly formatted request object based on server expectations
-        const requestData = {
-            // Core request fields
-            subject: subject,
-            academic_grade: academicGrade,
-            subject_specification: subjectSpec,
-            setting: setting,
-            main_character: mainCharacter,
-            word_count: wordCount,
-            language: language,
+        // Format booleans based on checkbox values - null when undefined, true when 'on'
+        const generateVocabulary = data.generate_vocabulary === undefined ? null : (data.generate_vocabulary === 'on');
+        const generateSummary = data.generate_summary === undefined ? null : (data.generate_summary === 'on');
+        
+        // Create an array of request formats to try
+        const requestFormats = [
+            // Format 1: Standard format with explicit boolean flags as literal boolean values
+            {
+                subject: subject,
+                academic_grade: academicGrade,
+                subject_specification: subjectSpec,
+                setting: setting,
+                main_character: mainCharacter,
+                word_count: parseInt(wordCount, 10),
+                language: language,
+                generate_vocabulary: generateVocabulary,
+                generate_summary: generateSummary
+            },
             
-            // Boolean flags as strings
-            generate_vocabulary: generateVocabulary,
-            generate_summary: generateSummary
-        };
+            // Format 2: String boolean values
+            {
+                subject: subject,
+                academic_grade: academicGrade,
+                subject_specification: subjectSpec,
+                setting: setting,
+                main_character: mainCharacter,
+                word_count: wordCount,
+                language: language,
+                generate_vocabulary: generateVocabulary === null ? undefined : String(generateVocabulary),
+                generate_summary: generateSummary === null ? undefined : String(generateSummary)
+            },
+            
+            // Format 3: Using 'on' directly for checkboxes
+            {
+                subject: subject,
+                academic_grade: academicGrade,
+                subject_specification: subjectSpec,
+                setting: setting,
+                main_character: mainCharacter,
+                word_count: wordCount,
+                language: language,
+                generate_vocabulary: data.generate_vocabulary,
+                generate_summary: data.generate_summary
+            },
+            
+            // Format 4: Raw form data
+            {...data}
+        ];
         
-        // Send the entire form data in a request wrapper
-        // Some APIs expect a specific wrapper structure
-        const apiRequest = {
-            story_request: requestData,
-            meta: {
-                client_version: "1.0.0",
-                timestamp: new Date().toISOString()
-            }
-        };
-        
-        // Also create bare bones version with just raw form data
-        const rawFormData = {...data};
-        
-        // Log the final formatted request
-        console.log('Formatted request data for API:', apiRequest);
-        console.log('Raw form data for fallback:', rawFormData);
+        // Log all the request formats we'll try
+        console.log('Request formats to try:', JSON.stringify(requestFormats, null, 2));
         
         try {
             const headers = {
@@ -125,67 +147,70 @@ class ApiService {
             // Use mock data if in development mode or specified in config
             if (window._config?.useMockData || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
                 console.log('Using mock story data');
-                return this.getMockStoryData(requestData);
+                return this.getMockStoryData(requestFormats[0]);
             }
             
             console.log(`Sending API request to ${this.baseUrl}/generate-story`);
             
-            // Try multiple formats in sequence, from most structured to least
+            // Try multiple formats in sequence
             let response;
             let errorMessages = [];
+            let lastRequestFormat;
             
-            try {
-                // Try with wrapper first
-                console.log('Attempt 1: With wrapper structure');
-                console.log('Request body:', JSON.stringify(apiRequest, null, 2));
-                response = await fetch(`${this.baseUrl}/generate-story`, {
-                    method: 'POST',
-                    headers: headers,
-                    body: JSON.stringify(apiRequest)
-                });
+            for (let i = 0; i < requestFormats.length; i++) {
+                const format = requestFormats[i];
+                lastRequestFormat = format;
                 
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    errorMessages.push(`Attempt 1 failed with status ${response.status}: ${errorText}`);
-                    console.warn(`First attempt failed with status ${response.status}`, errorText);
+                try {
+                    console.log(`Attempt ${i+1}: Using format:`, JSON.stringify(format, null, 2));
                     
-                    // Try without the wrapper
-                    console.log('Attempt 2: Without wrapper structure');
-                    console.log('Request body:', JSON.stringify(requestData, null, 2));
                     response = await fetch(`${this.baseUrl}/generate-story`, {
                         method: 'POST',
                         headers: headers,
-                        body: JSON.stringify(requestData)
+                        body: JSON.stringify(format)
                     });
                     
-                    if (!response.ok) {
+                    // Log full details about the response
+                    console.log(`Response for attempt ${i+1}:`, {
+                        status: response.status,
+                        statusText: response.statusText,
+                        headers: Object.fromEntries([...response.headers.entries()])
+                    });
+                    
+                    // If success, break the loop
+                    if (response.ok) {
+                        console.log(`Format ${i+1} succeeded!`);
+                        break;
+                    } else {
+                        // Get error details for debugging
                         const errorText = await response.text();
-                        errorMessages.push(`Attempt 2 failed with status ${response.status}: ${errorText}`);
-                        console.warn(`Second attempt failed with status ${response.status}`, errorText);
+                        const error = {
+                            status: response.status,
+                            statusText: response.statusText,
+                            body: errorText
+                        };
+                        errorMessages.push(`Format ${i+1} failed: ${JSON.stringify(error)}`);
+                        console.warn(`Format ${i+1} failed with status ${response.status}:`, errorText);
                         
-                        // Try with completely raw form data as a last resort
-                        console.log('Attempt 3: With raw form data');
-                        console.log('Request body:', JSON.stringify(rawFormData, null, 2));
-                        response = await fetch(`${this.baseUrl}/generate-story`, {
-                            method: 'POST',
-                            headers: headers,
-                            body: JSON.stringify(rawFormData)
-                        });
-                        
-                        if (!response.ok) {
-                            const errorText = await response.text();
-                            errorMessages.push(`Attempt 3 failed with status ${response.status}: ${errorText}`);
-                            console.warn(`Third attempt failed with status ${response.status}`, errorText);
+                        // If we reached the last format, throw error
+                        if (i === requestFormats.length - 1) {
                             throw new Error(`All request formats failed. ${errorMessages.join(' | ')}`);
                         }
                     }
+                } catch (fetchError) {
+                    console.error(`Fetch error in attempt ${i+1}:`, fetchError);
+                    errorMessages.push(`Format ${i+1} fetch error: ${fetchError.message}`);
+                    
+                    // If we reached the last format, throw error
+                    if (i === requestFormats.length - 1) {
+                        throw new Error(`Network errors in all attempts. ${errorMessages.join(' | ')}`);
+                    }
                 }
-            } catch (fetchError) {
-                console.error('Fetch error:', fetchError);
-                throw new Error(`Network error: ${fetchError.message}. ${errorMessages.join(' | ')}`);
             }
             
-            console.log('Received response status:', response.status);
+            console.log('Successful response with status:', response.status);
+            console.log('Using request format:', JSON.stringify(lastRequestFormat, null, 2));
+            
             return this.handleResponse(response);
         } catch (error) {
             console.error('Error in generateStory:', error);
@@ -194,7 +219,7 @@ class ApiService {
             if (error.name === 'TypeError' && error.message.includes('Failed to fetch') || 
                 (error.name === 'ApiError' && error.status === 500)) {
                 console.log('Network or server error, using mock data');
-                return this.getMockStoryData(requestData);
+                return this.getMockStoryData(requestFormats[0]);
             }
             
             throw error;

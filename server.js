@@ -225,6 +225,98 @@ const validateQuizStructure = (quiz) => {
     });
 };
 
+// Generate story using OpenRouter
+async function generateStoryWithOpenRouter(inputs) {
+    try {
+        const prompt = `Write a story about ${inputs.subject} for ${inputs.academic_grade} level students.
+Setting: ${inputs.setting}
+Main Character: ${inputs.main_character}
+Subject details: ${inputs.subject_specification}
+Language: ${inputs.language}
+Word count: ${inputs.word_count}
+
+The story should:
+1. Be engaging and age-appropriate
+2. Include clear learning objectives
+3. Use appropriate vocabulary
+4. Have a clear structure
+5. Include a quiz at the end
+6. Include a vocabulary list
+7. Include a summary
+
+Format the response as JSON with the following structure:
+{
+    "content": "the story text",
+    "learning_objectives": ["objective 1", "objective 2", ...],
+    "vocabulary": [
+        {
+            "word": "word",
+            "definition": "definition",
+            "example": "example sentence",
+            "part_of_speech": "part of speech"
+        }
+    ],
+    "quiz": [
+        {
+            "question": "question text",
+            "options": ["option 1", "option 2", "option 3", "option 4"],
+            "correctAnswer": 0
+        }
+    ],
+    "summary": "brief summary of the story"
+}`;
+
+        const response = await axios.post('https://openrouter.ai/api/v1/chat/completions', {
+            model: 'openai/gpt-4-turbo-preview',
+            messages: [
+                {
+                    role: 'system',
+                    content: 'You are a professional educational storyteller. Always respond in valid JSON format.'
+                },
+                {
+                    role: 'user',
+                    content: prompt
+                }
+            ],
+            temperature: 0.7,
+            max_tokens: 4000
+        }, {
+            headers: {
+                'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.data?.choices?.[0]?.message?.content) {
+            throw new AppError('Invalid response from OpenRouter', 500);
+        }
+
+        const content = response.data.choices[0].message.content;
+        let parsedContent;
+        try {
+            parsedContent = JSON.parse(content);
+        } catch (error) {
+            logger.error('Failed to parse OpenRouter response:', error);
+            throw new AppError('Invalid response format from OpenRouter', 500);
+        }
+
+        // Validate the response structure
+        if (!parsedContent.content || !Array.isArray(parsedContent.learning_objectives) || 
+            !Array.isArray(parsedContent.vocabulary) || !Array.isArray(parsedContent.quiz) || 
+            !parsedContent.summary) {
+            throw new AppError('Invalid response structure from OpenRouter', 500);
+        }
+
+        return parsedContent;
+    } catch (error) {
+        logger.error('Error generating story:', error);
+        if (error.response?.data?.error?.message) {
+            throw new AppError(error.response.data.error.message, 500);
+        }
+        throw new AppError('Failed to generate story', 500);
+    }
+}
+
 // Generate story endpoint
 app.post('/generate-story', apiLimiter, async (req, res) => {
     try {

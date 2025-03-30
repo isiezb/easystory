@@ -1,5 +1,6 @@
 import { config } from './config.js';
 import { uiHandler } from './uiHandler.js';
+import { supabase } from './supabase.js';
 
 export const auth = {
     init() {
@@ -27,27 +28,31 @@ export const auth = {
 
     async signUp(email, password) {
         try {
-            const { data, error } = await this.supabase.auth.signUp({
+            const { data, error } = await supabase.auth.signUp({
                 email,
                 password
             });
+            
             if (error) throw error;
-            uiHandler.showSuccess('Check your email for the confirmation link!');
+            return data;
         } catch (error) {
-            uiHandler.showError(error.message);
+            console.error('Error signing up:', error);
+            throw error;
         }
     },
 
     async signIn(email, password) {
         try {
-            const { data, error } = await this.supabase.auth.signInWithPassword({
+            const { data, error } = await supabase.auth.signInWithPassword({
                 email,
                 password
             });
+            
             if (error) throw error;
-            this.handleAuthSuccess(data.user);
+            return data;
         } catch (error) {
-            uiHandler.showError(error.message);
+            console.error('Error signing in:', error);
+            throw error;
         }
     },
 
@@ -64,10 +69,33 @@ export const auth = {
 
     async signOut() {
         try {
-            const { error } = await this.supabase.auth.signOut();
+            const { error } = await supabase.auth.signOut();
             if (error) throw error;
         } catch (error) {
-            uiHandler.showError(error.message);
+            console.error('Error signing out:', error);
+            throw error;
+        }
+    },
+
+    async resetPassword(email) {
+        try {
+            const { error } = await supabase.auth.resetPasswordForEmail(email);
+            if (error) throw error;
+        } catch (error) {
+            console.error('Error resetting password:', error);
+            throw error;
+        }
+    },
+
+    async updatePassword(newPassword) {
+        try {
+            const { error } = await supabase.auth.updateUser({
+                password: newPassword
+            });
+            if (error) throw error;
+        } catch (error) {
+            console.error('Error updating password:', error);
+            throw error;
         }
     },
 

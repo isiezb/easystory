@@ -1,3 +1,4 @@
+import { createClient } from '@supabase/supabase-js';
 import { config } from './config.js';
 
 // Validate Supabase URL
@@ -29,7 +30,7 @@ try {
     if (!window.supabase) {
         throw new Error('Supabase client library not loaded');
     }
-    supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+    supabase = createClient(supabaseUrl, supabaseKey);
 } catch (error) {
     console.error('Failed to initialize Supabase client:', error);
     throw new Error('Failed to initialize Supabase client');
